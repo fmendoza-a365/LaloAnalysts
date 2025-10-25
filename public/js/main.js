@@ -1,22 +1,37 @@
 // Archivo JavaScript principal para A365 Analyst
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Mobile menu toggle
-    const mobileMenuButton = document.getElementById('mobile-menu');
-    const mobileMenu = document.getElementById('mobile-menu-items');
-    
-    if (mobileMenuButton && mobileMenu) {
-        mobileMenuButton.addEventListener('click', function() {
-            const isHidden = mobileMenu.classList.contains('hidden');
-            if (isHidden) {
-                mobileMenu.classList.remove('hidden');
-                mobileMenu.classList.add('block');
-            } else {
-                mobileMenu.classList.remove('block');
-                mobileMenu.classList.add('hidden');
-            }
-        });
+    const btn = document.getElementById('mobile-menu');
+    const modal = document.getElementById('mobile-menu-modal');
+    const overlay = document.getElementById('mobile-menu-overlay');
+    const closeBtn = document.getElementById('mobile-menu-close');
+
+    function openMenu() {
+        if (!modal) return;
+        modal.classList.remove('hidden');
+        if (btn) btn.setAttribute('aria-expanded', 'true');
+        document.body.classList.add('overflow-hidden');
     }
+
+    function closeMenu() {
+        if (!modal) return;
+        modal.classList.add('hidden');
+        if (btn) btn.setAttribute('aria-expanded', 'false');
+        document.body.classList.remove('overflow-hidden');
+    }
+
+    if (btn && modal) {
+        btn.addEventListener('click', openMenu);
+    }
+    if (overlay) {
+        overlay.addEventListener('click', closeMenu);
+    }
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closeMenu);
+    }
+    document.addEventListener('keydown', function(e){
+        if (e.key === 'Escape') closeMenu();
+    });
 
     // Flash message auto-dismiss
     const flashMessages = document.querySelectorAll('[data-dismissible]');
