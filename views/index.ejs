@@ -1,0 +1,131 @@
+<div class="bg-white">
+  <div class="max-w-7xl mx-auto py-16 px-4 sm:py-24 sm:px-6 lg:px-8">
+    <div class="text-center">
+      <h1 class="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl md:text-6xl">
+        <span class="block">A365 · Análisis de Datos</span>
+        <span class="block text-blue-600">Decisiones confiables y oportunas para cada rol</span>
+      </h1>
+      <p class="mt-3 max-w-md mx-auto text-base text-gray-600 sm:text-lg md:mt-5 md:text-xl md:max-w-3xl">
+        Plataforma para unificar fuentes, gobernar KPIs e integrar Dashbords de Power BI con control de acceso por roles. Finanzas (PxQ) como capacidad transversal para Gerencia y Analistas.
+      </p>
+      <div class="mt-5 max-w-md mx-auto sm:flex sm:justify-center md:mt-8">
+        <% if (!user) { %>
+          <div class="rounded-md shadow">
+            <a href="/auth/register" class="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 md:py-4 md:text-lg md:px-10">
+              Comenzar
+            </a>
+          </div>
+          <div class="mt-3 rounded-md shadow sm:mt-0 sm:ml-3">
+            <a href="/auth/login" class="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-blue-600 bg-white hover:bg-gray-50 md:py-4 md:text-lg md:px-10">
+              Iniciar sesión
+            </a>
+          </div>
+        <% } else { %>
+          <div class="rounded-md shadow">
+            <a href="/dashboard" class="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 md:py-4 md:text-lg md:px-10">
+              Ir al Tablero
+            </a>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Features -->
+<div class="py-12 bg-gray-50">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="lg:text-center">
+      <h2 class="text-base text-blue-600 font-semibold tracking-wide uppercase">Perfiles y beneficios</h2>
+      <p class="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-gray-900 sm:text-4xl">
+        Resultados accionables para Gerencia, Supervisión, Asesoría y Análisis
+      </p>
+      <p class="mt-4 max-w-2xl text-xl text-gray-600 lg:mx-auto">
+        KPIs validados, Dashbords por rol y Finanzas (PxQ) con trazabilidad. Analistas ven absolutamente todo.
+      </p>
+    </div>
+
+    <div class="mt-10">
+      <div class="space-y-10 md:space-y-0 md:grid md:grid-cols-2 md:gap-x-8 md:gap-y-10">
+        <div class="relative">
+          <div class="absolute flex items-center justify-center h-12 w-12 rounded-md bg-blue-500 text-white">
+            <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+          </div>
+          <div class="ml-16">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Gerencia</h3>
+            <p class="mt-2 text-base text-gray-600">Indicadores estratégicos: ingresos, costos (PxQ), margen, NPS, SLA. Visión ejecutiva y alertas tempranas.</p>
+            <div class="mt-3 flex gap-3">
+              <a href="/dashboard" class="text-blue-600 hover:text-blue-800 text-sm font-semibold">Ver resumen ejecutivo</a>
+              <a href="/powerbi" class="text-blue-600 hover:text-blue-800 text-sm font-semibold">Explorar Dashbords</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="relative">
+          <div class="absolute flex items-center justify-center h-12 w-12 rounded-md bg-blue-500 text-white">
+            <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+          </div>
+          <div class="ml-16">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Supervisores</h3>
+            <p class="mt-2 text-base text-gray-600">Performance de equipos, adherencia, nivel de servicio y productividad. Corrección en tiempo.</p>
+            <div class="mt-3 flex gap-3">
+              <a href="/powerbi" class="text-blue-600 hover:text-blue-800 text-sm font-semibold">KPIs Operativos</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="relative">
+          <div class="absolute flex items-center justify-center h-12 w-12 rounded-md bg-blue-500 text-white">
+            <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+          </div>
+          <div class="ml-16">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Asesores / Ejecutivos / Vendedores</h3>
+            <p class="mt-2 text-base text-gray-600">Metas vs. logro, conversión, tasa de contacto y calidad. Claridad en objetivos y próximos pasos.</p>
+            <div class="mt-3 flex gap-3">
+              <a href="/powerbi" class="text-blue-600 hover:text-blue-800 text-sm font-semibold">Panel individual</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="relative">
+          <div class="absolute flex items-center justify-center h-12 w-12 rounded-md bg-blue-500 text-white">
+            <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+          </div>
+          <div class="ml-16">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Analistas de Datos</h3>
+            <p class="mt-2 text-base text-gray-600">Gobierno de KPIs, calidad y linaje de datos. Gestión de Finanzas (PxQ): tarifas, volúmenes, cálculo y trazabilidad. Acceso total.</p>
+            <div class="mt-3 flex gap-3">
+              <a href="/powerbi" class="text-blue-600 hover:text-blue-800 text-sm font-semibold">Explorar datasets y Dashbords</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CTA Section -->
+<div class="bg-blue-700">
+  <div class="max-w-2xl mx-auto text-center py-16 px-4 sm:py-20 sm:px-6 lg:px-8">
+    <h2 class="text-3xl font-extrabold text-white sm:text-4xl">
+      <span class="block">¿Listo para comenzar?</span>
+      <span class="block">Explora Dashbords y KPIs alineados a A365.</span>
+    </h2>
+    <p class="mt-4 text-lg leading-6 text-blue-200">
+      KPIs gobernados, finanzas PxQ y visualizaciones consistentes para tus decisiones.
+    </p>
+    <% if (!user) { %>
+      <a href="/auth/register" class="mt-8 w-full inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-blue-600 bg-white hover:bg-blue-50 sm:w-auto">Regístrate</a>
+    <% } else { %>
+      <a href="/powerbi" class="mt-8 w-full inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-blue-600 bg-white hover:bg-blue-50 sm:w-auto">Explorar Dashbords</a>
+    <% } %>
+  </div>
+</div>

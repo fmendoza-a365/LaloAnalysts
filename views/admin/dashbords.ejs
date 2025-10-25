@@ -1,0 +1,141 @@
+<div class="bg-white shadow rounded-lg">
+  <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
+    <div class="flex items-center justify-between gap-4 flex-wrap">
+      <div>
+        <h3 class="text-lg leading-6 font-medium text-gray-900">Administración · Dashbords</h3>
+        <p class="mt-1 text-sm text-gray-500">Gestión de enlaces de Power BI (búsqueda, filtros y acciones).</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <a href="/powerbi/nuevo" class="px-3 py-2 rounded-md bg-green-600 text-white text-sm hover:bg-green-700">Nuevo enlace</a>
+        <form method="get" class="flex items-center gap-2">
+          <input type="text" name="search" value="<%= (pagination && pagination.search) || '' %>" placeholder="Buscar..." class="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" />
+          <select name="modulo" class="border border-gray-300 rounded-md px-2 py-2 text-sm">
+            <% const mods = ['todos','finanzas','kpis','asesores','general']; %>
+            <% mods.forEach(m => { %>
+              <option value="<%= m %>" <%= (pagination && pagination.modulo === m) ? 'selected' : '' %>><%= m.charAt(0).toUpperCase() + m.slice(1) %></option>
+            <% }) %>
+          </select>
+          <select name="estado" class="border border-gray-300 rounded-md px-2 py-2 text-sm">
+            <option value="" <%= (!pagination || !pagination.estado) ? 'selected' : '' %>>Todos</option>
+            <option value="activo" <%= (pagination && pagination.estado === 'activo') ? 'selected' : '' %>>Activos</option>
+            <option value="inactivo" <%= (pagination && pagination.estado === 'inactivo') ? 'selected' : '' %>>Inactivos</option>
+          </select>
+          <button class="px-3 py-2 rounded-md bg-blue-600 text-white text-sm hover:bg-blue-700">Aplicar</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="px-4 py-5 sm:p-6">
+    <% if (links && links.length) { %>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
+              <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Módulo</th>
+              <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Roles</th>
+              <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+              <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            <% links.forEach(l => { %>
+              <tr>
+                <td class="px-4 py-2 text-sm text-gray-900"><div class="font-semibold"><%= l.nombreMesa %></div><div class="text-gray-500 text-xs truncate max-w-xs"><%= l.descripcion || '' %></div></td>
+                <td class="px-4 py-2 text-sm text-gray-700 capitalize"><%= l.modulo %></td>
+                <td class="px-4 py-2 text-sm text-gray-700"><%= (Array.isArray(l.rolesPermitidos) && l.rolesPermitidos.length) ? l.rolesPermitidos.join(', ') : 'Todos' %></td>
+                <td class="px-4 py-2 text-sm text-gray-700">
+                  <form action="/admin/dashbords/<%= l._id %>/roles" method="post" class="flex items-center gap-2">
+                    <select name="rolesPermitidos" multiple class="border border-gray-300 rounded px-2 py-1 text-xs">
+                      <% ['admin','analista','supervisor','asesor'].forEach(r => { %>
+                        <option value="<%= r %>" <%= (Array.isArray(l.rolesPermitidos) && l.rolesPermitidos.includes(r)) ? 'selected' : '' %>><%= r %></option>
+                      <% }) %>
+                    </select>
+                    <button type="submit" class="p-1.5 rounded hover:bg-gray-100 text-gray-600" title="Guardar roles" aria-label="Guardar roles">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-5 w-5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.75l6 6 9-13.5"/></svg>
+                    </button>
+                  </form>
+                </td>
+                <td class="px-4 py-2 text-sm">
+                  <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium <%= l.activo ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-700' %>"><%= l.activo ? 'Activo' : 'Inactivo' %></span>
+                </td>
+                <td class="px-4 py-2 text-sm text-gray-700 text-right">
+                  <a href="/powerbi/<%= l._id %>" class="inline-block text-gray-600 hover:text-gray-800" title="Ver" aria-label="Ver">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-5 w-5 inline" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2.25 12s3.75-6.75 9.75-6.75S21.75 12 21.75 12 18 18.75 12 18.75 2.25 12 2.25 12z"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                  </a>
+                  <form id="form-toggle-<%= l._id %>" action="/admin/dashbords/<%= l._id %>/toggle" method="post" class="inline ml-3">
+                    <button type="button" data-message="<%= l.activo ? '¿Desactivar este enlace?' : '¿Activar este enlace?' %>" onclick="openConfirm('form-toggle-<%= l._id %>', this.dataset.message)" class="text-gray-600 hover:text-gray-800" title="<%= l.activo ? 'Desactivar' : 'Activar' %>" aria-label="<%= l.activo ? 'Desactivar' : 'Activar' %>">
+                      <% if (l.activo) { %>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-5 w-5 inline" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15.75 8.25v7.5M8.25 8.25v7.5"/></svg>
+                      <% } else { %>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-5 w-5 inline" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8.25 7.5v9l9-4.5-9-4.5z"/></svg>
+                      <% } %>
+                    </button>
+                  </form>
+                  <% if (user && user.role === 'admin') { %>
+                  <form id="form-del-<%= l._id %>" action="/admin/dashbords/<%= l._id %>/eliminar" method="post" class="inline ml-3">
+                    <button type="button" onclick="openConfirm('form-del-<%= l._id %>', '¿Eliminar este enlace? Esta acción no se puede deshacer.')" class="text-gray-600 hover:text-red-700" title="Eliminar" aria-label="Eliminar">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-5 w-5 inline" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7.5h12M9.75 7.5v9.75M14.25 7.5v9.75M4.5 7.5l1.125 12.375A2.25 2.25 0 007.875 22.125h8.25a2.25 2.25 0 002.25-2.25L19.5 7.5M9 3.75h6l1.5 1.5H7.5l1.5-1.5z"/></svg>
+                    </button>
+                  </form>
+                  <% } %>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+      <div class="mt-4 flex items-center justify-between text-sm text-gray-600">
+        <div>
+          Página <%= pagination.page %> de <%= pagination.totalPages %> · Total: <%= pagination.total %>
+        </div>
+        <div class="flex gap-2">
+          <% const prev = Math.max(pagination.page - 1, 1); const next = Math.min(pagination.page + 1, pagination.totalPages); %>
+          <a href="?page=<%= prev %>&perPage=<%= pagination.perPage %>&search=<%= encodeURIComponent(pagination.search || '') %>&modulo=<%= encodeURIComponent(pagination.modulo || '') %>&estado=<%= encodeURIComponent(pagination.estado || '') %>" class="px-3 py-1 border rounded hover:bg-gray-50 <%= pagination.page === 1 ? 'pointer-events-none opacity-50' : '' %>">Anterior</a>
+          <a href="?page=<%= next %>&perPage=<%= pagination.perPage %>&search=<%= encodeURIComponent(pagination.search || '') %>&modulo=<%= encodeURIComponent(pagination.modulo || '') %>&estado=<%= encodeURIComponent(pagination.estado || '') %>" class="px-3 py-1 border rounded hover:bg-gray-50 <%= pagination.page === pagination.totalPages ? 'pointer-events-none opacity-50' : '' %>">Siguiente</a>
+        </div>
+      </div>
+    <% } else { %>
+      <p class="text-sm text-gray-500">No hay enlaces cargados aún.</p>
+    <% } %>
+  </div>
+</div>
+
+<div id="confirmModal" class="hidden fixed z-50 inset-0 overflow-y-auto" role="dialog" aria-modal="true">
+  <div class="flex items-center justify-center min-h-screen px-4">
+    <div class="fixed inset-0 bg-gray-500 bg-opacity-75" onclick="closeConfirm()"></div>
+    <div class="bg-white rounded-lg shadow-xl max-w-sm w-full z-10">
+      <div class="px-4 py-3 border-b">
+        <h3 class="text-sm font-medium text-gray-900">Confirmación</h3>
+      </div>
+      <div class="px-4 py-4">
+        <p id="confirmMessage" class="text-sm text-gray-700"></p>
+      </div>
+      <div class="px-4 py-3 border-t flex justify-end gap-2">
+        <button type="button" class="px-3 py-1.5 rounded border text-sm" onclick="closeConfirm()">Cancelar</button>
+        <button type="button" class="px-3 py-1.5 rounded bg-blue-600 text-white text-sm hover:bg-blue-700" onclick="submitConfirm()">Confirmar</button>
+      </div>
+    </div>
+  </div>
+  <form id="__confirmFormHelper" class="hidden"></form>
+  <input type="hidden" id="__confirmTargetId" />
+  <input type="hidden" id="__confirmMessageText" />
+</div>
+
+<script>
+  function openConfirm(formId, message) {
+    document.getElementById('__confirmTargetId').value = formId;
+    document.getElementById('confirmMessage').textContent = message || '¿Confirmas esta acción?';
+    document.getElementById('confirmModal').classList.remove('hidden');
+  }
+  function closeConfirm() {
+    document.getElementById('confirmModal').classList.add('hidden');
+  }
+  function submitConfirm() {
+    var formId = document.getElementById('__confirmTargetId').value;
+    if (formId) {
+      document.getElementById(formId).submit();
+    }
+    closeConfirm();
+  }
+</script>

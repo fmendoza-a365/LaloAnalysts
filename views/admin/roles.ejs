@@ -1,0 +1,54 @@
+<div class="bg-white shadow rounded-lg">
+  <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
+    <div class="flex items-center justify-between gap-3 flex-wrap">
+      <div>
+        <h3 class="text-lg leading-6 font-medium text-gray-900">Gestión de Roles</h3>
+        <p class="mt-1 text-sm text-gray-500">Crea, edita y administra permisos por módulo/acción.</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <% if (user && user.role === 'admin') { %>
+          <a href="/admin/roles/asignacion" class="inline-flex items-center px-3 py-2 rounded-md border text-sm hover:bg-gray-50" title="Asignación de Roles" aria-label="Asignación de Roles">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-5 w-5 text-gray-600" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15.75 7.5a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z"/><path d="M4.5 20.25a7.5 7.5 0 0115 0"/></svg>
+            <span class="sr-only">Asignación de Roles</span>
+          </a>
+          <a href="/admin/roles/nuevo" class="inline-flex items-center px-3 py-2 rounded-md border text-sm hover:bg-gray-50" title="Nuevo Rol" aria-label="Nuevo Rol">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-5 w-5 text-gray-600" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6v12M6 12h12"/></svg>
+            <span class="sr-only">Nuevo Rol</span>
+          </a>
+        <% } %>
+      </div>
+    </div>
+  </div>
+  <div class="px-4 py-5 sm:p-6">
+    <% if (roles && roles.length) { %>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rol</th>
+              <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descripción</th>
+              <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+              <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            <% roles.forEach(r => { %>
+              <tr>
+                <td class="px-4 py-2 text-sm text-gray-900"><%= r.nombre %></td>
+                <td class="px-4 py-2 text-sm text-gray-700"><%= r.descripcion || '-' %></td>
+                <td class="px-4 py-2 text-sm"><span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium <%= r.activo ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-700' %>"><%= r.activo ? 'Activo' : 'Inactivo' %></span></td>
+                <td class="px-4 py-2 text-sm text-right">
+                  <a href="/admin/roles/<%= r._id %>/editar" class="inline-block text-gray-600 hover:text-gray-800" title="Editar" aria-label="Editar">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="h-5 w-5 inline" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16.862 3.487a1.875 1.875 0 112.651 2.651L7.5 18.15 3 19.5l1.35-4.5 12.512-11.513z"/></svg>
+                  </a>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    <% } else { %>
+      <p class="text-sm text-gray-500">No hay roles definidos aún.</p>
+    <% } %>
+  </div>
+</div>

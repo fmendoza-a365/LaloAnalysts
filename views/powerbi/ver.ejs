@@ -1,0 +1,50 @@
+<div class="bg-white shadow rounded-lg">
+  <div class="px-4 py-5 sm:px-6 border-b border-gray-200 flex items-center justify-between">
+    <div>
+      <h3 class="text-lg leading-6 font-medium text-gray-900"><%= link.nombreMesa %></h3>
+      <p class="mt-1 text-sm text-gray-500"><%= link.descripcion || 'Visualización embebida de Power BI' %></p>
+    </div>
+    <div class="flex items-center gap-2">
+      <button type="button" id="btn-full" class="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">Pantalla completa</button>
+      <a href="/powerbi" class="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">Volver</a>
+    </div>
+  </div>
+
+  <div class="px-4 py-5 sm:p-6">
+    <div id="embed-container" class="relative w-full" style="padding-top: 56.25%;">
+      <iframe
+        id="embed-iframe"
+        src="<%= link.url %>"
+        class="absolute top-0 left-0 w-full h-full border rounded"
+        frameborder="0"
+        allowfullscreen
+        title="<%= link.nombreMesa %>"></iframe>
+    </div>
+    <p class="mt-2 text-xs text-gray-500">Si el reporte no carga, verifica que la URL sea de incrustación (embed) y que tengas permisos en Power BI.</p>
+  </div>
+</div>
+
+<script>
+  (function(){
+    const container = document.getElementById('embed-container');
+    const btn = document.getElementById('btn-full');
+    if (!container || !btn) return;
+    function isFullscreen(){
+      return document.fullscreenElement === container;
+    }
+    async function toggle(){
+      try {
+        if (!isFullscreen()) {
+          if (container.requestFullscreen) await container.requestFullscreen();
+        } else {
+          if (document.exitFullscreen) await document.exitFullscreen();
+        }
+      } catch (e) { console.warn('Fullscreen no disponible:', e); }
+      btn.textContent = isFullscreen() ? 'Salir de pantalla completa' : 'Pantalla completa';
+    }
+    btn.addEventListener('click', toggle);
+    document.addEventListener('fullscreenchange', () => {
+      btn.textContent = isFullscreen() ? 'Salir de pantalla completa' : 'Pantalla completa';
+    });
+  })();
+</script>

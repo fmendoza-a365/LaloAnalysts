@@ -1,0 +1,70 @@
+<div class="bg-white shadow rounded-lg">
+  <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
+    <h3 class="text-lg leading-6 font-medium text-gray-900">Editar enlace de Power BI</h3>
+    <p class="mt-1 text-sm text-gray-500">Actualiza la información del enlace y su visibilidad por roles.</p>
+  </div>
+
+  <div class="px-4 py-5 sm:p-6">
+    <form action="/powerbi/<%= link._id %>?_method=PUT" method="POST" class="space-y-6 max-w-2xl">
+      <div>
+        <label for="nombreMesa" class="block text-sm font-medium text-gray-700">Nombre de la Mesa</label>
+        <input type="text" id="nombreMesa" name="nombreMesa" value="<%= link.nombreMesa %>" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+      </div>
+
+      <div>
+        <label for="descripcion" class="block text-sm font-medium text-gray-700">Descripción</label>
+        <textarea id="descripcion" name="descripcion" rows="3" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"><%= link.descripcion || '' %></textarea>
+      </div>
+
+      <div>
+        <label for="url" class="block text-sm font-medium text-gray-700">URL</label>
+        <input type="url" id="url" name="url" value="<%= link.url %>" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+        <p class="mt-1 text-xs text-gray-500">Debe ser una URL de incrustación (embed) de Power BI.</p>
+      </div>
+
+      <div>
+        <label for="imageUrl" class="block text-sm font-medium text-gray-700">URL de imagen (logo)</label>
+        <input type="url" id="imageUrl" name="imageUrl" value="<%= link.imageUrl || '' %>" placeholder="https://.../logo.png" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+        <p class="mt-1 text-xs text-gray-500">Opcional. Se mostrará como imagen de la tarjeta.</p>
+      </div>
+
+      <div>
+        <label for="modulo" class="block text-sm font-medium text-gray-700">Módulo</label>
+        <select id="modulo" name="modulo" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+          <option value="general" <%= link.modulo === 'general' ? 'selected' : '' %>>General</option>
+          <option value="finanzas" <%= link.modulo === 'finanzas' ? 'selected' : '' %>>Finanzas</option>
+          <option value="kpis" <%= link.modulo === 'kpis' ? 'selected' : '' %>>KPIs</option>
+          <option value="asesores" <%= link.modulo === 'asesores' ? 'selected' : '' %>>Asesores</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Roles permitidos</label>
+        <div class="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+          <label class="inline-flex items-center">
+            <input type="checkbox" name="rolesPermitidos" value="admin" <%= (link.rolesPermitidos||[]).includes('admin') ? 'checked' : '' %> class="h-4 w-4 text-blue-600 border-gray-300 rounded">
+            <span class="ml-2">Administrador</span>
+          </label>
+          <label class="inline-flex items-center">
+            <input type="checkbox" name="rolesPermitidos" value="analista" <%= (link.rolesPermitidos||[]).includes('analista') ? 'checked' : '' %> class="h-4 w-4 text-blue-600 border-gray-300 rounded">
+            <span class="ml-2">Analista</span>
+          </label>
+          <label class="inline-flex items-center">
+            <input type="checkbox" name="rolesPermitidos" value="supervisor" <%= (link.rolesPermitidos||[]).includes('supervisor') ? 'checked' : '' %> class="h-4 w-4 text-blue-600 border-gray-300 rounded">
+            <span class="ml-2">Supervisor</span>
+          </label>
+          <label class="inline-flex items-center">
+            <input type="checkbox" name="rolesPermitidos" value="asesor" <%= (link.rolesPermitidos||[]).includes('asesor') ? 'checked' : '' %> class="h-4 w-4 text-blue-600 border-gray-300 rounded">
+            <span class="ml-2">Asesor</span>
+          </label>
+        </div>
+        <p class="mt-1 text-xs text-gray-500">Si no seleccionas ninguno, será visible para todos.</p>
+      </div>
+
+      <div class="flex items-center space-x-3">
+        <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">Guardar</button>
+        <a href="/powerbi" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</div>

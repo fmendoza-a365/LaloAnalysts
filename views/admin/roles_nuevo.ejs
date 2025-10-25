@@ -1,0 +1,74 @@
+<div class="bg-white shadow rounded-lg">
+  <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
+    <h3 class="text-lg leading-6 font-medium text-gray-900">Nuevo Rol</h3>
+    <p class="mt-1 text-sm text-gray-500">Define el nombre, estado y permisos básicos por módulo/acción.</p>
+  </div>
+  <div class="px-4 py-5 sm:p-6">
+    <form action="/admin/roles" method="post" class="space-y-6">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-3xl">
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Nombre</label>
+          <input name="nombre" required class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" />
+        </div>
+        <div class="flex items-center gap-2 mt-6">
+          <input type="checkbox" id="activo" name="activo" class="h-4 w-4 text-blue-600 border-gray-300 rounded" checked />
+          <label for="activo" class="text-sm text-gray-700">Activo</label>
+        </div>
+        <div class="sm:col-span-2">
+          <label class="block text-sm font-medium text-gray-700">Descripción</label>
+          <textarea name="descripcion" rows="2" class="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"></textarea>
+        </div>
+      </div>
+
+      <!-- Permisos básicos (puedes extender en futuras iteraciones) -->
+      <div class="mt-4">
+        <h4 class="text-sm font-semibold text-gray-900 mb-2">Permisos por módulo</h4>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="border rounded-md p-3">
+            <div class="font-medium text-sm text-gray-900 mb-2">Dashbords</div>
+            <div class="grid grid-cols-2 gap-2 text-sm text-gray-700">
+              <label class="inline-flex items-center gap-2"><input type="checkbox" name="permisos[dashbords][ver_listado]" class="rounded"> Ver listado</label>
+              <label class="inline-flex items-center gap-2"><input type="checkbox" name="permisos[dashbords][ver_detalle]" class="rounded" checked> Ver detalle</label>
+              <label class="inline-flex items-center gap-2"><input type="checkbox" name="permisos[dashbords][crear]" class="rounded"> Crear</label>
+              <label class="inline-flex items-center gap-2"><input type="checkbox" name="permisos[dashbords][editar]" class="rounded"> Editar</label>
+              <label class="inline-flex items-center gap-2"><input type="checkbox" name="permisos[dashbords][eliminar]" class="rounded"> Eliminar</label>
+              <label class="inline-flex items-center gap-2"><input type="checkbox" name="permisos[dashbords][activar_desactivar]" class="rounded"> Activar/Desactivar</label>
+              <label class="inline-flex items-center gap-2 md:col-span-2"><input type="checkbox" name="permisos[dashbords][ver_todos]" class="rounded"> Ver todos (ignora rolesPermitidos/inactivos)</label>
+            </div>
+          </div>
+          <div class="border rounded-md p-3">
+            <div class="font-medium text-sm text-gray-900 mb-2">Usuarios</div>
+            <div class="grid grid-cols-2 gap-2 text-sm text-gray-700">
+              <label class="inline-flex items-center gap-2"><input type="checkbox" name="permisos[usuarios][ver_listado]" class="rounded" checked> Ver listado</label>
+              <label class="inline-flex items-center gap-2"><input type="checkbox" name="permisos[usuarios][crear]" class="rounded"> Crear</label>
+              <label class="inline-flex items-center gap-2"><input type="checkbox" name="permisos[usuarios][cambiar_rol]" class="rounded"> Cambiar rol</label>
+              <label class="inline-flex items-center gap-2"><input type="checkbox" name="permisos[usuarios][reset_password]" class="rounded"> Reset contraseña</label>
+            </div>
+          </div>
+          <div class="border rounded-md p-3">
+            <div class="font-medium text-sm text-gray-900 mb-2">Finanzas · Tarifas</div>
+            <div class="grid grid-cols-2 gap-2 text-sm text-gray-700">
+              <label class="inline-flex items-center gap-2"><input type="checkbox" name="permisos[finanzas_tarifas][ver]" class="rounded" checked> Ver</label>
+              <label class="inline-flex items-center gap-2"><input type="checkbox" name="permisos[finanzas_tarifas][crear]" class="rounded"> Crear</label>
+              <label class="inline-flex items-center gap-2"><input type="checkbox" name="permisos[finanzas_tarifas][editar]" class="rounded"> Editar</label>
+              <label class="inline-flex items-center gap-2"><input type="checkbox" name="permisos[finanzas_tarifas][eliminar]" class="rounded"> Eliminar</label>
+            </div>
+          </div>
+          <div class="border rounded-md p-3">
+            <div class="font-medium text-sm text-gray-900 mb-2">Finanzas · Volúmenes</div>
+            <div class="grid grid-cols-2 gap-2 text-sm text-gray-700">
+              <label class="inline-flex items-center gap-2"><input type="checkbox" name="permisos[finanzas_volumenes][cargar]" class="rounded"> Cargar</label>
+              <label class="inline-flex items-center gap-2"><input type="checkbox" name="permisos[finanzas_volumenes][validar]" class="rounded"> Validar</label>
+              <label class="inline-flex items-center gap-2"><input type="checkbox" name="permisos[finanzas_volumenes][rollback]" class="rounded"> Rollback</label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pt-2">
+        <button class="px-4 py-2 rounded-md bg-blue-600 text-white text-sm hover:bg-blue-700">Crear Rol</button>
+        <a href="/admin/roles" class="ml-2 px-4 py-2 rounded-md border text-sm">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</div>

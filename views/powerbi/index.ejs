@@ -1,0 +1,91 @@
+<div class="bg-white shadow rounded-lg">
+  <div class="px-4 py-5 sm:px-6 border-b border-gray-200 flex items-center justify-between">
+    <div class="flex-1">
+      <h3 class="text-lg leading-6 font-medium text-gray-900">Dashbords</h3>
+      <p class="mt-1 text-sm text-gray-500">Lista de tableros/mesas disponibles según tu rol.</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <form action="/powerbi" method="GET" class="hidden sm:block">
+        <input type="hidden" name="perPage" value="<%= (pagination && pagination.perPage) || 10 %>">
+        <div class="relative">
+          <input type="text" name="search" value="<%= (pagination && pagination.search) || '' %>" placeholder="Buscar..." class="pl-3 pr-10 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+          <button type="submit" class="absolute right-1 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700">
+            🔎
+          </button>
+        </div>
+      </form>
+      <% if (user && (user.role === 'admin' || user.role === 'analista')) { %>
+        <a href="/powerbi/nuevo" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">Nuevo enlace</a>
+      <% } %>
+    </div>
+  </div>
+
+  <div class="px-4 py-5 sm:p-6">
+    <% if (links && links.length) { %>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <% links.forEach(l => { %>
+          <div class="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow transition">
+            <div class="h-40 bg-gray-100 flex items-center justify-center overflow-hidden">
+              <% if (l.imageUrl) { %>
+                <img src="<%= l.imageUrl %>" alt="Logo" class="object-contain w-full h-full">
+              <% } else { %>
+                <div class="text-gray-400 text-5xl">📊</div>
+              <% } %>
+            </div>
+            <div class="p-4">
+              <div class="flex items-start justify-between">
+                <h4 class="text-base font-semibold text-gray-900 truncate" title="<%= l.nombreMesa %>"><%= l.nombreMesa %></h4>
+                <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 capitalize"><%= l.modulo %></span>
+              </div>
+              <p class="mt-1 text-sm text-gray-600 line-clamp-2"><%= l.descripcion || 'Sin descripción' %></p>
+              <div class="mt-3 flex items-center justify-between">
+                <div class="space-x-3">
+                  <a href="/powerbi/<%= l._id %>" class="text-blue-600 hover:text-blue-800 text-sm font-medium">Ver</a>
+                  <% if (user && (user.role === 'admin' || user.role === 'analista')) { %>
+                    <a href="/powerbi/<%= l._id %>/editar" class="text-yellow-600 hover:text-yellow-700 text-sm font-medium">Editar</a>
+                  <% } %>
+                </div>
+                <% if (user && (user.role === 'admin' || user.role === 'analista')) { %>
+                  <form action="/powerbi/<%= l._id %>?_method=DELETE" method="POST" onsubmit="return confirm('¿Eliminar este enlace?');">
+                    <button type="submit" class="text-red-600 hover:text-red-700 text-sm font-medium">Eliminar</button>
+                  </form>
+                <% } %>
+              </div>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+      <% if (pagination && pagination.totalPages > 1) { %>
+        <div class="mt-6 flex items-center justify-between">
+          <div class="text-sm text-gray-600">
+            Página <%= pagination.page %> de <%= pagination.totalPages %> — <%= pagination.total %> registro(s)
+          </div>
+          <div class="space-x-2">
+            <% const makeUrl = (p) => `/powerbi?search=${encodeURIComponent(pagination.search || '')}&perPage=${pagination.perPage}&page=${p}`; %>
+            <% if (pagination.page > 1) { %>
+              <a class="px-3 py-1 border rounded text-sm" href="<%= makeUrl(1) %>">Primera</a>
+              <a class="px-3 py-1 border rounded text-sm" href="<%= makeUrl(pagination.page - 1) %>">Anterior</a>
+            <% } %>
+            <% if (pagination.page < pagination.totalPages) { %>
+              <a class="px-3 py-1 border rounded text-sm" href="<%= makeUrl(pagination.page + 1) %>">Siguiente</a>
+              <a class="px-3 py-1 border rounded text-sm" href="<%= makeUrl(pagination.totalPages) %>">Última</a>
+            <% } %>
+          </div>
+        </div>
+      <% } %>
+    <% } else { %>
+      <div class="text-center">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+          <path vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+        </svg>
+        <h3 class="mt-2 text-sm font-medium text-gray-900">No hay enlaces registrados</h3>
+        <p class="mt-1 text-sm text-gray-500">Agrega un nuevo enlace para comenzar.</p>
+        <% if (user && (user.role === 'admin' || user.role === 'analista')) { %>
+          <div class="mt-6">
+            <a href="/powerbi/nuevo" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700">Nuevo enlace</a>
+          </div>
+        <% } %>
+      </div>
+    <% } %>
+  </div>
+</div>

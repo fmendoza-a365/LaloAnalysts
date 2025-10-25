@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %> - A365 Análisis de Datos</title>
+    <link rel="icon" type="image/x-icon" href="/images/icon.ico" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="text/javascript" src="https://unpkg.com/powerbi-client@2.24.0/dist/powerbi.min.js"></script>
+</head>
+<body class="bg-gray-100">
+    <!-- Navigation -->
+    <nav class="bg-blue-600 text-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 sm:h-20">
+                <div class="flex">
+                    <div class="flex-shrink-0 flex items-center">
+                        <a href="/" class="inline-flex items-center group">
+                            <img src="/images/logo.png" alt="Logo" class="my-2 sm:my-3 h-12 sm:h-14 w-auto object-contain filter invert brightness-0 drop-shadow transition duration-100 ease-out group-hover:invert-0 group-hover:brightness-105 group-hover:saturate-85 cursor-pointer" />
+                        </a>
+                    </div>
+                    <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
+                        <a href="/" class="border-transparent text-white hover:text-gray-200 inline-flex items-center px-1 pt-1 border-b-0 text-sm font-bold">Inicio</a>
+                        <a href="/about" class="border-transparent text-white hover:text-gray-200 inline-flex items-center px-1 pt-1 border-b-0 text-sm font-bold">Acerca de</a>
+                    </div>
+                </div>
+                <div class="hidden sm:ml-6 sm:flex sm:items-center">
+                    <% if (user) { %>
+                        <div class="relative ml-3">
+                            <div class="flex items-center">
+                                <span class="mr-2 text-sm font-medium">Bienvenido, <%= user.username %></span>
+                                <a href="/auth/logout" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                                    Cerrar sesión
+                                </a>
+                            </div>
+                        </div>
+                    <% } %>
+                    <% if (!user) { %>
+                        <a href="/auth/login" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                            Iniciar sesión
+                        </a>
+                        <a href="/auth/register" class="ml-4 bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+                            Registrarse
+                        </a>
+                    <% } %>
+                </div>
+                <!-- Mobile menu button -->
+                <div class="-mr-2 flex items-center sm:hidden">
+                    <button type="button" class="inline-flex items-center justify-center p-2 rounded-md text-white hover:text-gray-300 focus:outline-none" id="mobile-menu">
+                        <span class="sr-only">Abrir menú principal</span>
+                        <svg class="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile menu, show/hide based on menu state. -->
+        <div class="sm:hidden hidden" id="mobile-menu-items">
+            <div class="pt-2 pb-3 space-y-1">
+                <a href="/" class="bg-blue-700 text-white block pl-3 pr-4 py-2 border-l-4 border-blue-500 text-base font-bold">Inicio</a>
+                <% if (user) { %>
+                    <a href="/dashboard" class="text-white hover:text-gray-200 block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-bold">Tablero</a>
+                    <% if (user.role === 'admin') { %>
+                        <a href="/dashboard/admin" class="text-white hover:text-gray-200 block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-bold">Administración</a>
+                    <% } %>
+                <% } %>
+                <a href="/about" class="text-white hover:text-gray-200 block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-bold">Acerca de</a>
+                
+                <% if (user) { %>
+                    <div class="pt-4 pb-3 border-t border-blue-700">
+                        <div class="flex items-center px-4">
+                            <div class="text-sm">
+                                <div class="font-medium text-white">Bienvenido, <%= user.username %></div>
+                                <div class="text-blue-300"><%= user.email %></div>
+                            </div>
+                        </div>
+                        <div class="mt-3 space-y-1">
+                            <a href="/auth/logout" class="block px-4 py-2 text-base font-medium text-white hover:bg-blue-500">Cerrar sesión</a>
+                        </div>
+                    </div>
+                <% } %>
+                <% if (!user) { %>
+                    <div class="pt-4 pb-3 border-t border-blue-700">
+                        <div class="space-y-1">
+                            <a href="/auth/login" class="block w-full text-left px-4 py-2 text-base font-medium text-white hover:bg-blue-500">Iniciar sesión</a>
+                            <a href="/auth/register" class="block w-full text-left px-4 py-2 text-base font-medium text-white hover:bg-blue-500">Registrarse</a>
+                        </div>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Flash Messages -->
+    <% if (Array.isArray(success_msg) && success_msg.length) { %>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+            <% success_msg.forEach(function(msg){ %>
+                <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-2" role="alert">
+                    <span class="block sm:inline"><%= msg %></span>
+                </div>
+            <% }) %>
+        </div>
+    <% } %>
+
+    <% if ((Array.isArray(error_msg) && error_msg.length) || (Array.isArray(error) && error.length)) { %>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+            <% (error_msg || []).concat(error || []).forEach(function(msg){ %>
+                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-2" role="alert">
+                    <span class="block sm:inline"><%= msg %></span>
+                </div>
+            <% }) %>
+        </div>
+    <% } %>
+
+    <!-- Contenedor principal con barra lateral (solo si hay usuario) -->
+    <% if (user) { %>
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div class="flex gap-6">
+          <!-- Sidebar izquierda -->
+          <aside class="w-64 hidden lg:block">
+            <nav class="bg-white shadow rounded-lg p-4">
+              <h2 class="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-3">Módulos</h2>
+              <ul class="space-y-1">
+                <li>
+                  <a href="/dashboard" class="block px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">Tablero</a>
+                </li>
+                <li>
+                  <a href="/powerbi" class="block px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">Dashbords</a>
+                </li>
+                <% if (user && user.role === 'admin') { %>
+                <li>
+                  <a href="/admin" class="block px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">Administración</a>
+                </li>
+                <% } %>
+                <!-- Placeholders de módulos futuros; se activarán cuando existan rutas -->
+                <li>
+                  <span class="block px-3 py-2 rounded-md text-sm font-medium text-gray-400 cursor-not-allowed">Finanzas (próx.)</span>
+                </li>
+                <li>
+                  <span class="block px-3 py-2 rounded-md text-sm font-medium text-gray-400 cursor-not-allowed">KPIs (próx.)</span>
+                </li>
+                <li>
+                  <span class="block px-3 py-2 rounded-md text-sm font-medium text-gray-400 cursor-not-allowed">Asesores (próx.)</span>
+                </li>
+              </ul>
+            </nav>
+          </aside>
+
+          <!-- Contenido principal -->
+          <main class="flex-1 min-w-0">
+            <%- body %>
+          </main>
+        </div>
+      </div>
+    <% } else { %>
+      <!-- Sin usuario: contenido centrado sin barra lateral -->
+      <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <%- body %>
+      </main>
+    <% } %>
+
+    <!-- Footer -->
+    <footer class="bg-white mt-12">
+        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+            <p class="text-center text-gray-500 text-sm">
+                &copy; <%= new Date().getFullYear() %> A365 - Análisis de Datos. Todos los derechos reservados.
+                · <a href="https://www.a365.com.pe" target="_blank" rel="noopener" class="underline hover:text-gray-700">Sitio A365</a>
+            </p>
+        </div>
+    </footer>
+
+    <!-- Mobile menu script -->
+    <script>
+        document.getElementById('mobile-menu').addEventListener('click', function() {
+            const menu = document.getElementById('mobile-menu-items');
+            if (menu.classList.contains('hidden')) {
+                menu.classList.remove('hidden');
+                menu.classList.add('block');
+            } else {
+                menu.classList.remove('block');
+                menu.classList.add('hidden');
+            }
+        });
+    </script>
+    <script src="/js/main.js"></script>
+</body>
+</html>
