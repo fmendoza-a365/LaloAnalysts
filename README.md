@@ -1,4 +1,4 @@
-# WindSurf Analytics
+# A365 Analytics
 
 A powerful web application for managing and displaying Power BI dashboards with role-based access control.
 
