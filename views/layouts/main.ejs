@@ -22,9 +22,6 @@
                     <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
                         <a href="/" class="border-transparent text-white hover:text-gray-200 inline-flex items-center px-1 pt-1 border-b-0 text-sm font-bold">Inicio</a>
                         <a href="/about" class="border-transparent text-white hover:text-gray-200 inline-flex items-center px-1 pt-1 border-b-0 text-sm font-bold">Acerca de</a>
-                        <% if (user) { %>
-                        <a href="/asesores" class="border-transparent text-white hover:text-gray-200 inline-flex items-center px-1 pt-1 border-b-0 text-sm font-bold">Asesores</a>
-                        <% } %>
                     </div>
                 </div>
                 <div class="hidden sm:ml-6 sm:flex sm:items-center">
@@ -75,11 +72,15 @@
               <a href="/" class="block px-3 py-3 rounded-md text-base font-medium text-gray-800 hover:bg-gray-100">Inicio</a>
               <a href="/about" class="block px-3 py-3 rounded-md text-base font-medium text-gray-800 hover:bg-gray-100">Acerca de</a>
               <% if (user) { %>
-                <a href="/dashboard" class="block px-3 py-3 rounded-md text-base font-medium text-gray-800 hover:bg-gray-100">Tablero</a>
-                <a href="/asesores" class="block px-3 py-3 rounded-md text-base font-medium text-gray-800 hover:bg-gray-100">Asesores</a>
-                <% if (user.role === 'admin') { %>
-                  <a href="/dashboard/admin" class="block px-3 py-3 rounded-md text-base font-medium text-gray-800 hover:bg-gray-100">Administración</a>
-                <% } %>
+                <div class="pt-2 mt-2 border-t">
+                  <div class="px-3 text-sm text-gray-500 uppercase tracking-wider">Módulos</div>
+                  <a href="/dashboard" class="block px-3 py-3 rounded-md text-base font-medium text-gray-800 hover:bg-gray-100">Tablero</a>
+                  <a href="/powerbi" class="block px-3 py-3 rounded-md text-base font-medium text-gray-800 hover:bg-gray-100">Dashbords</a>
+                  <a href="/asesores" class="block px-3 py-3 rounded-md text-base font-medium text-gray-800 hover:bg-gray-100">Asesores</a>
+                  <% if (user.role === 'admin') { %>
+                    <a href="/admin" class="block px-3 py-3 rounded-md text-base font-medium text-gray-800 hover:bg-gray-100">Administración</a>
+                  <% } %>
+                </div>
                 <div class="pt-2 mt-2 border-t">
                   <div class="px-3 text-sm text-gray-500">Sesión</div>
                   <a href="/auth/logout" class="block mt-1 px-3 py-3 rounded-md text-base font-medium text-gray-800 hover:bg-gray-100">Cerrar sesión</a>
@@ -97,9 +98,9 @@
 
     <!-- Flash Messages -->
     <% if (Array.isArray(success_msg) && success_msg.length) { %>
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+        <div class="max-w-[95%] mx-auto px-4 sm:px-6 lg:px-8 mt-3">
             <% success_msg.forEach(function(msg){ %>
-                <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-2" role="alert">
+                <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-2 rounded relative mb-2" role="alert">
                     <span class="block sm:inline"><%= msg %></span>
                 </div>
             <% }) %>
@@ -107,9 +108,9 @@
     <% } %>
 
     <% if ((Array.isArray(error_msg) && error_msg.length) || (Array.isArray(error) && error.length)) { %>
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+        <div class="max-w-[95%] mx-auto px-4 sm:px-6 lg:px-8 mt-3">
             <% (error_msg || []).concat(error || []).forEach(function(msg){ %>
-                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-2" role="alert">
+                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded relative mb-2" role="alert">
                     <span class="block sm:inline"><%= msg %></span>
                 </div>
             <% }) %>
@@ -118,7 +119,7 @@
 
     <!-- Contenedor principal con barra lateral (solo si hay usuario) -->
     <% if (user) { %>
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div class="max-w-[95%] mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <div class="flex gap-6">
           <!-- Sidebar izquierda -->
           <aside class="w-full lg:w-64 hidden lg:block">
@@ -126,25 +127,25 @@
               <h2 class="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-3">Módulos</h2>
               <ul class="space-y-1">
                 <li>
-                  <a href="/dashboard" class="block px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">Tablero</a>
+                  <a href="/dashboard" class="block px-3 py-1.5 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">Tablero</a>
                 </li>
                 <li>
-                  <a href="/powerbi" class="block px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">Dashbords</a>
+                  <a href="/powerbi" class="block px-3 py-1.5 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">Dashbords</a>
                 </li>
                 <% if (user && user.role === 'admin') { %>
                 <li>
-                  <a href="/admin" class="block px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">Administración</a>
+                  <a href="/admin" class="block px-3 py-1.5 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">Administración</a>
                 </li>
                 <% } %>
                 <!-- Placeholders de módulos futuros; se activarán cuando existan rutas -->
                 <li>
-                  <span class="block px-3 py-2 rounded-md text-sm font-medium text-gray-400 cursor-not-allowed">Finanzas (próx.)</span>
+                  <span class="block px-3 py-1.5 rounded-md text-sm font-medium text-gray-400 cursor-not-allowed">Finanzas (próx.)</span>
                 </li>
                 <li>
-                  <span class="block px-3 py-2 rounded-md text-sm font-medium text-gray-400 cursor-not-allowed">KPIs (próx.)</span>
+                  <span class="block px-3 py-1.5 rounded-md text-sm font-medium text-gray-400 cursor-not-allowed">KPIs (próx.)</span>
                 </li>
                 <li>
-                  <a href="/asesores" class="block px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">Asesores</a>
+                  <a href="/asesores" class="block px-3 py-1.5 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">Asesores</a>
                 </li>
               </ul>
             </nav>

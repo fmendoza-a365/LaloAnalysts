@@ -13,7 +13,7 @@ const User = require('../models/User');
 const Role = require('../models/Role');
 const GenesysDataset = require('../models/GenesysDataset');
 const GenesysRecord = require('../models/GenesysRecord');
-const { parseRendimiento, parseEstados } = require('../utils/genesysParsers');
+const { parseRendimiento, parseEstados, parseProvision, parseCalidad, parseSIOP } = require('../utils/genesysParsers');
 
 // Storage en memoria para todas las cargas
 const memoryStorage = multer.memoryStorage();
@@ -60,8 +60,9 @@ router.post('/genesys/upload', checkRole(['admin']), uploadGenesys.single('archi
       req.flash('error_msg', 'Adjunte un archivo Excel o CSV exportado de Genesys Cloud');
       return res.redirect('/admin/genesys');
     }
-    if (!['rendimiento','estados'].includes(String(tipo))) {
-      req.flash('error_msg', 'Tipo inválido. Use rendimiento o estados');
+    const tiposValidos = ['rendimiento', 'estados', 'provision', 'calidad', 'siop'];
+    if (!tiposValidos.includes(String(tipo))) {
+      req.flash('error_msg', 'Tipo inválido. Tipos soportados: ' + tiposValidos.join(', '));
       return res.redirect('/admin/genesys');
     }
     const y = parseInt(anio, 10); const m = parseInt(mes, 10);
@@ -77,10 +78,28 @@ router.post('/genesys/upload', checkRole(['admin']), uploadGenesys.single('archi
       return res.redirect('/admin/genesys');
     }
 
-    // Parsear
+    // Parsear según tipo
     let registros;
-    if (tipo === 'rendimiento') registros = parseRendimiento(req.file.buffer);
-    else registros = parseEstados(req.file.buffer);
+    switch(tipo) {
+      case 'rendimiento':
+        registros = parseRendimiento(req.file.buffer);
+        break;
+      case 'estados':
+        registros = parseEstados(req.file.buffer);
+        break;
+      case 'provision':
+        registros = parseProvision(req.file.buffer);
+        break;
+      case 'calidad':
+        registros = parseCalidad(req.file.buffer);
+        break;
+      case 'siop':
+        registros = parseSIOP(req.file.buffer);
+        break;
+      default:
+        req.flash('error_msg', 'Tipo no implementado');
+        return res.redirect('/admin/genesys');
+    }
 
     // Guardar archivo original en disco
     const uploadsDir = path.join(__dirname, '..', 'uploads', 'genesys');

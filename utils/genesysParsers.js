@@ -84,4 +84,44 @@ function parseEstados(buffer) {
   return cleaned;
 }
 
-module.exports = { parseRendimiento, parseEstados };
+// Parser genérico para otros tipos de archivos
+function parseGenerico(buffer) {
+  const rows = sheetToJson(buffer);
+  const cleaned = [];
+  for (const r of rows) {
+    const rr = dropColumns(r, [
+      'Source.Name','Inicio del intervalo','Fin del intervalo','Intervalo completo','Filtros','ID de división','Nombre de división'
+    ]);
+    // Intentar extraer ag y nombre del agente (puede variar según el tipo de reporte)
+    const nombreCol = rr['Nombre del agente'] || rr['Nombre del agente.1'] || rr['Nombre del agente 1'] || rr['Agente'] || rr['Usuario'] || '';
+    const nn = normalizeAgAndName(nombreCol);
+    delete rr['Nombre del agente'];
+    delete rr['Nombre del agente.1'];
+    delete rr['Nombre del agente 1'];
+    delete rr['Agente'];
+    delete rr['Usuario'];
+    delete rr['ID del agente'];
+    cleaned.push({ ag: nn.ag, nombreGenesys: nn.nombreGenesys, data: rr });
+  }
+  return cleaned;
+}
+
+function parseProvision(buffer) {
+  return parseGenerico(buffer);
+}
+
+function parseCalidad(buffer) {
+  return parseGenerico(buffer);
+}
+
+function parseSIOP(buffer) {
+  return parseGenerico(buffer);
+}
+
+module.exports = { 
+  parseRendimiento, 
+  parseEstados, 
+  parseProvision,
+  parseCalidad,
+  parseSIOP
+};

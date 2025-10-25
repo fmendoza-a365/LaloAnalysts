@@ -2,7 +2,7 @@
   <div class="px-4 py-5 sm:px-6 border-b border-gray-200 flex items-center justify-between">
     <div>
       <h3 class="text-lg leading-6 font-medium text-gray-900">Genesys Cloud · Carga de exportes</h3>
-      <p class="mt-1 text-sm text-gray-500">Sube archivos de <strong>Rendimiento</strong> o <strong>Estados</strong> por periodo (Año/Mes). Puedes reemplazar un periodo existente.</p>
+      <p class="mt-1 text-sm text-gray-500">Sube archivos CSV/Excel exportados de Genesys Cloud por periodo (Año/Mes). Tipos soportados: <strong>Rendimiento, Estados, Provisión, Calidad, SIOP</strong>. Puedes reemplazar un periodo existente.</p>
     </div>
   </div>
 
@@ -14,6 +14,9 @@
           <select required id="tipo" name="tipo" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm">
             <option value="rendimiento">Rendimiento</option>
             <option value="estados">Estados</option>
+            <option value="provision">Provisión</option>
+            <option value="calidad">Calidad</option>
+            <option value="siop">SIOP</option>
           </select>
         </div>
         <div>

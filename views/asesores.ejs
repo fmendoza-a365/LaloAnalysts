@@ -33,78 +33,84 @@
     </form>
 
     <div class="mb-8">
-      <h4 class="text-sm font-semibold text-gray-800 mb-3">Indicadores por Asesor (<%= (periodo && periodo.anio) %>-<%= String((periodo && periodo.mes)||'').padStart(2,'0') %>)</h4>
+      <div class="flex items-center justify-between mb-3">
+        <h4 class="text-sm font-semibold text-gray-800">Indicadores por Asesor (<%= (periodo && periodo.anio) %>-<%= String((periodo && periodo.mes)||'').padStart(2,'0') %>)</h4>
+        <div class="flex gap-2">
+          <input type="text" id="searchAsesor" placeholder="Buscar por nombre, DNI, AG o supervisor..." class="border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-80">
+          <button onclick="document.getElementById('searchAsesor').value=''; filterTable()" class="px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 rounded-md">Limpiar</button>
+        </div>
+      </div>
       <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200 text-xs">
+        <table id="asesoresTable" class="min-w-full divide-y divide-gray-200 text-xs">
           <thead class="bg-gray-50">
             <tr>
-              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">DNI</th>
-              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">AG</th>
-              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Apellidos y Nombres</th>
-              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Supervisor</th>
-              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pool</th>
-              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Conectado</th>
-              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">En Cola</th>
-              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fuera de Cola</th>
-              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Interactuando</th>
-              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No Responde</th>
-              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Inactivo</th>
-              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Disponible</th>
-              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Comida</th>
-              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ocupado</th>
-              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ausente</th>
-              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descanso</th>
-              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sistema Ausente</th>
-              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reunión</th>
-              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Capacitación</th>
-              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">En Comunicación</th>
-              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ofrecidas</th>
-              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contestadas</th>
-              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No Contestadas</th>
-              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TMO</th>
-              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TMC</th>
-              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TM ACW</th>
-              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TM Retención</th>
+              <th class="px-2 py-0.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="sortTable(0)">DNI ↕</th>
+              <th class="px-2 py-0.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="sortTable(1)">AG ↕</th>
+              <th class="px-2 py-0.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="sortTable(2)">Apellidos y Nombres ↕</th>
+              <th class="px-2 py-0.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="sortTable(3)">Supervisor ↕</th>
+              <th class="px-2 py-0.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+              <th class="px-2 py-0.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pool</th>
+              <th class="px-2 py-0.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Conectado</th>
+              <th class="px-2 py-0.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">En Cola</th>
+              <th class="px-2 py-0.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fuera de Cola</th>
+              <th class="px-2 py-0.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Interactuando</th>
+              <th class="px-2 py-0.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No Responde</th>
+              <th class="px-2 py-0.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Inactivo</th>
+              <th class="px-2 py-0.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Disponible</th>
+              <th class="px-2 py-0.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Comida</th>
+              <th class="px-2 py-0.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ocupado</th>
+              <th class="px-2 py-0.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ausente</th>
+              <th class="px-2 py-0.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descanso</th>
+              <th class="px-2 py-0.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sistema Ausente</th>
+              <th class="px-2 py-0.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reunión</th>
+              <th class="px-2 py-0.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Capacitación</th>
+              <th class="px-2 py-0.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">En Comunicación</th>
+              <th class="px-2 py-0.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ofrecidas</th>
+              <th class="px-2 py-0.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contestadas</th>
+              <th class="px-2 py-0.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No Contestadas</th>
+              <th class="px-2 py-0.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TMO</th>
+              <th class="px-2 py-0.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TMC</th>
+              <th class="px-2 py-0.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TM ACW</th>
+              <th class="px-2 py-0.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TM Retención</th>
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
             <% if (asesores && asesores.length) { %>
               <% asesores.forEach(a => { %>
                 <tr class="hover:bg-gray-50">
-                  <td class="px-2 py-1 text-xs text-gray-900"><%= a.DNI %></td>
-                  <td class="px-2 py-1 text-xs text-gray-700"><%= a.ag || '-' %></td>
-                  <td class="px-2 py-1 text-xs text-gray-700"><%= a.apellidosNombres %></td>
-                  <td class="px-2 py-1 text-xs text-gray-700"><%= a.supervisor %></td>
+                  <td class="px-2 py-0.5 text-xs text-gray-900"><%= a.DNI %></td>
+                  <td class="px-2 py-0.5 text-xs text-gray-700"><%= a.ag || '-' %></td>
+                  <td class="px-2 py-0.5 text-xs text-gray-700"><%= a.apellidosNombres %></td>
+                  <td class="px-2 py-0.5 text-xs text-gray-700"><%= a.supervisor %></td>
                   <td class="px-2 py-1 text-xs">
                     <span class="px-1 inline-flex text-xs leading-4 font-semibold rounded-full <%= a.estado && a.estado.toLowerCase().includes('activo') ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800' %>">
                       <%= a.estado || '-' %>
                     </span>
                   </td>
-                  <td class="px-2 py-1 text-xs text-gray-700"><%= a.pool || '-' %></td>
+                  <td class="px-2 py-0.5 text-xs text-gray-700"><%= a.pool || '-' %></td>
                   <% const ind = (indicadores && a.ag && indicadores[a.ag]) ? indicadores[a.ag] : {}; %>
-                  <td class="px-2 py-1 text-xs text-gray-700"><%= ind['Conectado'] ?? '-' %></td>
-                  <td class="px-2 py-1 text-xs text-gray-700"><%= ind['En Cola'] ?? '-' %></td>
-                  <td class="px-2 py-1 text-xs text-gray-700"><%= ind['Fuera de Cola'] ?? '-' %></td>
-                  <td class="px-2 py-1 text-xs text-gray-700"><%= ind['Interactuando'] ?? '-' %></td>
-                  <td class="px-2 py-1 text-xs text-gray-700"><%= ind['No Responde'] ?? '-' %></td>
-                  <td class="px-2 py-1 text-xs text-gray-700"><%= ind['Inactivo'] ?? '-' %></td>
-                  <td class="px-2 py-1 text-xs text-gray-700"><%= ind['Disponible'] ?? '-' %></td>
-                  <td class="px-2 py-1 text-xs text-gray-700"><%= ind['Comida'] ?? '-' %></td>
-                  <td class="px-2 py-1 text-xs text-gray-700"><%= ind['Ocupado'] ?? '-' %></td>
-                  <td class="px-2 py-1 text-xs text-gray-700"><%= ind['Ausente'] ?? '-' %></td>
-                  <td class="px-2 py-1 text-xs text-gray-700"><%= ind['Descanso'] ?? '-' %></td>
-                  <td class="px-2 py-1 text-xs text-gray-700"><%= ind['Sistema Ausente'] ?? '-' %></td>
-                  <td class="px-2 py-1 text-xs text-gray-700"><%= ind['Reunión'] ?? '-' %></td>
-                  <td class="px-2 py-1 text-xs text-gray-700"><%= ind['Capacitación'] ?? '-' %></td>
-                  <td class="px-2 py-1 text-xs text-gray-700"><%= ind['En Comunicación'] ?? '-' %></td>
-                  <td class="px-2 py-1 text-xs text-gray-700"><%= ind['Ofrecidas'] ?? '-' %></td>
-                  <td class="px-2 py-1 text-xs text-gray-700"><%= ind['Contestadas'] ?? '-' %></td>
-                  <td class="px-2 py-1 text-xs text-gray-700"><%= ind['No Contestadas'] ?? '-' %></td>
-                  <td class="px-2 py-1 text-xs text-gray-700"><%= ind['Tiempo Medio Operativo'] ?? '-' %></td>
-                  <td class="px-2 py-1 text-xs text-gray-700"><%= ind['Tiempo Medio Conversación'] ?? '-' %></td>
-                  <td class="px-2 py-1 text-xs text-gray-700"><%= ind['Tiempo Medio ACW'] ?? '-' %></td>
-                  <td class="px-2 py-1 text-xs text-gray-700"><%= ind['Tiempo Medio Retención'] ?? '-' %></td>
+                  <td class="px-2 py-0.5 text-xs text-gray-700"><%= ind['Conectado'] ?? '-' %></td>
+                  <td class="px-2 py-0.5 text-xs text-gray-700"><%= ind['En Cola'] ?? '-' %></td>
+                  <td class="px-2 py-0.5 text-xs text-gray-700"><%= ind['Fuera de Cola'] ?? '-' %></td>
+                  <td class="px-2 py-0.5 text-xs text-gray-700"><%= ind['Interactuando'] ?? '-' %></td>
+                  <td class="px-2 py-0.5 text-xs text-gray-700"><%= ind['No Responde'] ?? '-' %></td>
+                  <td class="px-2 py-0.5 text-xs text-gray-700"><%= ind['Inactivo'] ?? '-' %></td>
+                  <td class="px-2 py-0.5 text-xs text-gray-700"><%= ind['Disponible'] ?? '-' %></td>
+                  <td class="px-2 py-0.5 text-xs text-gray-700"><%= ind['Comida'] ?? '-' %></td>
+                  <td class="px-2 py-0.5 text-xs text-gray-700"><%= ind['Ocupado'] ?? '-' %></td>
+                  <td class="px-2 py-0.5 text-xs text-gray-700"><%= ind['Ausente'] ?? '-' %></td>
+                  <td class="px-2 py-0.5 text-xs text-gray-700"><%= ind['Descanso'] ?? '-' %></td>
+                  <td class="px-2 py-0.5 text-xs text-gray-700"><%= ind['Sistema Ausente'] ?? '-' %></td>
+                  <td class="px-2 py-0.5 text-xs text-gray-700"><%= ind['Reunión'] ?? '-' %></td>
+                  <td class="px-2 py-0.5 text-xs text-gray-700"><%= ind['Capacitación'] ?? '-' %></td>
+                  <td class="px-2 py-0.5 text-xs text-gray-700"><%= ind['En Comunicación'] ?? '-' %></td>
+                  <td class="px-2 py-0.5 text-xs text-gray-700"><%= ind['Ofrecidas'] ?? '-' %></td>
+                  <td class="px-2 py-0.5 text-xs text-gray-700"><%= ind['Contestadas'] ?? '-' %></td>
+                  <td class="px-2 py-0.5 text-xs text-gray-700"><%= ind['No Contestadas'] ?? '-' %></td>
+                  <td class="px-2 py-0.5 text-xs text-gray-700"><%= ind['Tiempo Medio Operativo'] ?? '-' %></td>
+                  <td class="px-2 py-0.5 text-xs text-gray-700"><%= ind['Tiempo Medio Conversación'] ?? '-' %></td>
+                  <td class="px-2 py-0.5 text-xs text-gray-700"><%= ind['Tiempo Medio ACW'] ?? '-' %></td>
+                  <td class="px-2 py-0.5 text-xs text-gray-700"><%= ind['Tiempo Medio Retención'] ?? '-' %></td>
                 </tr>
               <% }) %>
             <% } else { %>
@@ -137,60 +143,60 @@
         <table class="min-w-full divide-y divide-gray-200 text-xs">
           <thead class="bg-gray-50">
             <tr>
-              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Supervisor</th>
-              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asesores</th>
-              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Conectado</th>
-              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">En Cola</th>
-              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fuera de Cola</th>
-              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Interactuando</th>
-              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No Responde</th>
-              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Inactivo</th>
-              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Disponible</th>
-              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Comida</th>
-              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ocupado</th>
-              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ausente</th>
-              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descanso</th>
-              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sistema Ausente</th>
-              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reunión</th>
-              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Capacitación</th>
-              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">En Comunicación</th>
-              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ofrecidas</th>
-              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contestadas</th>
-              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No Contestadas</th>
-              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TMO (prom.)</th>
-              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TMC (prom.)</th>
-              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TM ACW (prom.)</th>
-              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TM Retención (prom.)</th>
+              <th class="px-2 py-0.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Supervisor</th>
+              <th class="px-2 py-0.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asesores</th>
+              <th class="px-2 py-0.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Conectado</th>
+              <th class="px-2 py-0.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">En Cola</th>
+              <th class="px-2 py-0.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fuera de Cola</th>
+              <th class="px-2 py-0.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Interactuando</th>
+              <th class="px-2 py-0.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No Responde</th>
+              <th class="px-2 py-0.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Inactivo</th>
+              <th class="px-2 py-0.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Disponible</th>
+              <th class="px-2 py-0.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Comida</th>
+              <th class="px-2 py-0.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ocupado</th>
+              <th class="px-2 py-0.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ausente</th>
+              <th class="px-2 py-0.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descanso</th>
+              <th class="px-2 py-0.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sistema Ausente</th>
+              <th class="px-2 py-0.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reunión</th>
+              <th class="px-2 py-0.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Capacitación</th>
+              <th class="px-2 py-0.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">En Comunicación</th>
+              <th class="px-2 py-0.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ofrecidas</th>
+              <th class="px-2 py-0.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contestadas</th>
+              <th class="px-2 py-0.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No Contestadas</th>
+              <th class="px-2 py-0.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TMO (prom.)</th>
+              <th class="px-2 py-0.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TMC (prom.)</th>
+              <th class="px-2 py-0.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TM ACW (prom.)</th>
+              <th class="px-2 py-0.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TM Retención (prom.)</th>
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
             <% if (porSupervisor && porSupervisor.length) { %>
               <% porSupervisor.forEach(s => { %>
                 <tr class="hover:bg-gray-50">
-                  <td class="px-2 py-1 text-xs font-semibold text-gray-900"><%= s.supervisor %></td>
-                  <td class="px-2 py-1 text-xs text-gray-700"><%= s.count %></td>
-                  <td class="px-2 py-1 text-xs text-gray-700"><%= s.totales['Conectado'] ?? '-' %></td>
-                  <td class="px-2 py-1 text-xs text-gray-700"><%= s.totales['En Cola'] ?? '-' %></td>
-                  <td class="px-2 py-1 text-xs text-gray-700"><%= s.totales['Fuera de Cola'] ?? '-' %></td>
-                  <td class="px-2 py-1 text-xs text-gray-700"><%= s.totales['Interactuando'] ?? '-' %></td>
-                  <td class="px-2 py-1 text-xs text-gray-700"><%= s.totales['No Responde'] ?? '-' %></td>
-                  <td class="px-2 py-1 text-xs text-gray-700"><%= s.totales['Inactivo'] ?? '-' %></td>
-                  <td class="px-2 py-1 text-xs text-gray-700"><%= s.totales['Disponible'] ?? '-' %></td>
-                  <td class="px-2 py-1 text-xs text-gray-700"><%= s.totales['Comida'] ?? '-' %></td>
-                  <td class="px-2 py-1 text-xs text-gray-700"><%= s.totales['Ocupado'] ?? '-' %></td>
-                  <td class="px-2 py-1 text-xs text-gray-700"><%= s.totales['Ausente'] ?? '-' %></td>
-                  <td class="px-2 py-1 text-xs text-gray-700"><%= s.totales['Descanso'] ?? '-' %></td>
-                  <td class="px-2 py-1 text-xs text-gray-700"><%= s.totales['Sistema Ausente'] ?? '-' %></td>
-                  <td class="px-2 py-1 text-xs text-gray-700"><%= s.totales['Reunión'] ?? '-' %></td>
-                  <td class="px-2 py-1 text-xs text-gray-700"><%= s.totales['Capacitación'] ?? '-' %></td>
-                  <td class="px-2 py-1 text-xs text-gray-700"><%= s.totales['En Comunicación'] ?? '-' %></td>
-                  <td class="px-2 py-1 text-xs text-gray-700"><%= s.totales['Ofrecidas'] ?? '-' %></td>
-                  <td class="px-2 py-1 text-xs text-gray-700"><%= s.totales['Contestadas'] ?? '-' %></td>
-                  <td class="px-2 py-1 text-xs text-gray-700"><%= s.totales['No Contestadas'] ?? '-' %></td>
-                  <td class="px-2 py-1 text-xs text-gray-700"><%= s.totales['Tiempo Medio Operativo'] ?? '-' %></td>
-                  <td class="px-2 py-1 text-xs text-gray-700"><%= s.totales['Tiempo Medio Conversación'] ?? '-' %></td>
-                  <td class="px-2 py-1 text-xs text-gray-700"><%= s.totales['Tiempo Medio ACW'] ?? '-' %></td>
-                  <td class="px-2 py-1 text-xs text-gray-700"><%= s.totales['Tiempo Medio Retención'] ?? '-' %></td>
+                  <td class="px-2 py-0.5 text-xs font-semibold text-gray-900"><%= s.supervisor %></td>
+                  <td class="px-2 py-0.5 text-xs text-gray-700"><%= s.count %></td>
+                  <td class="px-2 py-0.5 text-xs text-gray-700"><%= s.totales['Conectado'] ?? '-' %></td>
+                  <td class="px-2 py-0.5 text-xs text-gray-700"><%= s.totales['En Cola'] ?? '-' %></td>
+                  <td class="px-2 py-0.5 text-xs text-gray-700"><%= s.totales['Fuera de Cola'] ?? '-' %></td>
+                  <td class="px-2 py-0.5 text-xs text-gray-700"><%= s.totales['Interactuando'] ?? '-' %></td>
+                  <td class="px-2 py-0.5 text-xs text-gray-700"><%= s.totales['No Responde'] ?? '-' %></td>
+                  <td class="px-2 py-0.5 text-xs text-gray-700"><%= s.totales['Inactivo'] ?? '-' %></td>
+                  <td class="px-2 py-0.5 text-xs text-gray-700"><%= s.totales['Disponible'] ?? '-' %></td>
+                  <td class="px-2 py-0.5 text-xs text-gray-700"><%= s.totales['Comida'] ?? '-' %></td>
+                  <td class="px-2 py-0.5 text-xs text-gray-700"><%= s.totales['Ocupado'] ?? '-' %></td>
+                  <td class="px-2 py-0.5 text-xs text-gray-700"><%= s.totales['Ausente'] ?? '-' %></td>
+                  <td class="px-2 py-0.5 text-xs text-gray-700"><%= s.totales['Descanso'] ?? '-' %></td>
+                  <td class="px-2 py-0.5 text-xs text-gray-700"><%= s.totales['Sistema Ausente'] ?? '-' %></td>
+                  <td class="px-2 py-0.5 text-xs text-gray-700"><%= s.totales['Reunión'] ?? '-' %></td>
+                  <td class="px-2 py-0.5 text-xs text-gray-700"><%= s.totales['Capacitación'] ?? '-' %></td>
+                  <td class="px-2 py-0.5 text-xs text-gray-700"><%= s.totales['En Comunicación'] ?? '-' %></td>
+                  <td class="px-2 py-0.5 text-xs text-gray-700"><%= s.totales['Ofrecidas'] ?? '-' %></td>
+                  <td class="px-2 py-0.5 text-xs text-gray-700"><%= s.totales['Contestadas'] ?? '-' %></td>
+                  <td class="px-2 py-0.5 text-xs text-gray-700"><%= s.totales['No Contestadas'] ?? '-' %></td>
+                  <td class="px-2 py-0.5 text-xs text-gray-700"><%= s.totales['Tiempo Medio Operativo'] ?? '-' %></td>
+                  <td class="px-2 py-0.5 text-xs text-gray-700"><%= s.totales['Tiempo Medio Conversación'] ?? '-' %></td>
+                  <td class="px-2 py-0.5 text-xs text-gray-700"><%= s.totales['Tiempo Medio ACW'] ?? '-' %></td>
+                  <td class="px-2 py-0.5 text-xs text-gray-700"><%= s.totales['Tiempo Medio Retención'] ?? '-' %></td>
                 </tr>
               <% }) %>
             <% } else { %>
@@ -204,3 +210,62 @@
     </div>
   </div>
 </div>
+
+<script>
+// Búsqueda en tiempo real
+document.getElementById('searchAsesor').addEventListener('input', filterTable);
+
+function filterTable() {
+  const searchValue = document.getElementById('searchAsesor').value.toLowerCase();
+  const table = document.getElementById('asesoresTable');
+  const rows = table.querySelectorAll('tbody tr');
+  
+  rows.forEach(row => {
+    const dni = row.cells[0]?.textContent.toLowerCase() || '';
+    const ag = row.cells[1]?.textContent.toLowerCase() || '';
+    const nombre = row.cells[2]?.textContent.toLowerCase() || '';
+    const supervisor = row.cells[3]?.textContent.toLowerCase() || '';
+    
+    if (dni.includes(searchValue) || ag.includes(searchValue) || 
+        nombre.includes(searchValue) || supervisor.includes(searchValue)) {
+      row.style.display = '';
+    } else {
+      row.style.display = 'none';
+    }
+  });
+}
+
+// Ordenamiento de tabla
+let sortDirection = {}; // Track sort direction per column
+
+function sortTable(columnIndex) {
+  const table = document.getElementById('asesoresTable');
+  const tbody = table.querySelector('tbody');
+  const rows = Array.from(tbody.querySelectorAll('tr'));
+  
+  // Toggle sort direction
+  sortDirection[columnIndex] = !sortDirection[columnIndex];
+  const ascending = sortDirection[columnIndex];
+  
+  rows.sort((a, b) => {
+    let aValue = a.cells[columnIndex]?.textContent.trim() || '';
+    let bValue = b.cells[columnIndex]?.textContent.trim() || '';
+    
+    // Try to parse as number for numerical columns
+    const aNum = parseFloat(aValue.replace(/,/g, ''));
+    const bNum = parseFloat(bValue.replace(/,/g, ''));
+    
+    if (!isNaN(aNum) && !isNaN(bNum)) {
+      return ascending ? aNum - bNum : bNum - aNum;
+    }
+    
+    // String comparison
+    return ascending ? 
+      aValue.localeCompare(bValue, 'es') : 
+      bValue.localeCompare(aValue, 'es');
+  });
+  
+  // Reorder rows
+  rows.forEach(row => tbody.appendChild(row));
+}
+</script>
