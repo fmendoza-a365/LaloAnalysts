@@ -1,4 +1,4 @@
-// Main JavaScript file for WindSurf Analytics
+// Archivo JavaScript principal para A365 Analyst
 
 document.addEventListener('DOMContentLoaded', function() {
     // Mobile menu toggle
@@ -189,6 +189,6 @@ function showToast(message, type = 'success') {
 }
 
 // Export for use in other modules if needed
-window.WindSurf = {
-    showToast
-};
+window.A365Analyst = { showToast };
+// Alias temporal para compatibilidad hacia atrás
+window.WindSurf = window.A365Analyst;

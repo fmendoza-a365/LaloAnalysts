@@ -211,7 +211,7 @@ async function init() {
         uri = mem.getUri();
         console.log('Using in-memory MongoDB instance');
       } else {
-        uri = 'mongodb://127.0.0.1:27017/windsurf-app';
+        uri = 'mongodb://127.0.0.1:27017/a365-analyst';
         console.log('Falling back to local MongoDB at', uri);
       }
     }
