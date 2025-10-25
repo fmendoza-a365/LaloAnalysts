@@ -1,0 +1,206 @@
+<div class="bg-white shadow rounded-lg">
+  <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
+    <h3 class="text-lg leading-6 font-medium text-gray-900">Asesores · Indicadores de Rendimiento</h3>
+    <p class="mt-1 text-sm text-gray-500">Consulta indicadores de Estados y Rendimiento por periodo desde Genesys Cloud.</p>
+  </div>
+
+  <div class="px-4 py-5 sm:p-6">
+    <form class="mb-6 flex flex-col sm:flex-row gap-3 items-start sm:items-end" method="GET" action="/asesores">
+      <div>
+        <label for="anio" class="block text-sm font-medium text-gray-700">Año</label>
+        <input type="number" min="2000" max="2100" id="anio" name="anio" value="<%= (periodo && periodo.anio) || new Date().getFullYear() %>" class="mt-1 block w-32 border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm">
+      </div>
+      <div>
+        <label for="mes" class="block text-sm font-medium text-gray-700">Mes</label>
+        <select id="mes" name="mes" class="mt-1 block w-36 border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm">
+          <% const _m = (periodo && periodo.mes) || (new Date().getMonth()+1); %>
+          <% for (let i=1;i<=12;i++){ %>
+            <option value="<%= i %>" <%= _m===i ? 'selected' : '' %>><%= String(i).padStart(2,'0') %></option>
+          <% } %>
+        </select>
+      </div>
+      <div>
+        <label for="perPage" class="block text-sm font-medium text-gray-700">Por página</label>
+        <select id="perPage" name="perPage" class="mt-1 block w-36 border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm">
+          <% [10,20,50,100].forEach(n => { %>
+            <option value="<%= n %>" <%= (pagination && pagination.perPage===n)?'selected':'' %>><%= n %></option>
+          <% }) %>
+        </select>
+      </div>
+      <div>
+        <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700">Aplicar</button>
+      </div>
+    </form>
+
+    <div class="mb-8">
+      <h4 class="text-sm font-semibold text-gray-800 mb-3">Indicadores por Asesor (<%= (periodo && periodo.anio) %>-<%= String((periodo && periodo.mes)||'').padStart(2,'0') %>)</h4>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200 text-xs">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">DNI</th>
+              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">AG</th>
+              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Apellidos y Nombres</th>
+              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Supervisor</th>
+              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pool</th>
+              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Conectado</th>
+              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">En Cola</th>
+              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fuera de Cola</th>
+              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Interactuando</th>
+              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No Responde</th>
+              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Inactivo</th>
+              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Disponible</th>
+              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Comida</th>
+              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ocupado</th>
+              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ausente</th>
+              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descanso</th>
+              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sistema Ausente</th>
+              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reunión</th>
+              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Capacitación</th>
+              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">En Comunicación</th>
+              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ofrecidas</th>
+              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contestadas</th>
+              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No Contestadas</th>
+              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TMO</th>
+              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TMC</th>
+              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TM ACW</th>
+              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TM Retención</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            <% if (asesores && asesores.length) { %>
+              <% asesores.forEach(a => { %>
+                <tr class="hover:bg-gray-50">
+                  <td class="px-2 py-1 text-xs text-gray-900"><%= a.DNI %></td>
+                  <td class="px-2 py-1 text-xs text-gray-700"><%= a.ag || '-' %></td>
+                  <td class="px-2 py-1 text-xs text-gray-700"><%= a.apellidosNombres %></td>
+                  <td class="px-2 py-1 text-xs text-gray-700"><%= a.supervisor %></td>
+                  <td class="px-2 py-1 text-xs">
+                    <span class="px-1 inline-flex text-xs leading-4 font-semibold rounded-full <%= a.estado && a.estado.toLowerCase().includes('activo') ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800' %>">
+                      <%= a.estado || '-' %>
+                    </span>
+                  </td>
+                  <td class="px-2 py-1 text-xs text-gray-700"><%= a.pool || '-' %></td>
+                  <% const ind = (indicadores && a.ag && indicadores[a.ag]) ? indicadores[a.ag] : {}; %>
+                  <td class="px-2 py-1 text-xs text-gray-700"><%= ind['Conectado'] ?? '-' %></td>
+                  <td class="px-2 py-1 text-xs text-gray-700"><%= ind['En Cola'] ?? '-' %></td>
+                  <td class="px-2 py-1 text-xs text-gray-700"><%= ind['Fuera de Cola'] ?? '-' %></td>
+                  <td class="px-2 py-1 text-xs text-gray-700"><%= ind['Interactuando'] ?? '-' %></td>
+                  <td class="px-2 py-1 text-xs text-gray-700"><%= ind['No Responde'] ?? '-' %></td>
+                  <td class="px-2 py-1 text-xs text-gray-700"><%= ind['Inactivo'] ?? '-' %></td>
+                  <td class="px-2 py-1 text-xs text-gray-700"><%= ind['Disponible'] ?? '-' %></td>
+                  <td class="px-2 py-1 text-xs text-gray-700"><%= ind['Comida'] ?? '-' %></td>
+                  <td class="px-2 py-1 text-xs text-gray-700"><%= ind['Ocupado'] ?? '-' %></td>
+                  <td class="px-2 py-1 text-xs text-gray-700"><%= ind['Ausente'] ?? '-' %></td>
+                  <td class="px-2 py-1 text-xs text-gray-700"><%= ind['Descanso'] ?? '-' %></td>
+                  <td class="px-2 py-1 text-xs text-gray-700"><%= ind['Sistema Ausente'] ?? '-' %></td>
+                  <td class="px-2 py-1 text-xs text-gray-700"><%= ind['Reunión'] ?? '-' %></td>
+                  <td class="px-2 py-1 text-xs text-gray-700"><%= ind['Capacitación'] ?? '-' %></td>
+                  <td class="px-2 py-1 text-xs text-gray-700"><%= ind['En Comunicación'] ?? '-' %></td>
+                  <td class="px-2 py-1 text-xs text-gray-700"><%= ind['Ofrecidas'] ?? '-' %></td>
+                  <td class="px-2 py-1 text-xs text-gray-700"><%= ind['Contestadas'] ?? '-' %></td>
+                  <td class="px-2 py-1 text-xs text-gray-700"><%= ind['No Contestadas'] ?? '-' %></td>
+                  <td class="px-2 py-1 text-xs text-gray-700"><%= ind['Tiempo Medio Operativo'] ?? '-' %></td>
+                  <td class="px-2 py-1 text-xs text-gray-700"><%= ind['Tiempo Medio Conversación'] ?? '-' %></td>
+                  <td class="px-2 py-1 text-xs text-gray-700"><%= ind['Tiempo Medio ACW'] ?? '-' %></td>
+                  <td class="px-2 py-1 text-xs text-gray-700"><%= ind['Tiempo Medio Retención'] ?? '-' %></td>
+                </tr>
+              <% }) %>
+            <% } else { %>
+              <tr>
+                <td colspan="28" class="px-3 py-4 text-center text-sm text-gray-500">No hay registros de asesores.</td>
+              </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+      <div class="mt-4 flex items-center justify-between text-sm text-gray-600">
+        <div> Página <%= pagination.page %> de <%= pagination.totalPages %> — <%= pagination.total %> registro(s)</div>
+        <div class="space-x-2">
+          <% const base = '/asesores?anio=' + ((periodo && periodo.anio)||'') + '&mes=' + ((periodo && periodo.mes)||'') + '&perPage=' + pagination.perPage + '&page='; %>
+          <% if (pagination.page > 1) { %>
+            <a class="px-3 py-1 border rounded" href="<%= base + 1 %>">Primera</a>
+            <a class="px-3 py-1 border rounded" href="<%= base + (pagination.page - 1) %>">Anterior</a>
+          <% } %>
+          <% if (pagination.page < pagination.totalPages) { %>
+            <a class="px-3 py-1 border rounded" href="<%= base + (pagination.page + 1) %>">Siguiente</a>
+            <a class="px-3 py-1 border rounded" href="<%= base + pagination.totalPages %>">Última</a>
+          <% } %>
+        </div>
+      </div>
+    </div>
+
+    <div class="border-t pt-8">
+      <h4 class="text-sm font-semibold text-gray-800 mb-3">Indicadores por Supervisor (<%= (periodo && periodo.anio) %>-<%= String((periodo && periodo.mes)||'').padStart(2,'0') %>)</h4>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200 text-xs">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Supervisor</th>
+              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asesores</th>
+              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Conectado</th>
+              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">En Cola</th>
+              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fuera de Cola</th>
+              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Interactuando</th>
+              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No Responde</th>
+              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Inactivo</th>
+              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Disponible</th>
+              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Comida</th>
+              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ocupado</th>
+              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ausente</th>
+              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descanso</th>
+              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sistema Ausente</th>
+              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reunión</th>
+              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Capacitación</th>
+              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">En Comunicación</th>
+              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ofrecidas</th>
+              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contestadas</th>
+              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No Contestadas</th>
+              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TMO (prom.)</th>
+              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TMC (prom.)</th>
+              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TM ACW (prom.)</th>
+              <th class="px-2 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TM Retención (prom.)</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            <% if (porSupervisor && porSupervisor.length) { %>
+              <% porSupervisor.forEach(s => { %>
+                <tr class="hover:bg-gray-50">
+                  <td class="px-2 py-1 text-xs font-semibold text-gray-900"><%= s.supervisor %></td>
+                  <td class="px-2 py-1 text-xs text-gray-700"><%= s.count %></td>
+                  <td class="px-2 py-1 text-xs text-gray-700"><%= s.totales['Conectado'] ?? '-' %></td>
+                  <td class="px-2 py-1 text-xs text-gray-700"><%= s.totales['En Cola'] ?? '-' %></td>
+                  <td class="px-2 py-1 text-xs text-gray-700"><%= s.totales['Fuera de Cola'] ?? '-' %></td>
+                  <td class="px-2 py-1 text-xs text-gray-700"><%= s.totales['Interactuando'] ?? '-' %></td>
+                  <td class="px-2 py-1 text-xs text-gray-700"><%= s.totales['No Responde'] ?? '-' %></td>
+                  <td class="px-2 py-1 text-xs text-gray-700"><%= s.totales['Inactivo'] ?? '-' %></td>
+                  <td class="px-2 py-1 text-xs text-gray-700"><%= s.totales['Disponible'] ?? '-' %></td>
+                  <td class="px-2 py-1 text-xs text-gray-700"><%= s.totales['Comida'] ?? '-' %></td>
+                  <td class="px-2 py-1 text-xs text-gray-700"><%= s.totales['Ocupado'] ?? '-' %></td>
+                  <td class="px-2 py-1 text-xs text-gray-700"><%= s.totales['Ausente'] ?? '-' %></td>
+                  <td class="px-2 py-1 text-xs text-gray-700"><%= s.totales['Descanso'] ?? '-' %></td>
+                  <td class="px-2 py-1 text-xs text-gray-700"><%= s.totales['Sistema Ausente'] ?? '-' %></td>
+                  <td class="px-2 py-1 text-xs text-gray-700"><%= s.totales['Reunión'] ?? '-' %></td>
+                  <td class="px-2 py-1 text-xs text-gray-700"><%= s.totales['Capacitación'] ?? '-' %></td>
+                  <td class="px-2 py-1 text-xs text-gray-700"><%= s.totales['En Comunicación'] ?? '-' %></td>
+                  <td class="px-2 py-1 text-xs text-gray-700"><%= s.totales['Ofrecidas'] ?? '-' %></td>
+                  <td class="px-2 py-1 text-xs text-gray-700"><%= s.totales['Contestadas'] ?? '-' %></td>
+                  <td class="px-2 py-1 text-xs text-gray-700"><%= s.totales['No Contestadas'] ?? '-' %></td>
+                  <td class="px-2 py-1 text-xs text-gray-700"><%= s.totales['Tiempo Medio Operativo'] ?? '-' %></td>
+                  <td class="px-2 py-1 text-xs text-gray-700"><%= s.totales['Tiempo Medio Conversación'] ?? '-' %></td>
+                  <td class="px-2 py-1 text-xs text-gray-700"><%= s.totales['Tiempo Medio ACW'] ?? '-' %></td>
+                  <td class="px-2 py-1 text-xs text-gray-700"><%= s.totales['Tiempo Medio Retención'] ?? '-' %></td>
+                </tr>
+              <% }) %>
+            <% } else { %>
+              <tr>
+                <td colspan="24" class="px-3 py-4 text-center text-sm text-gray-500">No hay datos por supervisor.</td>
+              </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

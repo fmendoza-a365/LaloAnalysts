@@ -85,7 +85,9 @@ const indexRouter = require('./routes/index');
 const authRouter = require('./routes/auth');
 const dashboardRouter = require('./routes/dashboard');
 const powerbiRouter = require('./routes/powerbi');
+const indicadoresRouter = require('./routes/indicadores');
 const adminRouter = require('./routes/admin');
+const asesoresRouter = require('./routes/asesores');
 
 // Import models
 const User = require('./models/User');
@@ -177,7 +179,9 @@ app.use('/', indexRouter);
 app.use('/auth', authRouter);
 app.use('/dashboard', dashboardRouter);
 app.use('/powerbi', powerbiRouter);
+app.use('/asesores', asesoresRouter);
 app.use('/admin', adminRouter);
+app.use('/api/indicadores', indicadoresRouter);
 
 // Error handler
 app.use((err, req, res, next) => {

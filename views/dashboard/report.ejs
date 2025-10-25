@@ -30,12 +30,14 @@
   </div>
   
   <div class="px-4 py-5 sm:p-6">
-    <!-- Power BI Report Container -->
-    <div id="reportContainer" class="w-full" style="height: 70vh; min-height: 500px;" data-access-token="<%= accessToken || '' %>">
-      <div class="flex items-center justify-center h-full">
-        <div class="text-center">
-          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-          <p class="mt-4 text-gray-600">Cargando reporte de Power BI...</p>
+    <!-- Power BI Report Container (responsive 16:9) -->
+    <div id="reportBox" class="relative w-full" style="padding-top:56.25%; min-height:320px;">
+      <div id="reportContainer" class="absolute inset-0 w-full h-full" data-access-token="<%= accessToken || '' %>">
+        <div class="flex items-center justify-center h-full">
+          <div class="text-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+            <p class="mt-4 text-gray-600">Cargando reporte de Power BI...</p>
+          </div>
         </div>
       </div>
     </div>

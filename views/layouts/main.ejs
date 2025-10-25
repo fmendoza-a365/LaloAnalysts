@@ -22,6 +22,9 @@
                     <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
                         <a href="/" class="border-transparent text-white hover:text-gray-200 inline-flex items-center px-1 pt-1 border-b-0 text-sm font-bold">Inicio</a>
                         <a href="/about" class="border-transparent text-white hover:text-gray-200 inline-flex items-center px-1 pt-1 border-b-0 text-sm font-bold">Acerca de</a>
+                        <% if (user) { %>
+                        <a href="/asesores" class="border-transparent text-white hover:text-gray-200 inline-flex items-center px-1 pt-1 border-b-0 text-sm font-bold">Asesores</a>
+                        <% } %>
                     </div>
                 </div>
                 <div class="hidden sm:ml-6 sm:flex sm:items-center">
@@ -73,6 +76,7 @@
               <a href="/about" class="block px-3 py-3 rounded-md text-base font-medium text-gray-800 hover:bg-gray-100">Acerca de</a>
               <% if (user) { %>
                 <a href="/dashboard" class="block px-3 py-3 rounded-md text-base font-medium text-gray-800 hover:bg-gray-100">Tablero</a>
+                <a href="/asesores" class="block px-3 py-3 rounded-md text-base font-medium text-gray-800 hover:bg-gray-100">Asesores</a>
                 <% if (user.role === 'admin') { %>
                   <a href="/dashboard/admin" class="block px-3 py-3 rounded-md text-base font-medium text-gray-800 hover:bg-gray-100">Administración</a>
                 <% } %>
@@ -140,7 +144,7 @@
                   <span class="block px-3 py-2 rounded-md text-sm font-medium text-gray-400 cursor-not-allowed">KPIs (próx.)</span>
                 </li>
                 <li>
-                  <span class="block px-3 py-2 rounded-md text-sm font-medium text-gray-400 cursor-not-allowed">Asesores (próx.)</span>
+                  <a href="/asesores" class="block px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">Asesores</a>
                 </li>
               </ul>
             </nav>
