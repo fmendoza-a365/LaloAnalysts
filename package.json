@@ -1,7 +1,7 @@
 {
-  "name": "a365-analyst",
+  "name": "a365-analytics",
   "version": "1.0.0",
-  "description": "A365 Analyst: Aplicación web para gestión de accesos por roles e integración con Power BI, construida con Node.js, Express, MongoDB y TailwindCSS.",
+  "description": "A365 Analytics: Aplicación web para gestión de accesos por roles e integración con Power BI, construida con Node.js, Express, MongoDB y TailwindCSS.",
   "main": "app.js",
   "scripts": {
     "start": "node app.js",

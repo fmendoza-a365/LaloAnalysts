@@ -1,5 +1,4 @@
-#
-# A365 Analyst
+# A365 Analytics
 
 Aplicación web para gestión de accesos por roles (RBAC) e integración con Power BI. Backend en Node.js/Express con MongoDB y vistas EJS + TailwindCSS. Ideal para visualizar KPIs y administrar permisos de usuarios por módulo/acción.
 

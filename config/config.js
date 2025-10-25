@@ -7,7 +7,7 @@ const config = {
   
   // Database configuration
   db: {
-    uri: process.env.MONGODB_URI || 'mongodb://localhost:27017/a365-analyst',
+    uri: process.env.MONGODB_URI || 'mongodb://localhost:27017/a365-analytics',
     options: {
       useNewUrlParser: true,
       useUnifiedTopology: true,
@@ -56,7 +56,7 @@ const config = {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS,
     },
-    from: process.env.SMTP_FROM || 'noreply@a365-analyst.local',
+    from: process.env.SMTP_FROM || 'noreply@a365-analytics.local',
   },
   
   // Logging configuration
@@ -99,7 +99,7 @@ module.exports = (env = config.env) => {
       // Test-specific settings
       db: {
         ...config.db,
-        uri: process.env.TEST_MONGODB_URI || 'mongodb://localhost:27017/a365-analyst-test',
+        uri: process.env.TEST_MONGODB_URI || 'mongodb://localhost:27017/a365-analytics-test',
       },
     },
     production: {
