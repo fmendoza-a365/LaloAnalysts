@@ -4,6 +4,8 @@ const { ensureAuthenticated } = require('../middleware/auth');
 const Asesor = require('../models/Asesor');
 const GenesysDataset = require('../models/GenesysDataset');
 const GenesysRecord = require('../models/GenesysRecord');
+const AsistenciaDataset = require('../models/AsistenciaDataset');
+const AsistenciaRecord = require('../models/AsistenciaRecord');
 
 router.use(ensureAuthenticated);
 
@@ -37,10 +39,12 @@ router.get('/', async (req, res) => {
     const anio = parseInt(req.query.anio || new Date().getFullYear(), 10);
     const mes = parseInt(req.query.mes || (new Date().getMonth() + 1), 10);
     const total = await Asesor.countDocuments();
-    const asesores = await Asesor.find({})
-      .sort({ apellidosNombres: 1 })
-      .skip((page - 1) * perPage)
-      .limit(perPage);
+    
+    // Obtener TODOS los asesores para cálculos de supervisores
+    const todosLosAsesores = await Asesor.find({}).sort({ apellidosNombres: 1 });
+    
+    // Obtener asesores paginados solo para mostrar en la tabla
+    const asesores = todosLosAsesores.slice((page - 1) * perPage, page * perPage);
 
     // Indicadores Genesys por periodo
     const datasets = await GenesysDataset.find({ anio, mes, tipo: { $in: ['rendimiento','estados'] } });
@@ -89,17 +93,133 @@ router.get('/', async (req, res) => {
     }
     const indicadoresRaw = indMap.size ? Object.fromEntries(indMap) : {};
 
-    // Agregar por Supervisor (con valores sin formatear)
+    // Calcular horas programadas, % adherencia y estadísticas de asistencia
+    const asistenciaDataset = await AsistenciaDataset.findOne({ anio, mes }).sort({ creadoEn: -1 });
+    const horasProgramadasMap = new Map();
+    const adherenciaMap = new Map();
+    const asistenciaStatsMap = new Map(); // Estadísticas detalladas de asistencia
+    
+    if (asistenciaDataset) {
+      const registrosAsistencia = await AsistenciaRecord.find({ datasetId: asistenciaDataset._id });
+      
+      // Agrupar por DNI
+      const asistenciaPorDni = new Map();
+      for (const reg of registrosAsistencia) {
+        if (!asistenciaPorDni.has(reg.dni)) {
+          asistenciaPorDni.set(reg.dni, []);
+        }
+        asistenciaPorDni.get(reg.dni).push(reg);
+      }
+      
+      // Calcular días efectivos, horas programadas y estadísticas de asistencia por asesor
+      for (const [dni, registros] of asistenciaPorDni) {
+        // Calcular estadísticas detalladas
+        let diasPuntuales = 0;
+        let cantidadTardanzas = 0;
+        let minutosTardanzaTotal = 0;
+        let faltas = 0;
+        let descansos = 0;
+        
+        registros.forEach(r => {
+          // Días puntuales (P sin tardanza)
+          if (r.regAsistencia === 'P' && (!r.tardanza || parseFloat(r.tardanza) === 0)) {
+            diasPuntuales++;
+          }
+          
+          // Tardanzas
+          if (r.tardanza) {
+            const tardanzaNum = parseFloat(r.tardanza);
+            if (!isNaN(tardanzaNum) && tardanzaNum > 0) {
+              cantidadTardanzas++;
+              minutosTardanzaTotal += tardanzaNum;
+            }
+          }
+          
+          // Faltas injustificadas
+          if (r.regAsistencia === 'FI') {
+            faltas++;
+          }
+          
+          // Descansos
+          if (r.regAsistencia === 'DS') {
+            descansos++;
+          }
+        });
+        
+        // Guardar estadísticas
+        asistenciaStatsMap.set(dni, {
+          diasPuntuales,
+          cantidadTardanzas,
+          minutosTardanzaTotal,
+          faltas,
+          descansos,
+          totalRegistros: registros.length
+        });
+        
+        // Días efectivos: regAsistencia = 'P' (Presente) O con tardanza O faltas (FI)
+        const diasEfectivos = registros.filter(r => {
+          // Incluir si es 'P' (Presente)
+          if (r.regAsistencia === 'P') return true;
+          
+          // Incluir si tiene tardanza (número mayor a 0)
+          if (r.tardanza) {
+            const tardanzaNum = parseFloat(r.tardanza);
+            if (!isNaN(tardanzaNum) && tardanzaNum > 0) return true;
+          }
+          
+          // Incluir faltas injustificadas (también son días programados)
+          if (r.regAsistencia === 'FI') return true;
+          
+          return false;
+        }).length;
+        
+        // Buscar el asesor por DNI para obtener su modalidad
+        const asesor = todosLosAsesores.find(a => a.DNI === dni);
+        
+        // Determinar horas por día según modalidad
+        // Full Time = 8 horas/día, Part Time = 4 horas/día
+        let horasPorDia = 8; // Default: Full Time
+        if (asesor && asesor.modalidad) {
+          const modalidad = String(asesor.modalidad).toLowerCase();
+          if (modalidad.includes('part') || modalidad.includes('medio') || modalidad.includes('4')) {
+            horasPorDia = 4;
+          }
+        }
+        
+        // Horas programadas = días efectivos × horas por día
+        const horasProgramadas = diasEfectivos * horasPorDia;
+        horasProgramadasMap.set(dni, horasProgramadas);
+        
+        // Calcular % adherencia si tiene datos en Genesys
+        if (asesor && asesor.ag && indicadoresRaw[asesor.ag]) {
+          const ind = indicadoresRaw[asesor.ag];
+          // "En Cola" está en segundos
+          const enColaSegundos = Number(ind['En Cola']) || 0;
+          const horasProgramadasSegundos = horasProgramadas * 3600; // convertir horas a segundos
+          
+          // % Adherencia = (Tiempo En Cola / Horas Programadas) × 100
+          const adherencia = horasProgramadasSegundos > 0 
+            ? ((enColaSegundos / horasProgramadasSegundos) * 100).toFixed(2)
+            : 0;
+          
+          adherenciaMap.set(asesor.ag, adherencia);
+        }
+      }
+    }
+
+    // Agregar por Supervisor (con valores sin formatear) - USAR TODOS LOS ASESORES
     const supMap = new Map();
     // Todas las métricas de rendimiento se promedian
     const metricasRendimientoPromedio = ['Tiempo Medio Operativo', 'Tiempo Medio Conversación', 'Tiempo Medio ACW', 'Tiempo Medio Retención', 'Ofrecidas', 'Contestadas', 'No Contestadas'];
-    for (const a of asesores) {
+    for (const a of todosLosAsesores) {
       const sup = a.supervisor || 'Sin supervisor';
       if (!supMap.has(sup)) supMap.set(sup, { supervisor: sup, count: 0, totales: {}, contadores: {}, asesores: [] });
       const entry = supMap.get(sup);
-      entry.count++;
-      entry.asesores.push(a);
+      
+      // Solo contar asesores que tienen datos en el período consultado
       if (a.ag && indicadoresRaw[a.ag]) {
+        entry.count++;
+        entry.asesores.push(a);
         const ind = indicadoresRaw[a.ag];
         for (const k in ind) {
           const val = Number(ind[k]);
@@ -161,6 +281,9 @@ router.get('/', async (req, res) => {
       periodo: { anio, mes },
       indicadores,
       porSupervisor,
+      horasProgramadasMap,
+      adherenciaMap,
+      asistenciaStatsMap,
       pagination: {
         page,
         perPage,

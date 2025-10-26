@@ -1,0 +1,547 @@
+<div class="max-w-[1800px] mx-auto px-4 py-6">
+  <!-- Header con selector de periodo -->
+  <div class="bg-white shadow-sm rounded-lg p-6 mb-6">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">Dashboard de KPIs</h1>
+        <p class="text-sm text-gray-600 mt-1">Métricas de llamadas y nivel de servicio por mesas de trabajo</p>
+      </div>
+      
+      <!-- Selector de periodo -->
+      <form method="GET" action="/kpis" class="flex gap-3">
+        <select name="mes" class="border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+          <% for (let m = 1; m <= 12; m++) { %>
+            <option value="<%= m %>" <%= periodo.mes === m ? 'selected' : '' %>>
+              <%= ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][m-1] %>
+            </option>
+          <% } %>
+        </select>
+        <select name="anio" class="border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+          <% for (let y = 2023; y <= 2030; y++) { %>
+            <option value="<%= y %>" <%= periodo.anio === y ? 'selected' : '' %>><%= y %></option>
+          <% } %>
+        </select>
+        <input type="hidden" name="vista" value="<%= vista %>">
+        <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors">
+          Actualizar
+        </button>
+      </form>
+    </div>
+
+    <!-- Navegación de vistas -->
+    <div class="flex gap-2 border-b border-gray-200">
+      <a href="/kpis?anio=<%= periodo.anio %>&mes=<%= periodo.mes %>&vista=resumen" 
+         class="px-4 py-2 text-sm font-medium border-b-2 transition-colors <%= vista === 'resumen' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-600 hover:text-gray-900' %>">
+        📊 Resumen Mensual
+      </a>
+      <a href="/kpis?anio=<%= periodo.anio %>&mes=<%= periodo.mes %>&vista=mesas" 
+         class="px-4 py-2 text-sm font-medium border-b-2 transition-colors <%= vista === 'mesas' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-600 hover:text-gray-900' %>">
+        📂 Por Mesas
+      </a>
+    </div>
+  </div>
+
+  <% if (noData) { %>
+    <!-- Sin datos -->
+    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-8 text-center">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-yellow-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+      </svg>
+      <h3 class="text-lg font-semibold text-yellow-800 mb-2">No hay datos de provisión para este periodo</h3>
+      <p class="text-yellow-700 mb-4">Cargue un archivo CSV de provisión agregada en el módulo Genesys Cloud.</p>
+      <a href="/admin/genesys" class="inline-flex items-center px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-md text-sm font-medium transition-colors">
+        Ir a Genesys Cloud
+      </a>
+    </div>
+  <% } else { %>
+    
+    <!-- VISTA RESUMEN MENSUAL POR MESAS -->
+    <% if (vista === 'resumen') { %>
+      <div class="space-y-6">
+        <% Object.keys(mesasResumen).sort().forEach((mesa, idx) => { 
+          const mesaData = mesasResumen[mesa];
+          
+          // Colores por tipo de mesa
+          let colorClasses = {
+            gradient: 'from-blue-50 to-blue-100',
+            border: 'border-blue-200',
+            text: 'text-blue-900',
+            badge: 'bg-blue-600'
+          };
+          
+          if (mesa.includes('Fraude')) {
+            colorClasses = {
+              gradient: 'from-red-50 to-red-100',
+              border: 'border-red-200',
+              text: 'text-red-900',
+              badge: 'bg-red-600'
+            };
+          } else if (mesa.includes('Redes')) {
+            colorClasses = {
+              gradient: 'from-green-50 to-green-100',
+              border: 'border-green-200',
+              text: 'text-green-900',
+              badge: 'bg-green-600'
+            };
+          } else if (mesa.includes('Central')) {
+            colorClasses = {
+              gradient: 'from-purple-50 to-purple-100',
+              border: 'border-purple-200',
+              text: 'text-purple-900',
+              badge: 'bg-purple-600'
+            };
+          } else if (mesa.includes('Mesa de Ayuda')) {
+            colorClasses = {
+              gradient: 'from-indigo-50 to-indigo-100',
+              border: 'border-indigo-200',
+              text: 'text-indigo-900',
+              badge: 'bg-indigo-600'
+            };
+          } else if (mesa === 'Quechua') {
+            colorClasses = {
+              gradient: 'from-orange-50 to-orange-100',
+              border: 'border-orange-200',
+              text: 'text-orange-900',
+              badge: 'bg-orange-600'
+            };
+          }
+        %>
+        
+        <div class="bg-white shadow-sm rounded-lg overflow-hidden border-2 <%= colorClasses.border %>">
+          <div class="px-6 py-4 bg-gradient-to-r <%= colorClasses.gradient %> border-b <%= colorClasses.border %> flex items-center justify-between">
+            <div>
+              <h2 class="text-lg font-bold <%= colorClasses.text %>"><%= mesa %></h2>
+              <p class="text-sm <%= colorClasses.text %> opacity-80 mt-1">
+                <%= mesaData.cantidadColas %> colas · <%= periodo.anio %>-<%= String(periodo.mes).padStart(2,'0') %>
+              </p>
+            </div>
+            <div class="flex gap-4 text-sm">
+              <div class="text-right">
+                <div class="text-xs <%= colorClasses.text %> opacity-70">Total Ofrecidas</div>
+                <div class="font-bold <%= colorClasses.text %>"><%= mesaData.ofrecidas.toLocaleString('es-PE') %></div>
+              </div>
+              <div class="text-right">
+                <div class="text-xs <%= colorClasses.text %> opacity-70">Nivel Atención</div>
+                <div class="font-bold <%= colorClasses.text %>"><%= mesaData.nivelAtencion %>%</div>
+              </div>
+            </div>
+          </div>
+        
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200" style="font-size: 9px;">
+            <thead class="bg-gray-50 sticky top-0">
+              <tr>
+                <th class="px-2 py-1 text-left font-semibold text-gray-700 uppercase border-r border-gray-300 bg-gray-100" style="font-size: 9px;">
+                  Métrica
+                </th>
+                <% diasDelMes.forEach(dia => { %>
+                  <th class="px-0.5 py-1 text-center font-medium text-gray-600 border-r border-gray-200" style="font-size: 8px;">
+                    <%= dia %>
+                  </th>
+                <% }) %>
+                <th class="px-2 py-1 text-center font-bold text-blue-700 uppercase bg-blue-50 border-l-2 border-blue-300" style="font-size: 9px;">
+                  TOT
+                </th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <!-- Llamadas Ofrecidas -->
+              <tr class="hover:bg-blue-50">
+                <td class="px-2 py-1 font-semibold text-gray-800 whitespace-nowrap border-r border-gray-300 bg-gray-50">
+                  Llam. Ofrecidas
+                </td>
+                <% diasDelMes.forEach(dia => { 
+                  const dato = mesaData.datosPorDia[dia] || { ofrecidas: 0, contestadas: 0, umbral: 0 };
+                %>
+                  <td class="px-0.5 py-0.5 text-center text-gray-700 border-r border-gray-100">
+                    <%= (dato.ofrecidas || 0).toLocaleString('es-PE') %>
+                  </td>
+                <% }) %>
+                <td class="px-2 py-1 text-center font-bold text-blue-900 bg-blue-50 border-l-2 border-blue-300">
+                  <%= mesaData.ofrecidas %>
+                </td>
+              </tr>
+
+              <!-- Llamadas Atendidas -->
+              <tr class="hover:bg-green-50">
+                <td class="px-2 py-1 font-semibold text-gray-800 whitespace-nowrap border-r border-gray-300 bg-gray-50">
+                  Llam. Atendidas
+                </td>
+                <% diasDelMes.forEach(dia => { 
+                  const dato = mesaData.datosPorDia[dia] || { ofrecidas: 0, contestadas: 0, umbral: 0 };
+                %>
+                  <td class="px-0.5 py-0.5 text-center text-gray-700 border-r border-gray-100">
+                    <%= (dato.contestadas || 0).toLocaleString('es-PE') %>
+                  </td>
+                <% }) %>
+                <td class="px-2 py-1 text-center font-bold text-green-900 bg-green-50 border-l-2 border-blue-300">
+                  <%= mesaData.contestadas %>
+                </td>
+              </tr>
+
+              <!-- Llamadas Umbral -->
+              <tr class="hover:bg-purple-50">
+                <td class="px-2 py-1 font-semibold text-gray-800 whitespace-nowrap border-r border-gray-300 bg-gray-50">
+                  Llam. Umbral
+                </td>
+                <% diasDelMes.forEach(dia => { 
+                  const dato = mesaData.datosPorDia[dia] || { ofrecidas: 0, contestadas: 0, umbral: 0 };
+                %>
+                  <td class="px-0.5 py-0.5 text-center text-gray-700 border-r border-gray-100">
+                    <%= (dato.umbral || 0).toLocaleString('es-PE') %>
+                  </td>
+                <% }) %>
+                <td class="px-2 py-1 text-center font-bold text-purple-900 bg-purple-50 border-l-2 border-blue-300">
+                  <%= mesaData.umbral %>
+                </td>
+              </tr>
+
+              <!-- % Nivel Atención -->
+              <tr class="hover:bg-yellow-50">
+                <td class="px-2 py-1 font-semibold text-gray-800 whitespace-nowrap border-r border-gray-300 bg-gray-50">
+                  %Atención
+                </td>
+                <% diasDelMes.forEach(dia => { 
+                  const dato = mesaData.datosPorDia[dia] || { ofrecidas: 0, contestadas: 0, umbral: 0 };
+                  const valor = dato.ofrecidas > 0 ? ((dato.contestadas / dato.ofrecidas) * 100) : 0;
+                  const colorClass = valor >= 90 ? 'text-green-700 font-semibold' : valor >= 80 ? 'text-yellow-700' : 'text-red-700';
+                %>
+                  <td class="px-0.5 py-0.5 text-center border-r border-gray-100 <%= colorClass %>">
+                    <%= valor.toFixed(0) %>%
+                  </td>
+                <% }) %>
+                <td class="px-2 py-1 text-center font-bold text-gray-900 bg-yellow-50 border-l-2 border-blue-300">
+                  <%= parseFloat(mesaData.nivelAtencion).toFixed(2) %>%
+                </td>
+              </tr>
+
+              <!-- % Nivel Servicio -->
+              <tr class="hover:bg-orange-50">
+                <td class="px-2 py-1 font-semibold text-gray-800 whitespace-nowrap border-r border-gray-300 bg-gray-50">
+                  %Servicio
+                </td>
+                <% diasDelMes.forEach(dia => { 
+                  const dato = mesaData.datosPorDia[dia] || { ofrecidas: 0, contestadas: 0, umbral: 0 };
+                  const valor = dato.ofrecidas > 0 ? ((dato.umbral / dato.ofrecidas) * 100) : 0;
+                  const colorClass = valor >= 85 ? 'text-green-700 font-semibold' : valor >= 75 ? 'text-yellow-700' : 'text-red-700';
+                %>
+                  <td class="px-0.5 py-0.5 text-center border-r border-gray-100 <%= colorClass %>">
+                    <%= valor.toFixed(0) %>%
+                  </td>
+                <% }) %>
+                <td class="px-2 py-1 text-center text-xs font-bold text-gray-900 bg-orange-50 border-l-2 border-blue-300">
+                  <%= parseFloat(mesaData.nivelServicio).toFixed(2) %>%
+                </td>
+              </tr>
+              
+              <!-- TMO (HH:MM:SS) -->
+              <tr class="hover:bg-indigo-50">
+                <td class="px-2 py-1 font-semibold text-gray-800 whitespace-nowrap border-r border-gray-300 bg-gray-50">
+                  TMO(h:m:s)
+                </td>
+                <% diasDelMes.forEach(dia => { 
+                  const dato = mesaData.datosPorDia[dia] || { tmo: '00:00:00' };
+                %>
+                  <td class="px-0.5 py-0.5 text-center text-indigo-700 border-r border-gray-100 font-mono" style="font-size: 9px;">
+                    <%= dato.tmo && dato.tmo !== '00:00:00' ? dato.tmo : '-' %>
+                  </td>
+                <% }) %>
+                <td class="px-2 py-1 text-center text-xs font-bold text-indigo-900 bg-indigo-50 border-l-2 border-blue-300 font-mono">
+                  -
+                </td>
+              </tr>
+              
+              <!-- TMO (Segundos) -->
+              <tr class="hover:bg-gray-50">
+                <td class="px-2 py-1 font-semibold text-gray-800 whitespace-nowrap border-r border-gray-300 bg-gray-50">
+                  TMO(seg)
+                </td>
+                <% diasDelMes.forEach(dia => { 
+                  const dato = mesaData.datosPorDia[dia] || { tmo: '00:00:00' };
+                  // Convertir HH:MM:SS a segundos
+                  let segundos = 0;
+                  if (dato.tmo && dato.tmo !== '00:00:00') {
+                    const partes = dato.tmo.split(':');
+                    segundos = (parseInt(partes[0]) * 3600) + (parseInt(partes[1]) * 60) + parseInt(partes[2]);
+                  }
+                %>
+                  <td class="px-0.5 py-0.5 text-center text-gray-600 border-r border-gray-100" style="font-size: 9px;">
+                    <%= segundos > 0 ? segundos : '-' %>
+                  </td>
+                <% }) %>
+                <td class="px-2 py-1 text-center text-xs font-bold text-gray-900 bg-gray-100 border-l-2 border-blue-300">
+                  -
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+        <% }) %>
+      </div>
+    <% } %>
+
+    <!-- VISTA POR MESAS -->
+    <% if (vista === 'mesas') { %>
+      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        <% Object.keys(mesasResumen).forEach(mesa => { 
+          const data = mesasResumen[mesa];
+          const nivelAtencion = parseFloat(data.nivelAtencion);
+          const nivelServicio = parseFloat(data.nivelServicio);
+          
+          // Colores por tipo de mesa
+          let colorClasses = {
+            gradient: 'from-blue-50 to-blue-100',
+            border: 'border-blue-200',
+            text: 'text-blue-900',
+            badge: 'bg-blue-600'
+          };
+          
+          if (mesa.includes('Fraude')) {
+            colorClasses = {
+              gradient: 'from-red-50 to-red-100',
+              border: 'border-red-200',
+              text: 'text-red-900',
+              badge: 'bg-red-600'
+            };
+          } else if (mesa.includes('Redes')) {
+            colorClasses = {
+              gradient: 'from-green-50 to-green-100',
+              border: 'border-green-200',
+              text: 'text-green-900',
+              badge: 'bg-green-600'
+            };
+          } else if (mesa.includes('Central')) {
+            colorClasses = {
+              gradient: 'from-purple-50 to-purple-100',
+              border: 'border-purple-200',
+              text: 'text-purple-900',
+              badge: 'bg-purple-600'
+            };
+          } else if (mesa === 'Quechua') {
+            colorClasses = {
+              gradient: 'from-orange-50 to-orange-100',
+              border: 'border-orange-200',
+              text: 'text-orange-900',
+              badge: 'bg-orange-600'
+            };
+          } else if (mesa.includes('Mesa de Ayuda')) {
+            colorClasses = {
+              gradient: 'from-indigo-50 to-indigo-100',
+              border: 'border-indigo-200',
+              text: 'text-indigo-900',
+              badge: 'bg-indigo-600'
+            };
+          }
+        %>
+          <div class="bg-white shadow-md rounded-lg overflow-hidden border-2 <%= colorClasses.border %> hover:shadow-lg transition-shadow">
+            <!-- Header de la tarjeta -->
+            <div class="px-5 py-4 bg-gradient-to-r <%= colorClasses.gradient %> border-b <%= colorClasses.border %>">
+              <div class="flex items-center justify-between mb-2">
+                <h3 class="text-base font-bold <%= colorClasses.text %>"><%= mesa %></h3>
+                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold text-white <%= colorClasses.badge %>">
+                  <%= data.cantidadColas %> colas
+                </span>
+              </div>
+              <p class="text-xs text-gray-600"><%= data.diasConDatos %> días con datos</p>
+            </div>
+
+            <!-- Métricas principales -->
+            <div class="px-5 py-4 space-y-3">
+              <!-- Llamadas -->
+              <div class="grid grid-cols-3 gap-3 text-center">
+                <div class="bg-gray-50 rounded p-2">
+                  <div class="text-xs text-gray-600 mb-1">Ofrecidas</div>
+                  <div class="text-base font-bold text-gray-900"><%= data.ofrecidas.toLocaleString('es-PE') %></div>
+                </div>
+                <div class="bg-green-50 rounded p-2">
+                  <div class="text-xs text-gray-600 mb-1">Atendidas</div>
+                  <div class="text-base font-bold text-green-700"><%= data.contestadas.toLocaleString('es-PE') %></div>
+                </div>
+                <div class="bg-purple-50 rounded p-2">
+                  <div class="text-xs text-gray-600 mb-1">Umbral</div>
+                  <div class="text-base font-bold text-purple-700"><%= data.umbral.toLocaleString('es-PE') %></div>
+                </div>
+              </div>
+
+              <!-- Porcentajes y TMO -->
+              <div class="grid grid-cols-3 gap-3">
+                <div class="border border-gray-200 rounded p-3">
+                  <div class="text-xs text-gray-600 mb-1">% Nivel Atención</div>
+                  <div class="text-xl font-bold <%= nivelAtencion >= 90 ? 'text-green-600' : nivelAtencion >= 80 ? 'text-yellow-600' : 'text-red-600' %>">
+                    <%= nivelAtencion.toFixed(2) %>%
+                  </div>
+                </div>
+                <div class="border border-gray-200 rounded p-3">
+                  <div class="text-xs text-gray-600 mb-1">% Nivel Servicio</div>
+                  <div class="text-xl font-bold <%= nivelServicio >= 85 ? 'text-green-600' : nivelServicio >= 75 ? 'text-yellow-600' : 'text-red-600' %>">
+                    <%= nivelServicio.toFixed(2) %>%
+                  </div>
+                </div>
+                <div class="border border-indigo-200 rounded p-3 bg-indigo-50">
+                  <div class="text-xs text-gray-600 mb-1">⏱️ TMO Promedio</div>
+                  <% 
+                    // Calcular TMO promedio de los días disponibles
+                    const diasConTMO = Object.values(data.datosPorDia).filter(d => d && d.tmo && d.tmo !== '00:00:00');
+                    const tmoMostrar = diasConTMO.length > 0 ? diasConTMO[0].tmo : '00:00:00';
+                  %>
+                  <div class="text-lg font-bold text-indigo-900 font-mono">
+                    <%= tmoMostrar %>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Colas -->
+              <div class="border-t border-gray-200 pt-3">
+                <div class="text-xs font-semibold text-gray-700 mb-2">Colas en esta mesa:</div>
+                <div class="flex flex-wrap gap-1">
+                  <% data.colas.slice(0, 6).forEach(cola => { %>
+                    <span class="inline-flex items-center px-2 py-1 rounded text-xs bg-gray-100 text-gray-700">
+                      <%= cola %>
+                    </span>
+                  <% }) %>
+                  <% if (data.colas.length > 6) { %>
+                    <span class="inline-flex items-center px-2 py-1 rounded text-xs bg-gray-200 text-gray-600 font-semibold">
+                      +<%= data.colas.length - 6 %> más
+                    </span>
+                  <% } %>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Detalle por cola individual -->
+            <div class="border-t-2 <%= colorClasses.border %> bg-gray-50 p-3">
+              <h4 class="text-xs font-bold text-gray-800 mb-2">📊 Detalle Diario por Cola</h4>
+              <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200" style="font-size: 9px;">
+                  <thead class="bg-white sticky top-0">
+                    <tr>
+                      <th class="px-1 py-1 text-left font-semibold text-gray-700 uppercase bg-gray-100 border-r border-gray-300" style="font-size: 9px;">Cola</th>
+                      <% diasDelMes.forEach(dia => { %>
+                        <th class="px-0.5 py-1 text-center font-medium text-gray-600 border-r border-gray-200" style="font-size: 8px;"><%= dia %></th>
+                      <% }) %>
+                      <th class="px-1 py-1 text-center font-bold text-blue-700 uppercase bg-blue-50 border-l-2 border-blue-300" style="font-size: 9px;">TOT</th>
+                    </tr>
+                  </thead>
+                  <tbody class="bg-white divide-y divide-gray-200">
+                    <% data.colas.forEach(cola => { 
+                      const colaData = data.colasPorDia[cola] || {};
+                      let totalOfrecidas = 0;
+                      let totalContestadas = 0;
+                      let totalUmbral = 0;
+                    %>
+                      <!-- Ofrecidas de esta cola -->
+                      <tr class="hover:bg-blue-50">
+                        <td class="px-1 py-0.5 text-gray-800 border-r border-gray-300 bg-gray-50" style="font-size: 9px;">
+                          <div class="font-semibold"><%= cola %></div>
+                          <div class="text-gray-500">Ofrec.</div>
+                        </td>
+                        <% diasDelMes.forEach(dia => { 
+                          const dato = colaData[dia] || { ofrecidas: 0, contestadas: 0, umbral: 0 };
+                          totalOfrecidas += dato.ofrecidas;
+                        %>
+                          <td class="px-0.5 py-0.5 text-center text-gray-700 border-r border-gray-100">
+                            <%= dato.ofrecidas > 0 ? dato.ofrecidas : '-' %>
+                          </td>
+                        <% }) %>
+                        <td class="px-1 py-0.5 text-center font-bold text-blue-900 bg-blue-50 border-l-2 border-blue-300">
+                          <%= totalOfrecidas %>
+                        </td>
+                      </tr>
+                      
+                      <!-- Contestadas de esta cola -->
+                      <tr class="hover:bg-green-50">
+                        <td class="px-1 py-0.5 text-gray-800 border-r border-gray-300 bg-gray-50" style="font-size: 9px;">
+                          <div class="text-gray-500 ml-2">Atend.</div>
+                        </td>
+                        <% diasDelMes.forEach(dia => { 
+                          const dato = colaData[dia] || { ofrecidas: 0, contestadas: 0, umbral: 0 };
+                          totalContestadas += dato.contestadas;
+                        %>
+                          <td class="px-0.5 py-0.5 text-center text-gray-700 border-r border-gray-100">
+                            <%= dato.contestadas > 0 ? dato.contestadas : '-' %>
+                          </td>
+                        <% }) %>
+                        <td class="px-1 py-0.5 text-center font-bold text-green-900 bg-green-50 border-l-2 border-blue-300">
+                          <%= totalContestadas %>
+                        </td>
+                      </tr>
+                      
+                      <!-- % Nivel Atención de esta cola -->
+                      <tr class="hover:bg-yellow-50">
+                        <td class="px-1 py-0.5 text-gray-800 border-r border-gray-300 bg-gray-50" style="font-size: 9px;">
+                          <div class="text-gray-500 ml-2">%Atenc.</div>
+                        </td>
+                        <% diasDelMes.forEach(dia => { 
+                          const dato = colaData[dia] || { ofrecidas: 0, contestadas: 0, umbral: 0 };
+                          const pct = dato.ofrecidas > 0 ? ((dato.contestadas / dato.ofrecidas) * 100) : 0;
+                          const colorClass = pct >= 90 ? 'text-green-700 font-semibold' : pct >= 80 ? 'text-yellow-700' : 'text-red-700';
+                        %>
+                          <td class="px-0.5 py-0.5 text-center border-r border-gray-100 <%= dato.ofrecidas > 0 ? colorClass : 'text-gray-400' %>">
+                            <%= dato.ofrecidas > 0 ? pct.toFixed(0) + '%' : '-' %>
+                          </td>
+                        <% }) %>
+                        <% 
+                          const totalPct = totalOfrecidas > 0 ? ((totalContestadas / totalOfrecidas) * 100) : 0;
+                        %>
+                        <td class="px-1 py-0.5 text-center font-bold text-gray-900 bg-yellow-50 border-l-2 border-blue-300">
+                          <%= totalPct.toFixed(1) %>%
+                        </td>
+                      </tr>
+                      
+                      <!-- % Nivel Servicio de esta cola -->
+                      <tr class="hover:bg-orange-50">
+                        <td class="px-1 py-0.5 text-gray-800 border-r border-gray-300 bg-gray-50" style="font-size: 9px;">
+                          <div class="text-gray-500 ml-2">%Serv.</div>
+                        </td>
+                        <% diasDelMes.forEach(dia => { 
+                          const dato = colaData[dia] || { ofrecidas: 0, contestadas: 0, umbral: 0 };
+                          const pct = dato.ofrecidas > 0 ? ((dato.umbral / dato.ofrecidas) * 100) : 0;
+                          const colorClass = pct >= 85 ? 'text-green-700 font-semibold' : pct >= 75 ? 'text-yellow-700' : 'text-red-700';
+                        %>
+                          <td class="px-0.5 py-0.5 text-center border-r border-gray-100 <%= dato.ofrecidas > 0 ? colorClass : 'text-gray-400' %>">
+                            <%= dato.ofrecidas > 0 ? pct.toFixed(0) + '%' : '-' %>
+                          </td>
+                        <% }) %>
+                        <% 
+                          const totalPctServicio = totalOfrecidas > 0 ? ((totalUmbral / totalOfrecidas) * 100) : 0;
+                        %>
+                        <td class="px-1 py-0.5 text-center font-bold text-gray-900 bg-orange-50 border-l-2 border-blue-300">
+                          <%= totalPctServicio.toFixed(1) %>%
+                        </td>
+                      </tr>
+                      
+                      <!-- TMO de esta cola (solo segundos) -->
+                      <tr class="hover:bg-indigo-50 border-b-2 border-gray-300">
+                        <td class="px-1 py-0.5 text-gray-800 border-r border-gray-300 bg-gray-50" style="font-size: 9px;">
+                          <div class="text-gray-500 ml-2">TMO(s)</div>
+                        </td>
+                        <% diasDelMes.forEach(dia => { 
+                          const dato = colaData[dia] || { ofrecidas: 0, contestadas: 0, umbral: 0, tmo: '00:00:00' };
+                          // Convertir HH:MM:SS a segundos
+                          let segundos = 0;
+                          if (dato.tmo && dato.tmo !== '00:00:00') {
+                            const partes = dato.tmo.split(':');
+                            segundos = (parseInt(partes[0]) * 3600) + (parseInt(partes[1]) * 60) + parseInt(partes[2]);
+                          }
+                        %>
+                          <td class="px-0.5 py-0.5 text-center text-indigo-700 border-r border-gray-100">
+                            <%= segundos > 0 ? segundos : '-' %>
+                          </td>
+                        <% }) %>
+                        <td class="px-1 py-0.5 text-center font-bold text-indigo-900 bg-indigo-50 border-l-2 border-blue-300">
+                          -
+                        </td>
+                      </tr>
+                    <% }) %>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    <% } %>
+
+  <% } %>
+</div>

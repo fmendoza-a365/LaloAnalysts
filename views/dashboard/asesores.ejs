@@ -1,0 +1,316 @@
+<%- include('../layouts/main') %>
+
+<!-- Selector de Periodo -->
+<div class="bg-white shadow rounded-lg mb-6">
+  <div class="px-4 py-3">
+    <form class="flex flex-col sm:flex-row gap-3 items-start sm:items-end" method="GET" action="/dashboard/asesores">
+      <div>
+        <label for="anio" class="block text-sm font-medium text-gray-700">Año</label>
+        <input type="number" min="2000" max="2100" id="anio" name="anio" value="<%= periodo.anio %>" class="mt-1 block w-32 border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm">
+      </div>
+      <div>
+        <label for="mes" class="block text-sm font-medium text-gray-700">Mes</label>
+        <select id="mes" name="mes" class="mt-1 block w-36 border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm">
+          <% for (let i=1;i<=12;i++){ %>
+            <option value="<%= i %>" <%= periodo.mes===i ? 'selected' : '' %>><%= String(i).padStart(2,'0') %></option>
+          <% } %>
+        </select>
+      </div>
+      <div>
+        <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700">Aplicar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- KPI Cards -->
+<div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+  <!-- Total Asesores -->
+  <div class="bg-white overflow-hidden shadow rounded-lg">
+    <div class="px-4 py-5 sm:p-6">
+      <div class="flex items-center">
+        <div class="flex-shrink-0 bg-blue-500 rounded-md p-3">
+          <svg class="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+          </svg>
+        </div>
+        <div class="ml-5 w-0 flex-1">
+          <dt class="text-sm font-medium text-gray-500 truncate">Asesores Activos</dt>
+          <dd class="flex items-baseline">
+            <div class="text-2xl font-semibold text-gray-900"><%= kpis.totalAsesores %></div>
+          </dd>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Nivel de Servicio -->
+  <div class="bg-white overflow-hidden shadow rounded-lg">
+    <div class="px-4 py-5 sm:p-6">
+      <div class="flex items-center">
+        <div class="flex-shrink-0 bg-green-500 rounded-md p-3">
+          <svg class="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <div class="ml-5 w-0 flex-1">
+          <dt class="text-sm font-medium text-gray-500 truncate">Nivel de Servicio</dt>
+          <dd class="flex items-baseline">
+            <div class="text-2xl font-semibold text-gray-900"><%= kpis.nivelServicio %>%</div>
+          </dd>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TMO Promedio -->
+  <div class="bg-white overflow-hidden shadow rounded-lg">
+    <div class="px-4 py-5 sm:p-6">
+      <div class="flex items-center">
+        <div class="flex-shrink-0 bg-purple-500 rounded-md p-3">
+          <svg class="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <div class="ml-5 w-0 flex-1">
+          <dt class="text-sm font-medium text-gray-500 truncate">TMO Promedio</dt>
+          <dd class="flex items-baseline">
+            <div class="text-2xl font-semibold text-gray-900">
+              <% 
+                const secs = Math.floor(kpis.tmoPromedio);
+                const h = Math.floor(secs / 3600);
+                const m = Math.floor((secs % 3600) / 60);
+                const s = secs % 60;
+              %>
+              <%= String(h).padStart(2,'0') %>:<%= String(m).padStart(2,'0') %>:<%= String(s).padStart(2,'0') %>
+            </div>
+          </dd>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Llamadas Contestadas -->
+  <div class="bg-white overflow-hidden shadow rounded-lg">
+    <div class="px-4 py-5 sm:p-6">
+      <div class="flex items-center">
+        <div class="flex-shrink-0 bg-yellow-500 rounded-md p-3">
+          <svg class="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+          </svg>
+        </div>
+        <div class="ml-5 w-0 flex-1">
+          <dt class="text-sm font-medium text-gray-500 truncate">Llamadas Contestadas</dt>
+          <dd class="flex items-baseline">
+            <div class="text-2xl font-semibold text-gray-900"><%= kpis.totalContestadas.toLocaleString() %></div>
+          </dd>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Gráficos -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+  <!-- Top 10 Asesores -->
+  <div class="bg-white shadow rounded-lg p-6">
+    <h4 class="text-lg font-semibold text-gray-800 mb-4">Top 10 Asesores por Llamadas Contestadas</h4>
+    <canvas id="top10Chart"></canvas>
+  </div>
+
+  <!-- Distribución de Estados -->
+  <div class="bg-white shadow rounded-lg p-6">
+    <h4 class="text-lg font-semibold text-gray-800 mb-4">Distribución de Estados (Tiempo Total)</h4>
+    <canvas id="estadosChart"></canvas>
+  </div>
+</div>
+
+<!-- Rendimiento por Supervisor -->
+<div class="bg-white shadow rounded-lg p-6">
+  <h4 class="text-lg font-semibold text-gray-800 mb-4">Rendimiento por Supervisor</h4>
+  <canvas id="supervisorChart"></canvas>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+<script>
+// Helper para formatear segundos a HH:MM:SS
+function formatSeconds(secs) {
+  const h = Math.floor(secs / 3600);
+  const m = Math.floor((secs % 3600) / 60);
+  const s = Math.floor(secs % 60);
+  return String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+}
+
+// Top 10 Asesores
+const top10Data = <%- JSON.stringify(top10Asesores) %>;
+new Chart(document.getElementById('top10Chart'), {
+  type: 'bar',
+  data: {
+    labels: top10Data.map(a => a.nombre.split(' ').slice(0, 2).join(' ')),
+    datasets: [{
+      label: 'Llamadas Contestadas',
+      data: top10Data.map(a => a.contestadas),
+      backgroundColor: 'rgba(59, 130, 246, 0.8)',
+      borderColor: 'rgba(59, 130, 246, 1)',
+      borderWidth: 1
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true,
+    maintainAspectRatio: true,
+    plugins: {
+      legend: {
+        display: false
+      },
+      tooltip: {
+        callbacks: {
+          afterLabel: function(context) {
+            const idx = context.dataIndex;
+            return 'TMO: ' + formatSeconds(top10Data[idx].tmo);
+          }
+        }
+      }
+    },
+    scales: {
+      x: {
+        beginAtZero: true,
+        ticks: {
+          precision: 0
+        }
+      }
+    }
+  }
+});
+
+// Distribución de Estados
+const estadosData = <%- JSON.stringify(estadosDistribucion) %>;
+const estadosLabels = Object.keys(estadosData);
+const estadosValues = Object.values(estadosData);
+
+new Chart(document.getElementById('estadosChart'), {
+  type: 'doughnut',
+  data: {
+    labels: estadosLabels,
+    datasets: [{
+      data: estadosValues,
+      backgroundColor: [
+        'rgba(34, 197, 94, 0.8)',   // Disponible - verde
+        'rgba(59, 130, 246, 0.8)',  // En Comunicación - azul
+        'rgba(251, 146, 60, 0.8)',  // Descanso - naranja
+        'rgba(234, 179, 8, 0.8)',   // Comida - amarillo
+        'rgba(168, 85, 247, 0.8)',  // Ocupado - morado
+        'rgba(239, 68, 68, 0.8)',   // Ausente - rojo
+        'rgba(14, 165, 233, 0.8)',  // Capacitación - cyan
+        'rgba(99, 102, 241, 0.8)',  // Reunión - índigo
+        'rgba(156, 163, 175, 0.8)'  // Otros - gris
+      ],
+      borderWidth: 2
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: true,
+    plugins: {
+      legend: {
+        position: 'right',
+        labels: {
+          font: {
+            size: 11
+          }
+        }
+      },
+      tooltip: {
+        callbacks: {
+          label: function(context) {
+            const label = context.label || '';
+            const value = formatSeconds(context.parsed);
+            const total = estadosValues.reduce((a,b) => a+b, 0);
+            const percentage = ((context.parsed / total) * 100).toFixed(1);
+            return label + ': ' + value + ' (' + percentage + '%)';
+          }
+        }
+      }
+    }
+  }
+});
+
+// Rendimiento por Supervisor
+const supervisorData = <%- JSON.stringify(porSupervisor) %>;
+new Chart(document.getElementById('supervisorChart'), {
+  type: 'bar',
+  data: {
+    labels: supervisorData.map(s => s.supervisor),
+    datasets: [
+      {
+        label: 'Llamadas Contestadas (Prom.)',
+        data: supervisorData.map(s => s.contestadasPromedio),
+        backgroundColor: 'rgba(34, 197, 94, 0.8)',
+        borderColor: 'rgba(34, 197, 94, 1)',
+        borderWidth: 1,
+        yAxisID: 'y'
+      },
+      {
+        label: 'TMO Promedio (seg)',
+        data: supervisorData.map(s => s.tmoPromedio),
+        backgroundColor: 'rgba(239, 68, 68, 0.8)',
+        borderColor: 'rgba(239, 68, 68, 1)',
+        borderWidth: 1,
+        yAxisID: 'y1'
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: true,
+    interaction: {
+      mode: 'index',
+      intersect: false,
+    },
+    plugins: {
+      tooltip: {
+        callbacks: {
+          label: function(context) {
+            let label = context.dataset.label || '';
+            if (label) {
+              label += ': ';
+            }
+            if (context.dataset.yAxisID === 'y1') {
+              label += formatSeconds(context.parsed.y);
+            } else {
+              label += context.parsed.y.toFixed(2);
+            }
+            return label;
+          }
+        }
+      }
+    },
+    scales: {
+      y: {
+        type: 'linear',
+        display: true,
+        position: 'left',
+        beginAtZero: true,
+        title: {
+          display: true,
+          text: 'Llamadas Contestadas (Promedio)'
+        }
+      },
+      y1: {
+        type: 'linear',
+        display: true,
+        position: 'right',
+        beginAtZero: true,
+        title: {
+          display: true,
+          text: 'TMO (segundos)'
+        },
+        grid: {
+          drawOnChartArea: false
+        }
+      }
+    }
+  }
+});
+</script>

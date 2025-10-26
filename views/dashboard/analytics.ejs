@@ -1,0 +1,386 @@
+<!-- Selector de Período -->
+<div class="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden mb-8">
+  <div class="bg-gradient-to-r from-indigo-600 to-indigo-700 px-6 py-4">
+    <h3 class="text-lg font-bold text-white">Análisis Avanzado</h3>
+    <p class="text-indigo-100 text-sm mt-1">Gráficos comparativos y evolutivos de rendimiento</p>
+  </div>
+  <div class="p-6 bg-gradient-to-br from-gray-50 to-white">
+    <form method="GET" action="/dashboard/analytics" class="flex flex-wrap gap-4 items-end">
+      <div class="flex-1 min-w-[140px]">
+        <label for="anio" class="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Año</label>
+        <input type="number" min="2000" max="2100" id="anio" name="anio" value="<%= periodo.anio %>" class="block w-full border-2 border-gray-200 rounded-lg shadow-sm px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm font-medium">
+      </div>
+      <div class="flex-1 min-w-[180px]">
+        <label for="mes" class="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Mes</label>
+        <select id="mes" name="mes" class="block w-full border-2 border-gray-200 rounded-lg shadow-sm px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm font-medium">
+          <% for (let i=1;i<=12;i++){ %>
+            <option value="<%= i %>" <%= periodo.mes===i ? 'selected' : '' %>><%= String(i).padStart(2,'0') %> - <%= ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][i-1] %></option>
+          <% } %>
+        </select>
+      </div>
+      <div class="flex-1 min-w-[200px]">
+        <label for="supervisor" class="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Supervisor</label>
+        <select id="supervisor" name="supervisor" class="block w-full border-2 border-gray-200 rounded-lg shadow-sm px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm font-medium">
+          <option value="">Todos los Supervisores</option>
+          <% (todosLosSupervisores || []).forEach(sup => { %>
+            <option value="<%= sup %>" <%= filtros.supervisor === sup ? 'selected' : '' %>><%= sup %></option>
+          <% }) %>
+        </select>
+      </div>
+      <div class="flex-1 min-w-[160px]">
+        <label for="antiguedad" class="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Antigüedad</label>
+        <select id="antiguedad" name="antiguedad" class="block w-full border-2 border-gray-200 rounded-lg shadow-sm px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm font-medium">
+          <option value="">Todas</option>
+          <option value="nuevo" <%= filtros.antiguedad === 'nuevo' ? 'selected' : '' %>>Nuevo (1-30 días)</option>
+          <option value="intermedio" <%= filtros.antiguedad === 'intermedio' ? 'selected' : '' %>>Intermedio (30-90 días)</option>
+          <option value="antiguo" <%= filtros.antiguedad === 'antiguo' ? 'selected' : '' %>>Antiguo (+90 días)</option>
+        </select>
+      </div>
+      <div>
+        <button type="submit" class="inline-flex items-center px-6 py-2.5 border border-transparent text-sm font-semibold rounded-lg shadow-md text-white bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all">
+          <svg class="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          Consultar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Gráficos Comparativos -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+
+  <!-- Comparativa Full Time vs Part Time -->
+  <div class="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+    <div class="bg-gradient-to-r from-green-600 to-green-700 px-6 py-4">
+      <div class="flex items-center">
+        <svg class="h-6 w-6 text-white mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+        </svg>
+        <h4 class="text-lg font-bold text-white">Full Time vs Part Time</h4>
+      </div>
+      <p class="text-green-100 text-sm mt-1">Comparativa de Rendimiento por Modalidad</p>
+    </div>
+    <div class="p-6 bg-gradient-to-br from-gray-50 to-white" style="min-height: 400px;">
+      <canvas id="modalidadChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Top/Bottom Performers -->
+  <div class="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+    <div class="bg-gradient-to-r from-amber-600 to-amber-700 px-6 py-4">
+      <div class="flex items-center">
+        <svg class="h-6 w-6 text-white mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+        </svg>
+        <h4 class="text-lg font-bold text-white">Top 10 vs Bottom 10</h4>
+      </div>
+      <p class="text-amber-100 text-sm mt-1">Ranking de Asesores por Llamadas</p>
+    </div>
+    <div class="p-6 bg-gradient-to-br from-gray-50 to-white" style="min-height: 400px;">
+      <canvas id="rankingChart"></canvas>
+    </div>
+  </div>
+
+</div>
+
+<!-- Distribución por Pool -->
+<div class="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden mb-8">
+  <div class="bg-gradient-to-r from-purple-600 to-purple-700 px-6 py-4">
+    <div class="flex items-center">
+      <svg class="h-6 w-6 text-white mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+      </svg>
+      <h4 class="text-lg font-bold text-white">Rendimiento por Pool/Producto</h4>
+    </div>
+    <p class="text-purple-100 text-sm mt-1">Top 10 Pools por Volumen</p>
+  </div>
+  <div class="p-6 bg-gradient-to-br from-gray-50 to-white" style="min-height: 400px;">
+    <canvas id="poolChart"></canvas>
+  </div>
+</div>
+
+<!-- Placeholder para gráficos evolutivos (requiere datos históricos) -->
+<div class="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden mb-8">
+  <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center">
+        <svg class="h-6 w-6 text-white mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+        </svg>
+        <h4 class="text-lg font-bold text-white">Evolución Mensual de KPIs</h4>
+      </div>
+      <span class="px-3 py-1 bg-blue-800 text-blue-100 text-xs font-semibold rounded-full">Próximamente</span>
+    </div>
+    <p class="text-blue-100 text-sm mt-1">Tendencias de los últimos 6 meses (requiere datos históricos)</p>
+  </div>
+  <div class="p-6 bg-gradient-to-br from-gray-50 to-white">
+    <div class="flex items-center justify-center h-64 border-2 border-dashed border-gray-300 rounded-lg">
+      <div class="text-center">
+        <svg class="mx-auto h-12 w-12 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+        </svg>
+        <h3 class="mt-2 text-sm font-medium text-gray-900">Gráfico Evolutivo</h3>
+        <p class="mt-1 text-sm text-gray-500">Se activará cuando se almacenen datos históricos mensuales</p>
+        <p class="mt-1 text-xs text-gray-400">Próxima actualización: con el módulo de históricos</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+<script>
+// Helper para formatear segundos a HH:MM:SS
+function formatSeconds(secs) {
+  const h = Math.floor(secs / 3600);
+  const m = Math.floor((secs % 3600) / 60);
+  const s = Math.floor(secs % 60);
+  return String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+}
+
+// 1. Comparativa Full Time vs Part Time
+const fullTimeStats = <%- JSON.stringify(fullTimeStats) %>;
+const partTimeStats = <%- JSON.stringify(partTimeStats) %>;
+const fullTimeCount = <%= fullTimeCount %>;
+const partTimeCount = <%= partTimeCount %>;
+
+new Chart(document.getElementById('modalidadChart'), {
+  type: 'bar',
+  data: {
+    labels: ['TMO Promedio (seg)', 'ACW Promedio (seg)', 'Llamadas/Asesor'],
+    datasets: [
+      {
+        label: `Full Time (${fullTimeCount})`,
+        data: [fullTimeStats.tmoPromedio, fullTimeStats.acwPromedio, fullTimeStats.llamadasPromedio],
+        backgroundColor: 'rgba(34, 197, 94, 0.8)',
+        borderColor: 'rgba(34, 197, 94, 1)',
+        borderWidth: 2
+      },
+      {
+        label: `Part Time (${partTimeCount})`,
+        data: [partTimeStats.tmoPromedio, partTimeStats.acwPromedio, partTimeStats.llamadasPromedio],
+        backgroundColor: 'rgba(168, 85, 247, 0.8)',
+        borderColor: 'rgba(168, 85, 247, 1)',
+        borderWidth: 2
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: window.innerWidth < 768 ? 'bottom' : 'top',
+        labels: {
+          font: { size: window.innerWidth < 768 ? 10 : 12, weight: 'bold' },
+          padding: 10
+        }
+      },
+      tooltip: {
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        titleFont: { size: 12, weight: 'bold' },
+        bodyFont: { size: 11 },
+        padding: 12,
+        cornerRadius: 8,
+        callbacks: {
+          label: function(context) {
+            let label = context.dataset.label || '';
+            if (label) label += ': ';
+            if (context.dataIndex < 2) {
+              label += formatSeconds(context.parsed.y);
+            } else {
+              label += context.parsed.y.toFixed(2);
+            }
+            return label;
+          }
+        }
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: {
+          font: { size: window.innerWidth < 768 ? 9 : 10 },
+          callback: function(value) {
+            return value.toFixed(0);
+          }
+        }
+      },
+      x: {
+        ticks: {
+          font: { size: window.innerWidth < 768 ? 9 : 11 }
+        }
+      }
+    }
+  }
+});
+
+// 2. Top/Bottom Performers (Barras Divergentes)
+const topPerformers = <%- JSON.stringify(topPerformers) %>;
+const bottomPerformers = <%- JSON.stringify(bottomPerformers) %>;
+
+// Combinar top y bottom en orden: bottom (negativos) + top (positivos)
+const allPerformers = [
+  ...bottomPerformers.reverse().map(a => ({ ...a, contestadas: -a.contestadas })),
+  ...topPerformers
+];
+
+new Chart(document.getElementById('rankingChart'), {
+  type: 'bar',
+  data: {
+    labels: allPerformers.map(a => {
+      const nombre = a.nombre.split(' ').slice(0, 2).join(' ');
+      return nombre.length > 15 ? nombre.substring(0, 15) + '...' : nombre;
+    }),
+    datasets: [{
+      label: 'Llamadas Contestadas',
+      data: allPerformers.map(a => a.contestadas),
+      backgroundColor: allPerformers.map(a => 
+        a.contestadas > 0 ? 'rgba(34, 197, 94, 0.8)' : 'rgba(239, 68, 68, 0.8)'
+      ),
+      borderColor: allPerformers.map(a => 
+        a.contestadas > 0 ? 'rgba(34, 197, 94, 1)' : 'rgba(239, 68, 68, 1)'
+      ),
+      borderWidth: 2
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false
+      },
+      tooltip: {
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        titleFont: { size: 12, weight: 'bold' },
+        bodyFont: { size: 11 },
+        padding: 12,
+        cornerRadius: 8,
+        callbacks: {
+          label: function(context) {
+            return 'Llamadas: ' + Math.abs(context.parsed.x);
+          }
+        }
+      }
+    },
+    scales: {
+      x: {
+        ticks: {
+          font: { size: window.innerWidth < 768 ? 9 : 10 },
+          callback: function(value) {
+            return Math.abs(value);
+          }
+        }
+      },
+      y: {
+        ticks: {
+          font: { size: window.innerWidth < 768 ? 8 : 10 }
+        }
+      }
+    }
+  }
+});
+
+// 3. Distribución por Pool
+const poolStats = <%- JSON.stringify(poolStats) %>;
+
+new Chart(document.getElementById('poolChart'), {
+  type: 'bar',
+  data: {
+    labels: poolStats.map(p => {
+      const nombre = p.pool;
+      return nombre.length > 20 ? nombre.substring(0, 20) + '...' : nombre;
+    }),
+    datasets: [
+      {
+        label: 'Total Llamadas',
+        data: poolStats.map(p => p.llamadasTotal),
+        backgroundColor: 'rgba(59, 130, 246, 0.8)',
+        borderColor: 'rgba(59, 130, 246, 1)',
+        borderWidth: 2,
+        yAxisID: 'y'
+      },
+      {
+        label: 'TMO Promedio (seg)',
+        data: poolStats.map(p => p.tmoPromedio),
+        backgroundColor: 'rgba(239, 68, 68, 0.8)',
+        borderColor: 'rgba(239, 68, 68, 1)',
+        borderWidth: 2,
+        yAxisID: 'y1'
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: window.innerWidth < 768 ? 'bottom' : 'top',
+        labels: {
+          font: { size: window.innerWidth < 768 ? 10 : 12, weight: 'bold' },
+          padding: 10
+        }
+      },
+      tooltip: {
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        titleFont: { size: 12, weight: 'bold' },
+        bodyFont: { size: 11 },
+        padding: 12,
+        cornerRadius: 8,
+        callbacks: {
+          label: function(context) {
+            let label = context.dataset.label || '';
+            if (label) label += ': ';
+            if (context.dataset.yAxisID === 'y1') {
+              label += formatSeconds(context.parsed.y);
+            } else {
+              label += context.parsed.y.toLocaleString();
+            }
+            return label;
+          }
+        }
+      }
+    },
+    scales: {
+      x: {
+        ticks: {
+          font: { size: window.innerWidth < 768 ? 9 : 10 }
+        }
+      },
+      y: {
+        type: 'linear',
+        position: 'left',
+        beginAtZero: true,
+        title: {
+          display: window.innerWidth >= 768,
+          text: 'Total Llamadas',
+          font: { size: 11, weight: 'bold' }
+        },
+        ticks: {
+          font: { size: window.innerWidth < 768 ? 9 : 10 }
+        }
+      },
+      y1: {
+        type: 'linear',
+        position: 'right',
+        beginAtZero: true,
+        title: {
+          display: window.innerWidth >= 768,
+          text: 'TMO (segundos)',
+          font: { size: 11, weight: 'bold' }
+        },
+        ticks: {
+          font: { size: window.innerWidth < 768 ? 9 : 10 }
+        },
+        grid: {
+          drawOnChartArea: false
+        }
+      }
+    }
+  }
+});
+</script>

@@ -88,6 +88,8 @@ const powerbiRouter = require('./routes/powerbi');
 const indicadoresRouter = require('./routes/indicadores');
 const adminRouter = require('./routes/admin');
 const asesoresRouter = require('./routes/asesores');
+const asistenciaRouter = require('./routes/asistencia');
+const kpisRouter = require('./routes/provision'); // Dashboard de KPIs (Provisión Agregada)
 
 // Import models
 const User = require('./models/User');
@@ -180,6 +182,8 @@ app.use('/auth', authRouter);
 app.use('/dashboard', dashboardRouter);
 app.use('/powerbi', powerbiRouter);
 app.use('/asesores', asesoresRouter);
+app.use('/asistencia', asistenciaRouter);
+app.use('/kpis', kpisRouter);
 app.use('/admin', adminRouter);
 app.use('/api/indicadores', indicadoresRouter);
 

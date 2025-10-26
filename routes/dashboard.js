@@ -7,15 +7,98 @@ const Asesor = require('../models/Asesor');
 const GenesysDataset = require('../models/GenesysDataset');
 const GenesysRecord = require('../models/GenesysRecord');
 
+// Helper para convertir números de Excel a fechas JavaScript
+function excelDateToJSDate(excelDate) {
+  if (!excelDate) return null;
+  
+  // Si ya es un objeto Date válido, devolverlo
+  if (excelDate instanceof Date && !isNaN(excelDate.getTime())) {
+    return excelDate;
+  }
+  
+  // Si es un string que parece una fecha, intentar parsearlo
+  if (typeof excelDate === 'string') {
+    const parsed = new Date(excelDate);
+    if (!isNaN(parsed.getTime())) {
+      return parsed;
+    }
+  }
+  
+  // Si es un número (formato serial de Excel)
+  if (typeof excelDate === 'number') {
+    // Excel fecha serial: días desde 1/1/1900
+    // Nota: Excel tiene un bug donde considera 1900 como año bisiesto
+    const excelEpoch = new Date(1899, 11, 30); // 30 de diciembre de 1899
+    const jsDate = new Date(excelEpoch.getTime() + excelDate * 86400000); // 86400000 ms = 1 día
+    return jsDate;
+  }
+  
+  return null;
+}
+
 // Dashboard route - protected - Ahora muestra indicadores de asesores
 router.get('/', ensureAuthenticated, async (req, res) => {
   try {
     const anio = parseInt(req.query.anio || new Date().getFullYear(), 10);
     const mes = parseInt(req.query.mes || (new Date().getMonth() + 1), 10);
+    const supervisorFiltro = req.query.supervisor || '';
+    const antiguedadFiltro = req.query.antiguedad || '';
     
-    // Obtener todos los asesores activos
-    const asesores = await Asesor.find({}).sort({ apellidosNombres: 1 });
-    const totalAsesores = asesores.filter(a => a.estado && a.estado.toLowerCase().includes('activo')).length;
+    // Obtener todos los asesores
+    let asesores = await Asesor.find({}).sort({ apellidosNombres: 1 });
+    
+    // Aplicar filtro por supervisor
+    if (supervisorFiltro) {
+      asesores = asesores.filter(a => a.supervisor === supervisorFiltro);
+    }
+    
+    // Aplicar filtro por antigüedad (basado en fechaAlta)
+    if (antiguedadFiltro) {
+      const hoy = new Date();
+      const hace30dias = new Date(hoy.getTime() - 30 * 24 * 60 * 60 * 1000);
+      const hace90dias = new Date(hoy.getTime() - 90 * 24 * 60 * 60 * 1000);
+      
+      asesores = asesores.filter(a => {
+        // Si no tiene fechaAlta, considerar como "antiguo"
+        if (!a.fechaAlta) {
+          return antiguedadFiltro === 'antiguo';
+        }
+        
+        // Convertir desde formato Excel si es necesario
+        const fechaAlta = excelDateToJSDate(a.fechaAlta);
+        
+        // Validar que la fecha sea válida
+        if (!fechaAlta || isNaN(fechaAlta.getTime())) {
+          return antiguedadFiltro === 'antiguo';
+        }
+        
+        if (antiguedadFiltro === 'nuevo') {
+          // Nuevo: fecha de alta en los últimos 30 días
+          return fechaAlta >= hace30dias && fechaAlta <= hoy;
+        } else if (antiguedadFiltro === 'intermedio') {
+          // Intermedio: fecha de alta entre 30 y 90 días atrás
+          return fechaAlta < hace30dias && fechaAlta >= hace90dias;
+        } else if (antiguedadFiltro === 'antiguo') {
+          // Antiguo: fecha de alta hace más de 90 días
+          return fechaAlta < hace90dias;
+        }
+        return true;
+      });
+    }
+    
+    const asesoresActivos = asesores.filter(a => a.estado && a.estado.toLowerCase().includes('activo'));
+    const asesoresBaja = asesores.filter(a => a.estado && a.estado.toLowerCase().includes('baja'));
+    const totalAsesores = asesoresActivos.length;
+    const totalBaja = asesoresBaja.length;
+    const totalGeneral = asesores.length;
+    
+    // Calcular Full Time y Part Time (basado en campo modalidad)
+    // Consideramos Part Time si modalidad contiene la palabra 'part' (por ejemplo: 'part time')
+    const partTime = asesoresActivos.filter(a => (a.modalidad || '').toLowerCase().includes('part')).length;
+    const fullTime = asesoresActivos.length - partTime;
+    
+    // Calcular rotación: (bajas / total general) * 100
+    const rotacion = totalGeneral > 0 ? ((totalBaja / totalGeneral) * 100).toFixed(1) : 0;
     
     // Obtener datasets del periodo
     const dsE = await GenesysDataset.findOne({ anio, mes, tipo: 'estados' }).sort({ creadoEn: -1 });
@@ -84,6 +167,8 @@ router.get('/', ensureAuthenticated, async (req, res) => {
     let sumaEnComunicacion = 0;
     let sumaTMO = 0;
     let contadorTMO = 0;
+    let sumaACW = 0;
+    let contadorACW = 0;
     
     const estadosDistribucion = {
       'Conectado': 0,
@@ -117,6 +202,10 @@ router.get('/', ensureAuthenticated, async (req, res) => {
           sumaTMO += Number(ind['Tiempo Medio Operativo']);
           contadorTMO++;
         }
+        if (ind['Tiempo Medio ACW']) {
+          sumaACW += Number(ind['Tiempo Medio ACW']);
+          contadorACW++;
+        }
         
         // Distribución de estados - todos individuales
         if (ind['Conectado']) estadosDistribucion['Conectado'] += Number(ind['Conectado']);
@@ -139,6 +228,7 @@ router.get('/', ensureAuthenticated, async (req, res) => {
     
     const nivelServicio = totalOfrecidas > 0 ? ((totalContestadas / totalOfrecidas) * 100).toFixed(2) : 0;
     const tmoPromedio = contadorTMO > 0 ? (sumaTMO / contadorTMO) : 0;
+    const acwPromedio = contadorACW > 0 ? (sumaACW / contadorACW) : 0;
     const adherencia = sumaConnectado > 0 ? ((sumaEnComunicacion / sumaConnectado) * 100).toFixed(2) : 0;
     
     // Top 10 Asesores por llamadas contestadas
@@ -197,17 +287,24 @@ router.get('/', ensureAuthenticated, async (req, res) => {
       .sort((a, b) => b.contestadasPromedio - a.contestadasPromedio)
       .slice(0, 8);
     
+    // Obtener lista única de supervisores para el dropdown
+    const todosLosSupervisores = [...new Set(await Asesor.find({}).distinct('supervisor'))].sort();
+    
     res.render('dashboard/index', {
       title: 'Tablero',
       user: req.user,
       periodo: { anio, mes },
+      filtros: { supervisor: supervisorFiltro, antiguedad: antiguedadFiltro },
+      todosLosSupervisores,
       kpis: {
         totalAsesores,
-        nivelServicio,
+        totalBaja,
+        rotacion,
+        fullTime,
+        partTime,
+        totalContestadas,
         tmoPromedio,
-        adherencia,
-        totalOfrecidas,
-        totalContestadas
+        acwPromedio
       },
       estadosDistribucion,
       top10Asesores: asesoresConTMO,
@@ -441,11 +538,12 @@ router.get('/asesores', ensureAuthenticated, async (req, res) => {
     const supMap = new Map();
     for (const a of asesores) {
       const sup = a.supervisor || 'Sin supervisor';
-      if (!supMap.has(sup)) supMap.set(sup, { supervisor: sup, count: 0, totalTMO: 0, contadorTMO: 0, totalContestadas: 0 });
+      if (!supMap.has(sup)) supMap.set(sup, { supervisor: sup, count: 0, totalTMO: 0, contadorTMO: 0, totalContestadas: 0, contadorContestadas: 0 });
       const entry = supMap.get(sup);
-      entry.count++;
       
+      // Solo contar asesores que tienen datos en el período consultado
       if (a.ag && indicadoresRaw[a.ag]) {
+        entry.count++;
         const ind = indicadoresRaw[a.ag];
         if (ind['Tiempo Medio Operativo']) {
           entry.totalTMO += Number(ind['Tiempo Medio Operativo']);
@@ -453,6 +551,7 @@ router.get('/asesores', ensureAuthenticated, async (req, res) => {
         }
         if (ind['Contestadas']) {
           entry.totalContestadas += Number(ind['Contestadas']);
+          entry.contadorContestadas++;
         }
       }
     }
@@ -463,7 +562,7 @@ router.get('/asesores', ensureAuthenticated, async (req, res) => {
         supervisor: s.supervisor,
         count: s.count,
         tmoPromedio: s.totalTMO / s.contadorTMO,
-        contestadasPromedio: s.totalContestadas / s.count
+        contestadasPromedio: s.contadorContestadas > 0 ? s.totalContestadas / s.contadorContestadas : 0
       }))
       .sort((a, b) => b.contestadasPromedio - a.contestadasPromedio)
       .slice(0, 8);
@@ -488,6 +587,217 @@ router.get('/asesores', ensureAuthenticated, async (req, res) => {
   } catch (err) {
     console.error(err);
     req.flash('error_msg', 'Error cargando el dashboard de asesores');
+    res.redirect('/dashboard');
+  }
+});
+
+// Análisis Avanzado - Gráficos comparativos y evolutivos
+router.get('/analytics', ensureAuthenticated, async (req, res) => {
+  try {
+    const anio = parseInt(req.query.anio || new Date().getFullYear(), 10);
+    const mes = parseInt(req.query.mes || (new Date().getMonth() + 1), 10);
+    const supervisorFiltro = req.query.supervisor || '';
+    const antiguedadFiltro = req.query.antiguedad || '';
+    
+    // Obtener todos los asesores
+    let asesores = await Asesor.find({}).sort({ apellidosNombres: 1 });
+    
+    // Aplicar filtro por supervisor
+    if (supervisorFiltro) {
+      asesores = asesores.filter(a => a.supervisor === supervisorFiltro);
+    }
+    
+    // Aplicar filtro por antigüedad (basado en fechaAlta)
+    if (antiguedadFiltro) {
+      const hoy = new Date();
+      const hace30dias = new Date(hoy.getTime() - 30 * 24 * 60 * 60 * 1000);
+      const hace90dias = new Date(hoy.getTime() - 90 * 24 * 60 * 60 * 1000);
+      
+      asesores = asesores.filter(a => {
+        // Si no tiene fechaAlta, considerar como "antiguo"
+        if (!a.fechaAlta) {
+          return antiguedadFiltro === 'antiguo';
+        }
+        
+        // Convertir desde formato Excel si es necesario
+        const fechaAlta = excelDateToJSDate(a.fechaAlta);
+        
+        // Validar que la fecha sea válida
+        if (!fechaAlta || isNaN(fechaAlta.getTime())) {
+          return antiguedadFiltro === 'antiguo';
+        }
+        
+        if (antiguedadFiltro === 'nuevo') {
+          // Nuevo: fecha de alta en los últimos 30 días
+          return fechaAlta >= hace30dias && fechaAlta <= hoy;
+        } else if (antiguedadFiltro === 'intermedio') {
+          // Intermedio: fecha de alta entre 30 y 90 días atrás
+          return fechaAlta < hace30dias && fechaAlta >= hace90dias;
+        } else if (antiguedadFiltro === 'antiguo') {
+          // Antiguo: fecha de alta hace más de 90 días
+          return fechaAlta < hace90dias;
+        }
+        return true;
+      });
+    }
+    
+    const asesoresActivos = asesores.filter(a => a.estado && a.estado.toLowerCase().includes('activo'));
+    
+    // Obtener datasets del periodo
+    const dsE = await GenesysDataset.findOne({ anio, mes, tipo: 'estados' }).sort({ creadoEn: -1 });
+    const dsR = await GenesysDataset.findOne({ anio, mes, tipo: 'rendimiento' }).sort({ creadoEn: -1 });
+    
+    // Helpers
+    function pick(obj, keys) {
+      for (const k of keys) if (obj[k] != null && obj[k] !== '') return obj[k];
+      return null;
+    }
+    function setIf(ag, metric, val) {
+      if (val != null && !indMap.has(ag)) indMap.set(ag, {});
+      if (val != null) indMap.get(ag)[metric] = val;
+    }
+    
+    const indMap = new Map();
+    
+    // Procesar Estados
+    if (dsE) {
+      const recE = await GenesysRecord.find({ datasetId: dsE._id }).select('ag data');
+      for (const r of recE) {
+        const d = r.data || {};
+        setIf(r.ag, 'Conectado', pick(d, ['Conectado']));
+        setIf(r.ag, 'En Cola', pick(d, ['En Cola']));
+        setIf(r.ag, 'Fuera de Cola', pick(d, ['Fuera de Cola']));
+        setIf(r.ag, 'Interactuando', pick(d, ['Interactuando']));
+        setIf(r.ag, 'No Responde', pick(d, ['No Responde']));
+        setIf(r.ag, 'Inactivo', pick(d, ['Inactivo']));
+        setIf(r.ag, 'Disponible', pick(d, ['Disponible']));
+        setIf(r.ag, 'Comida', pick(d, ['Comida']));
+        setIf(r.ag, 'Ocupado', pick(d, ['Ocupado']));
+        setIf(r.ag, 'Ausente', pick(d, ['Ausente']));
+        setIf(r.ag, 'Descanso', pick(d, ['Descanso']));
+        setIf(r.ag, 'Sistema Ausente', pick(d, ['Sistema Ausente']));
+        setIf(r.ag, 'Reunión', pick(d, ['Reunión']));
+        setIf(r.ag, 'Capacitación', pick(d, ['Capacitación']));
+        setIf(r.ag, 'En Comunicación', pick(d, ['En Comunicación']));
+      }
+    }
+    
+    // Procesar Rendimiento
+    if (dsR) {
+      const recR = await GenesysRecord.find({ datasetId: dsR._id }).select('ag data');
+      for (const r of recR) {
+        const d = r.data || {};
+        const ofrecidas = pick(d, ['Ofrecidas','Total de alertas','Total que están contactando']);
+        const contestadas = pick(d, ['Contestadas','Manejo']);
+        setIf(r.ag, 'Ofrecidas', ofrecidas);
+        setIf(r.ag, 'Contestadas', contestadas);
+        setIf(r.ag, 'Tiempo Medio Operativo', pick(d, ['Manejo medio']));
+        setIf(r.ag, 'Tiempo Medio Conversación', pick(d, ['Conversación media']));
+        setIf(r.ag, 'Tiempo Medio ACW', pick(d, ['ACW medio']));
+        setIf(r.ag, 'Tiempo Medio Retención', pick(d, ['Retención media','Retención media manejada']));
+      }
+    }
+    
+    const indicadoresRaw = indMap.size ? Object.fromEntries(indMap) : {};
+    
+    // 1. Comparativa Full Time vs Part Time
+    const fullTimeAsesores = asesoresActivos.filter(a => !(a.modalidad || '').toLowerCase().includes('part'));
+    const partTimeAsesores = asesoresActivos.filter(a => (a.modalidad || '').toLowerCase().includes('part'));
+    
+    const calcularPromedios = (asesoresList) => {
+      let sumTMO = 0, countTMO = 0;
+      let sumACW = 0, countACW = 0;
+      let sumLlamadas = 0, countLlamadas = 0;
+      
+      asesoresList.forEach(a => {
+        if (a.ag && indicadoresRaw[a.ag]) {
+          const ind = indicadoresRaw[a.ag];
+          if (ind['Tiempo Medio Operativo']) { sumTMO += Number(ind['Tiempo Medio Operativo']); countTMO++; }
+          if (ind['Tiempo Medio ACW']) { sumACW += Number(ind['Tiempo Medio ACW']); countACW++; }
+          if (ind['Contestadas']) { sumLlamadas += Number(ind['Contestadas']); countLlamadas++; }
+        }
+      });
+      
+      return {
+        tmoPromedio: countTMO > 0 ? sumTMO / countTMO : 0,
+        acwPromedio: countACW > 0 ? sumACW / countACW : 0,
+        llamadasPromedio: countLlamadas > 0 ? sumLlamadas / countLlamadas : 0
+      };
+    };
+    
+    const fullTimeStats = calcularPromedios(fullTimeAsesores);
+    const partTimeStats = calcularPromedios(partTimeAsesores);
+    
+    // 2. Top y Bottom Performers
+    const asesoresConMetricas = asesoresActivos
+      .filter(a => a.ag && indicadoresRaw[a.ag] && indicadoresRaw[a.ag]['Tiempo Medio Operativo'])
+      .map(a => ({
+        nombre: a.apellidosNombres,
+        tmo: Number(indicadoresRaw[a.ag]['Tiempo Medio Operativo']),
+        contestadas: Number(indicadoresRaw[a.ag]['Contestadas'] || 0),
+        acw: Number(indicadoresRaw[a.ag]['Tiempo Medio ACW'] || 0)
+      }));
+    
+    const topPerformers = [...asesoresConMetricas]
+      .sort((a, b) => b.contestadas - a.contestadas)
+      .slice(0, 10);
+    
+    const bottomPerformers = [...asesoresConMetricas]
+      .sort((a, b) => a.contestadas - b.contestadas)
+      .slice(0, 10);
+    
+    // 3. Distribución por Pool
+    const poolMap = new Map();
+    asesoresActivos.forEach(a => {
+      const pool = a.pool || 'Sin Pool';
+      if (!poolMap.has(pool)) {
+        poolMap.set(pool, { pool, count: 0, sumTMO: 0, countTMO: 0, sumLlamadas: 0 });
+      }
+      const entry = poolMap.get(pool);
+      entry.count++;
+      
+      if (a.ag && indicadoresRaw[a.ag]) {
+        const ind = indicadoresRaw[a.ag];
+        if (ind['Tiempo Medio Operativo']) {
+          entry.sumTMO += Number(ind['Tiempo Medio Operativo']);
+          entry.countTMO++;
+        }
+        if (ind['Contestadas']) {
+          entry.sumLlamadas += Number(ind['Contestadas']);
+        }
+      }
+    });
+    
+    const poolStats = Array.from(poolMap.values())
+      .map(p => ({
+        pool: p.pool,
+        count: p.count,
+        tmoPromedio: p.countTMO > 0 ? p.sumTMO / p.countTMO : 0,
+        llamadasTotal: p.sumLlamadas
+      }))
+      .sort((a, b) => b.llamadasTotal - a.llamadasTotal)
+      .slice(0, 10);
+    
+    // Obtener lista única de supervisores para el dropdown
+    const todosLosSupervisores = [...new Set(await Asesor.find({}).distinct('supervisor'))].sort();
+    
+    res.render('dashboard/analytics', {
+      title: 'Análisis Avanzado',
+      user: req.user,
+      periodo: { anio, mes },
+      filtros: { supervisor: supervisorFiltro, antiguedad: antiguedadFiltro },
+      todosLosSupervisores,
+      fullTimeStats,
+      partTimeStats,
+      fullTimeCount: fullTimeAsesores.length,
+      partTimeCount: partTimeAsesores.length,
+      topPerformers,
+      bottomPerformers,
+      poolStats
+    });
+  } catch (err) {
+    console.error(err);
+    req.flash('error_msg', 'Error cargando análisis avanzado');
     res.redirect('/dashboard');
   }
 });

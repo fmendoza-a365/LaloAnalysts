@@ -114,14 +114,9 @@ function parseCalidad(buffer) {
   return parseGenerico(buffer);
 }
 
-function parseSIOP(buffer) {
-  return parseGenerico(buffer);
-}
-
 module.exports = { 
   parseRendimiento, 
   parseEstados, 
   parseProvision,
-  parseCalidad,
-  parseSIOP
+  parseCalidad
 };

@@ -13,7 +13,42 @@ const User = require('../models/User');
 const Role = require('../models/Role');
 const GenesysDataset = require('../models/GenesysDataset');
 const GenesysRecord = require('../models/GenesysRecord');
-const { parseRendimiento, parseEstados, parseProvision, parseCalidad, parseSIOP } = require('../utils/genesysParsers');
+const AsistenciaDataset = require('../models/AsistenciaDataset');
+const AsistenciaRecord = require('../models/AsistenciaRecord');
+const ProvisionDataset = require('../models/ProvisionDataset');
+const ProvisionRecord = require('../models/ProvisionRecord');
+const { parseRendimiento, parseEstados, parseProvision, parseCalidad } = require('../utils/genesysParsers');
+const { parseAsistencia } = require('../utils/asistenciaParser');
+const { parseProvisionAgregada } = require('../utils/proviParser');
+
+// Helper para convertir números de Excel a fechas JavaScript
+function excelDateToJSDate(excelDate) {
+  if (!excelDate) return null;
+  
+  // Si ya es un objeto Date válido, devolverlo
+  if (excelDate instanceof Date && !isNaN(excelDate.getTime())) {
+    return excelDate;
+  }
+  
+  // Si es un string que parece una fecha, intentar parsearlo
+  if (typeof excelDate === 'string') {
+    const parsed = new Date(excelDate);
+    if (!isNaN(parsed.getTime())) {
+      return parsed;
+    }
+  }
+  
+  // Si es un número (formato serial de Excel)
+  if (typeof excelDate === 'number') {
+    // Excel fecha serial: días desde 1/1/1900
+    // Nota: Excel tiene un bug donde considera 1900 como año bisiesto
+    const excelEpoch = new Date(1899, 11, 30); // 30 de diciembre de 1899
+    const jsDate = new Date(excelEpoch.getTime() + excelDate * 86400000); // 86400000 ms = 1 día
+    return jsDate;
+  }
+  
+  return null;
+}
 
 // Storage en memoria para todas las cargas
 const memoryStorage = multer.memoryStorage();
@@ -33,12 +68,40 @@ router.get('/genesys', checkRole(['admin']), async (req, res) => {
     const page = Math.max(parseInt(req.query.page || '1', 10), 1);
     const perPage = Math.min(Math.max(parseInt(req.query.perPage || '12', 10), 5), 50);
     const filtroTipo = (req.query.tipo || '').trim();
-    const query = filtroTipo ? { tipo: filtroTipo } : {};
-    const total = await GenesysDataset.countDocuments(query);
-    const datasets = await GenesysDataset.find(query)
+    
+    // Obtener datasets de Genesys normales
+    const query = filtroTipo && filtroTipo !== 'provision-agregada' ? { tipo: filtroTipo } : {};
+    const genesysDatasets = await GenesysDataset.find(query)
       .sort({ anio: -1, mes: -1, tipo: 1 })
-      .skip((page - 1) * perPage)
-      .limit(perPage);
+      .lean();
+    
+    // Obtener datasets de Provisión Agregada
+    let provisionDatasets = [];
+    if (!filtroTipo || filtroTipo === 'provision-agregada') {
+      provisionDatasets = await ProvisionDataset.find()
+        .sort({ anio: -1, mes: -1 })
+        .lean();
+      
+      // Agregar campo 'tipo' para uniformidad
+      provisionDatasets = provisionDatasets.map(d => ({
+        ...d,
+        tipo: 'provision-agregada',
+        originalFilename: d.nombreArchivo
+      }));
+    }
+    
+    // Combinar ambos tipos de datasets
+    const allDatasets = [...genesysDatasets, ...provisionDatasets]
+      .sort((a, b) => {
+        if (b.anio !== a.anio) return b.anio - a.anio;
+        if (b.mes !== a.mes) return b.mes - a.mes;
+        return (a.tipo || '').localeCompare(b.tipo || '');
+      });
+    
+    // Paginar
+    const total = allDatasets.length;
+    const datasets = allDatasets.slice((page - 1) * perPage, page * perPage);
+    
     res.render('admin/genesys', {
       title: 'Admin · Genesys Cloud',
       user: req.user,
@@ -60,7 +123,7 @@ router.post('/genesys/upload', checkRole(['admin']), uploadGenesys.single('archi
       req.flash('error_msg', 'Adjunte un archivo Excel o CSV exportado de Genesys Cloud');
       return res.redirect('/admin/genesys');
     }
-    const tiposValidos = ['rendimiento', 'estados', 'provision', 'calidad', 'siop'];
+    const tiposValidos = ['rendimiento', 'estados', 'provision-agregada', 'calidad', 'siop'];
     if (!tiposValidos.includes(String(tipo))) {
       req.flash('error_msg', 'Tipo inválido. Tipos soportados: ' + tiposValidos.join(', '));
       return res.redirect('/admin/genesys');
@@ -71,7 +134,83 @@ router.post('/genesys/upload', checkRole(['admin']), uploadGenesys.single('archi
       return res.redirect('/admin/genesys');
     }
 
-    // Buscar dataset existente
+    // Caso especial: provision-agregada usa modelos separados
+    if (tipo === 'provision-agregada') {
+      try {
+        console.log('[PROVISION-AGREGADA] Iniciando carga para', y, '-', m);
+        
+        // Buscar dataset en ProvisionDataset
+        let dataset = await ProvisionDataset.findOne({ anio: y, mes: m });
+        if (dataset && !reemplazar) {
+          req.flash('error_msg', 'Ya existe un dataset para ese periodo. Marque "Reemplazar" para actualizar.');
+          return res.redirect('/admin/genesys');
+        }
+
+        // Parsear con parseProvisionAgregada
+        console.log('[PROVISION-AGREGADA] Parseando archivo, tamaño:', req.file.buffer.length, 'bytes');
+        const registros = parseProvisionAgregada(req.file.buffer);
+        console.log('[PROVISION-AGREGADA] Registros parseados:', registros.length);
+        
+        if (registros.length === 0) {
+          throw new Error('No se pudieron parsear registros del archivo CSV');
+        }
+
+      // Guardar archivo original
+      const uploadsDir = path.join(__dirname, '..', 'uploads', 'provision');
+      try { fs.mkdirSync(uploadsDir, { recursive: true }); } catch {}
+      const ext = path.extname(req.file.originalname) || '.csv';
+      const filename = `provision_${y}-${String(m).padStart(2,'0')}_${Date.now()}${ext}`;
+      const fullPath = path.join(uploadsDir, filename);
+      fs.writeFileSync(fullPath, req.file.buffer);
+
+      if (!dataset) {
+        dataset = new ProvisionDataset({ 
+          anio: y, 
+          mes: m, 
+          nombreArchivo: filename, 
+          creadoPor: req.user._id,
+          totalRegistros: 0 
+        });
+        await dataset.save();
+      } else {
+        await ProvisionRecord.deleteMany({ datasetId: dataset._id });
+        dataset.nombreArchivo = filename;
+        dataset.creadoPor = req.user._id;
+        dataset.creadoEn = new Date();
+      }
+
+      // Insertar registros
+      const bulk = registros.map(r => ({ 
+        insertOne: { 
+          document: { 
+            datasetId: dataset._id, 
+            ...r 
+          } 
+        } 
+      }));
+      
+      console.log('[PROVISION-AGREGADA] Insertando', bulk.length, 'registros en la BD');
+      
+      if (bulk.length) {
+        const resultado = await ProvisionRecord.bulkWrite(bulk);
+        console.log('[PROVISION-AGREGADA] Resultado bulkWrite:', resultado.insertedCount);
+      }
+      
+      dataset.totalRegistros = bulk.length;
+      await dataset.save();
+      
+        console.log('[PROVISION-AGREGADA] Dataset guardado con ID:', dataset._id);
+
+        req.flash('success_msg', `Cargado ${bulk.length} registro(s) de provisión agregada para ${y}-${String(m).padStart(2,'0')}`);
+        return res.redirect('/admin/genesys');
+      } catch (errorProvision) {
+        console.error('[PROVISION-AGREGADA] Error:', errorProvision);
+        req.flash('error_msg', 'Error procesando provisión agregada: ' + errorProvision.message);
+        return res.redirect('/admin/genesys');
+      }
+    }
+
+    // Flujo normal para otros tipos de Genesys
     let dataset = await GenesysDataset.findOne({ tipo, anio: y, mes: m });
     if (dataset && !reemplazar) {
       req.flash('error_msg', 'Ya existe un dataset para ese periodo. Marque "Reemplazar" para actualizar.');
@@ -87,14 +226,8 @@ router.post('/genesys/upload', checkRole(['admin']), uploadGenesys.single('archi
       case 'estados':
         registros = parseEstados(req.file.buffer);
         break;
-      case 'provision':
-        registros = parseProvision(req.file.buffer);
-        break;
       case 'calidad':
         registros = parseCalidad(req.file.buffer);
-        break;
-      case 'siop':
-        registros = parseSIOP(req.file.buffer);
         break;
       default:
         req.flash('error_msg', 'Tipo no implementado');
@@ -132,6 +265,159 @@ router.post('/genesys/upload', checkRole(['admin']), uploadGenesys.single('archi
     console.error(e);
     req.flash('error_msg', 'Error procesando el archivo de Genesys Cloud');
     res.redirect('/admin/genesys');
+  }
+});
+
+// ===== Eliminar dataset de Genesys Cloud (solo admin) =====
+router.post('/genesys/delete/:id', checkRole(['admin']), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { tipo } = req.body;
+    
+    console.log('[DELETE] Eliminando dataset:', id, 'tipo:', tipo);
+    
+    if (tipo === 'provision-agregada') {
+      // Eliminar dataset de Provisión Agregada
+      const dataset = await ProvisionDataset.findById(id);
+      if (!dataset) {
+        req.flash('error_msg', 'Dataset no encontrado');
+        return res.redirect('/admin/genesys');
+      }
+      
+      // Eliminar registros asociados
+      const registrosEliminados = await ProvisionRecord.deleteMany({ datasetId: id });
+      console.log('[DELETE] Registros eliminados:', registrosEliminados.deletedCount);
+      
+      // Eliminar dataset
+      await ProvisionDataset.findByIdAndDelete(id);
+      
+      req.flash('success_msg', `Dataset de Provisión Agregada eliminado (${dataset.anio}-${String(dataset.mes).padStart(2,'0')})`);
+    } else {
+      // Eliminar dataset normal de Genesys
+      const dataset = await GenesysDataset.findById(id);
+      if (!dataset) {
+        req.flash('error_msg', 'Dataset no encontrado');
+        return res.redirect('/admin/genesys');
+      }
+      
+      // Eliminar registros asociados
+      const registrosEliminados = await GenesysRecord.deleteMany({ datasetId: id });
+      console.log('[DELETE] Registros eliminados:', registrosEliminados.deletedCount);
+      
+      // Eliminar dataset
+      await GenesysDataset.findByIdAndDelete(id);
+      
+      req.flash('success_msg', `Dataset de ${tipo} eliminado (${dataset.anio}-${String(dataset.mes).padStart(2,'0')})`);
+    }
+    
+    res.redirect('/admin/genesys');
+  } catch (e) {
+    console.error('[DELETE] Error:', e);
+    req.flash('error_msg', 'Error eliminando el dataset');
+    res.redirect('/admin/genesys');
+  }
+});
+
+// ===== Asistencia: Carga de archivos CSV (solo admin) =====
+const uploadAsistencia = multer({ storage: memoryStorage, limits: { fileSize: 25 * 1024 * 1024 } });
+
+router.get('/asistencia', checkRole(['admin']), async (req, res) => {
+  try {
+    const page = Math.max(parseInt(req.query.page || '1', 10), 1);
+    const perPage = Math.min(Math.max(parseInt(req.query.perPage || '12', 10), 5), 50);
+    const total = await AsistenciaDataset.countDocuments();
+    const datasets = await AsistenciaDataset.find()
+      .sort({ anio: -1, mes: -1, creadoEn: -1 })
+      .skip((page - 1) * perPage)
+      .limit(perPage);
+
+    res.render('admin/asistencia', {
+      title: 'Admin · Asistencia',
+      user: req.user,
+      datasets,
+      pagination: { page, perPage, total, totalPages: Math.max(1, Math.ceil(total / perPage)) }
+    });
+  } catch (e) {
+    console.error(e);
+    req.flash('error_msg', 'Error cargando datasets de asistencia');
+    res.redirect('/admin');
+  }
+});
+
+router.post('/asistencia/upload', checkRole(['admin']), uploadAsistencia.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      req.flash('error_msg', 'No se recibió ningún archivo');
+      return res.redirect('/admin/asistencia');
+    }
+
+    const { anio, mes, reemplazar } = req.body;
+    const y = parseInt(anio, 10);
+    const m = parseInt(mes, 10);
+    
+    if (!y || !m || m < 1 || m > 12) {
+      req.flash('error_msg', 'Año o mes inválido');
+      return res.redirect('/admin/asistencia');
+    }
+
+    // Buscar dataset existente
+    let dataset = await AsistenciaDataset.findOne({ anio: y, mes: m });
+    if (dataset && !reemplazar) {
+      req.flash('error_msg', 'Ya existe un dataset para ese periodo. Marque "Reemplazar" para actualizar.');
+      return res.redirect('/admin/asistencia');
+    }
+
+    // Parsear archivo CSV
+    const registros = parseAsistencia(req.file.buffer);
+
+    // Guardar archivo original en disco
+    const uploadsDir = path.join(__dirname, '..', 'uploads', 'asistencia');
+    try { fs.mkdirSync(uploadsDir, { recursive: true }); } catch {}
+    const ext = path.extname(req.file.originalname) || '.csv';
+    const filename = `asistencia_${y}-${String(m).padStart(2,'0')}_${Date.now()}${ext}`;
+    const fullPath = path.join(uploadsDir, filename);
+    fs.writeFileSync(fullPath, req.file.buffer);
+
+    if (!dataset) {
+      dataset = new AsistenciaDataset({ 
+        anio: y, 
+        mes: m, 
+        nombreArchivo: filename, 
+        creadoPor: req.user._id,
+        totalRegistros: 0 
+      });
+      await dataset.save();
+    } else {
+      // Reemplazo: borrar registros previos
+      await AsistenciaRecord.deleteMany({ datasetId: dataset._id });
+      dataset.nombreArchivo = filename;
+      dataset.creadoPor = req.user._id;
+      dataset.creadoEn = new Date();
+    }
+
+    // Insertar registros
+    const bulk = registros.map(r => ({ 
+      insertOne: { 
+        document: { 
+          datasetId: dataset._id, 
+          ...r 
+        } 
+      } 
+    }));
+    
+    if (bulk.length) {
+      await AsistenciaRecord.bulkWrite(bulk);
+    }
+    
+    dataset.totalRegistros = bulk.length;
+    await dataset.save();
+
+    req.flash('success_msg', `Cargado ${bulk.length} registro(s) de asistencia para ${y}-${String(m).padStart(2,'0')}`);
+    res.redirect('/admin/asistencia');
+  } catch (e) {
+    console.error(e);
+    req.flash('error_msg', 'Error procesando el archivo de asistencia: ' + e.message);
+    res.redirect('/admin/asistencia');
   }
 });
 
@@ -298,8 +584,8 @@ router.post('/asesores/carga', checkRole(['admin']), uploadExcel.single('archivo
         apellidosNombres: String(r['APELLIDOS Y NOMBRES'] || '').trim(),
         supervisor: String(r['SUPERVISOR'] || '').trim(),
         estado: String(r['ESTADO'] || '').trim(),
-        fechaAlta: r['FECHA ALTA'] ? new Date(r['FECHA ALTA']) : null,
-        fechaCese: r['FECHA DE CESE'] ? new Date(r['FECHA DE CESE']) : null,
+        fechaAlta: r['FECHA ALTA'] ? excelDateToJSDate(r['FECHA ALTA']) : null,
+        fechaCese: r['FECHA DE CESE'] ? excelDateToJSDate(r['FECHA DE CESE']) : null,
         motivoCese: String(r['MOTIVO DE CESE'] || '').trim(),
         edad: r['EDAD'] ? Number(r['EDAD']) : undefined,
         turno: String(r['TURNO'] || '').trim(),
