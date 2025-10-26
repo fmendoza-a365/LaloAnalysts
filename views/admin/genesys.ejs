@@ -1,14 +1,14 @@
 <div class="bg-white shadow rounded-lg">
-  <div class="px-4 py-5 sm:px-6 border-b border-gray-200 flex items-center justify-between">
-    <div>
-      <h3 class="text-lg leading-6 font-medium text-gray-900">Genesys Cloud · Carga de exportes</h3>
-      <p class="mt-1 text-sm text-gray-500">Sube archivos CSV/Excel exportados de Genesys Cloud por periodo (Año/Mes). Tipos soportados: <strong>Rendimiento, Estados, Provisión Agregada, Calidad</strong>. Puedes reemplazar un periodo existente.</p>
+  <div class="space-y-4 sm:space-y-8">
+    <!-- Encabezado -->
+    <div class="bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg sm:rounded-xl shadow-lg p-4 sm:p-6">
+      <h1 class="text-2xl sm:text-3xl font-bold text-white mb-2">Administración Genesys Cloud</h1>
+      <p class="text-sm sm:text-base text-blue-100">Gestión de datasets de Genesys Cloud</p>
     </div>
-  </div>
-
-  <div class="px-4 py-5 sm:p-6">
-    <form action="/admin/genesys/upload" method="POST" enctype="multipart/form-data" class="space-y-4">
-      <div class="grid grid-cols-1 sm:grid-cols-5 gap-4">
+    <div class="px-4 py-5 sm:px-6 border-b border-gray-200 flex items-center justify-between">
+      <div>
+        <h3 class="text-lg leading-6 font-medium text-gray-900">Genesys Cloud · Carga de exportes</h3>
+        <p class="mt-1 text-sm text-gray-500">Sube archivos CSV/Excel exportados de Genesys Cloud por periodo (Año/Mes). Tipos soportados: <strong>Rendimiento, Estados, Provisión Agregada, Calidad</strong>. Puedes reemplazar un periodo existente.</p>
         <div>
           <label for="tipo" class="block text-sm font-medium text-gray-700">Tipo</label>
           <select required id="tipo" name="tipo" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm">
