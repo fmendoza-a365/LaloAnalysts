@@ -1,0 +1,22 @@
+feat: Dockerización completa de la aplicación
+
+Implementación Docker:
+- Dockerfile optimizado con multi-stage build
+- docker-compose.yml con app, MongoDB y Mongo Express
+- .env.docker.example con variables configurables
+- .dockerignore para optimizar build
+- Health check endpoint en /health
+- Volúmenes persistentes para datos
+
+Documentación:
+- DOCKER.md con guía completa de uso
+- Instrucciones de instalación paso a paso
+- Comandos útiles y troubleshooting
+- Configuración para producción
+- README.md actualizado con opción Docker
+
+Mejoras:
+- App funciona en cualquier servidor/dispositivo
+- Setup en 3 comandos vs 15 pasos manual
+- MongoDB incluido automáticamente
+- Arquitectura portable y escalable

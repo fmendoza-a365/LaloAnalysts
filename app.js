@@ -92,6 +92,7 @@ const asesoresRouter = require('./routes/asesores');
 const asistenciaRouter = require('./routes/asistencia');
 const kpisRouter = require('./routes/provision'); // Dashboard de KPIs (Provisión Agregada)
 const srrRouter = require('./routes/srr'); // Service Results Report
+const docsRouter = require('./routes/docs'); // Documentación
 
 // Import models
 const User = require('./models/User');
@@ -193,6 +194,7 @@ app.get('/health', (req, res) => {
 // Routes
 app.use('/', indexRouter);
 app.use('/auth', authRouter);
+app.use('/docs', docsRouter);
 app.use('/campaigns', campaignsRouter);
 app.use('/dashboard', dashboardRouter);
 app.use('/powerbi', powerbiRouter);
