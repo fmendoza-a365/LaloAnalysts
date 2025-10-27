@@ -176,27 +176,26 @@ Plataforma web completa de gestión y análisis para contact centers, con sistem
 
 ```bash
 # 1. Clonar repositorio
-git clone https://github.com/tu-organizacion/a365-contact-center.git
+git clone https://github.com/tu-usuario/a365-contact-center.git
 cd a365-contact-center
 
-# 2. Configurar variables de entorno
-cp .env.example .env
-# Editar el archivo .env con tus credenciales
+# 2. Configurar variables
+cp .env.docker.example .env.docker
+nano .env.docker  # Editar configuración
 
-# 3. Instalar dependencias
-npm install
+# 3. Levantar con Docker Compose
+docker-compose --env-file .env.docker up -d
 
-# 4. Iniciar la aplicación
-npm start
-
-# Alternativa con Docker (requiere Docker instalado)
-# docker-compose up -d
+# 4. Acceder
+http://localhost:3000
 ```
 
-🔒 **Nota de Seguridad:**
-- Nunca subas archivos `.env` con credenciales reales al repositorio
-- Usa contraseñas seguras y únicas para cada entorno
-- Revisa el archivo `.gitignore` para asegurarte de que los archivos sensibles no sean rastreados
+✅ **Ventajas de Docker:**
+- ✅ No necesitas instalar Node.js ni MongoDB
+- ✅ Funciona igual en Windows, Mac y Linux
+- ✅ Aislamiento completo del sistema
+- ✅ Fácil de actualizar y escalar
+- ✅ Incluye MongoDB automáticamente
 
 **📖 Ver guía completa**: [DOCKER.md](DOCKER.md)
 
@@ -319,9 +318,8 @@ SEED_DEMO=true
 # Iniciar MongoDB localmente
 mongod --dbpath /ruta/a/tu/db
 
-# Conexión con MongoDB Atlas
-Agrega tu URI en el archivo `.env` (no incluir credenciales aquí).
-
+# O usar MongoDB Atlas (cloud)
+MONGO_URI=mongodb+srv://usuario:password@cluster.mongodb.net/a365-db
 ```
 
 ---
