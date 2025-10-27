@@ -170,6 +170,39 @@ Plataforma web completa de gestión y análisis para contact centers, con sistem
 
 ## 🚀 Instalación
 
+### 🐳 Opción 1: Con Docker (Recomendado)
+
+**La forma más rápida y fácil** - Funciona en cualquier servidor o dispositivo:
+
+```bash
+# 1. Clonar repositorio
+git clone https://github.com/tu-usuario/a365-contact-center.git
+cd a365-contact-center
+
+# 2. Configurar variables
+cp .env.docker.example .env.docker
+nano .env.docker  # Editar configuración
+
+# 3. Levantar con Docker Compose
+docker-compose --env-file .env.docker up -d
+
+# 4. Acceder
+http://localhost:3000
+```
+
+✅ **Ventajas de Docker:**
+- ✅ No necesitas instalar Node.js ni MongoDB
+- ✅ Funciona igual en Windows, Mac y Linux
+- ✅ Aislamiento completo del sistema
+- ✅ Fácil de actualizar y escalar
+- ✅ Incluye MongoDB automáticamente
+
+**📖 Ver guía completa**: [DOCKER.md](DOCKER.md)
+
+---
+
+### 💻 Opción 2: Instalación Manual
+
 ### 1. Clonar el Repositorio
 
 ```bash

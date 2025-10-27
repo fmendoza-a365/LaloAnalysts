@@ -180,6 +180,16 @@ app.use((req, res, next) => {
   next();
 });
 
+// Health check endpoint (para Docker y monitoreo)
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
+
 // Routes
 app.use('/', indexRouter);
 app.use('/auth', authRouter);

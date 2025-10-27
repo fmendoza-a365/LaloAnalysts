@@ -105,3 +105,12 @@ dist
 *~
 .DS_Store
 Thumbs.db
+
+# Docker
+.env.docker
+.commit_msg
+docker-compose.override.yml
+
+# Backup files
+backup/
+*.backup
