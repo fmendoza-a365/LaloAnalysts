@@ -95,7 +95,8 @@ function parseProvisionAgregada(buffer) {
     const headerLine = lines[0];
     const headers = headerLine.split(';').map(h => h.replace(/^"|"$/g, '').trim());
     
-    const registros = [];
+    // Estructura para agrupar por fecha y cola
+    const datosPorDiaYCola = {};
     
     // Parsear cada día
     for (let i = 1; i < lines.length; i++) {
@@ -150,99 +151,88 @@ function parseProvisionAgregada(buffer) {
       const nivelServicio = parseFloat(registro['% nivel de servicio']) || 0;
       const cumpleSLA = parseFloat(registro['Cumplen el SLA']) || 0;
       
+      // Parsear TMO (Manejo medio) en segundos
+      const tmoSegundos = parseFloat(registro['Manejo medio']) || 0;
+      const tmoHHMMSS = segundosAHHMMSS(tmoSegundos);
+      
       // Parsear nombres de colas (están separadas por ;)
       const nombresColas = registro['Nombre de cola'] ? 
         registro['Nombre de cola'].split(';').map(c => c.trim()).filter(Boolean) : [];
       
-      // DESCARTAR registros anómalos: si el campo "Nombre de cola" contiene demasiadas colas
-      // (indica una concatenación errónea de todas las colas en una sola línea)
-      if (nombresColas.length > 20) {
+      // Validar que no sea un registro con TODAS las colas concatenadas (más de 20 colas)
+      if (nombresColas.length > 35) {
         console.warn('[PARSER] Registro anómalo descartado - demasiadas colas concatenadas:', nombresColas.length, 'colas');
-        continue; // Saltar este registro completamente
-      }
-      
-      // También descartar si alguna "cola" individual contiene punto y coma interno
-      // (indica que es una concatenación dentro de una celda)
-      const tieneColaConcatenada = nombresColas.some(c => c.includes(';') || c.split(' ').length > 5);
-      if (tieneColaConcatenada) {
-        console.warn('[PARSER] Registro anómalo descartado - cola concatenada detectada');
         continue;
       }
       
-      // Filtrar colas descartadas (como MA_Total) y clasificar por mesa
-      const colasValidas = [];
-      const mesasData = {};
+      // Obtener fecha en formato YYYY-MM-DD para agrupar
+      const fechaKey = fecha ? fecha.toISOString().split('T')[0] : 'sin-fecha';
       
-      // Si tenemos colas, calcular métricas proporcionales por mesa
-      if (nombresColas.length > 0) {
-        // Agrupar colas por mesa, filtrando las que retornan null
-        const colasPorMesa = {};
-        nombresColas.forEach(cola => {
-          const mesa = clasificarMesa(cola);
-          
-          // Ignorar colas que retornan null (como MA_Total)
-          if (mesa === null) {
-            console.log('[PARSER] Cola descartada:', cola);
-            return;
-          }
-          
-          colasValidas.push(cola);
-          
-          if (!colasPorMesa[mesa]) {
-            colasPorMesa[mesa] = [];
-          }
-          colasPorMesa[mesa].push(cola);
-        });
+      // Procesar cada cola individualmente
+      nombresColas.forEach(cola => {
+        const mesa = clasificarMesa(cola);
         
-        // Distribuir métricas proporcionalmente (solo sobre colas válidas)
-        Object.keys(colasPorMesa).forEach(mesa => {
-          const cantidadColas = colasPorMesa[mesa].length;
-          const proporcion = colasValidas.length > 0 ? (cantidadColas / colasValidas.length) : 0;
-          
-          mesasData[mesa] = {
-            colas: colasPorMesa[mesa],
-            cantidadColas,
-            ofrecidas: Math.round(ofrecidas * proporcion),
-            contestadas: Math.round(contestadas * proporcion),
-            abandonadas: Math.round(abandonadas * proporcion),
-            porcentajeContestadas: porcentajeContestadas, // Se mantiene igual
-            porcentajeAbandono: porcentajeAbandono, // Se mantiene igual
-            nivelServicio: nivelServicio, // Se mantiene igual
-            cumpleSLA: Math.round(cumpleSLA * proporcion)
+        // Ignorar colas descartadas (MA_Total, etc.)
+        if (mesa === null) {
+          return;
+        }
+        
+        // Crear clave única: fecha + cola
+        const key = `${fechaKey}|${cola}`;
+        
+        // Inicializar si no existe
+        if (!datosPorDiaYCola[key]) {
+          datosPorDiaYCola[key] = {
+            cola,
+            mesa,
+            fecha,
+            fechaKey,
+            ofrecidas: 0,
+            contestadas: 0,
+            umbral: 0,
+            tmoTotalSegundos: 0,
+            intervalosConTMO: 0
           };
-        });
-      }
-      
-      // Convertir tiempos de segundos a HH:MM:SS
-      const manejoMedioSegs = registro['Manejo medio'];
-      const conversacionMediaSegs = registro['Conversación media'];
-      const retencionMediaSegs = registro['Retención media'];
-      const acwMedioSegs = registro['Tiempo medio de trabajo después de llamada (ACW)'];
-      const esperaMediaSegs = registro['Espera media'];
-      const asaSegs = registro['Velocidad media de respuesta (ASA)'];
-      
-      registros.push({
-        fecha,
-        fechaTexto: fechaInicio,
-        ofrecidas,
-        contestadas,
-        abandonadas,
-        porcentajeContestadas,
-        porcentajeAbandono,
-        nivelServicio,
-        cumpleSLA,
-        nombresColas: colasValidas, // Solo colas válidas (sin MA_Total)
-        totalColas: colasValidas.length,
-        mesasData, // Datos agrupados por mesa
-        // Tiempos convertidos a HH:MM:SS
-        manejoMedio: segundosAHHMMSS(manejoMedioSegs),
-        conversacionMedia: segundosAHHMMSS(conversacionMediaSegs),
-        retencionMedia: segundosAHHMMSS(retencionMediaSegs),
-        acwMedio: segundosAHHMMSS(acwMedioSegs),
-        esperaMedia: segundosAHHMMSS(esperaMediaSegs),
-        asa: segundosAHHMMSS(asaSegs)
+        }
+        
+        // Distribuir métricas proporcionalmente entre las colas del intervalo
+        const cantidadColasEnIntervalo = nombresColas.length;
+        const proporcion = 1 / cantidadColasEnIntervalo;
+        
+        // Acumular métricas
+        datosPorDiaYCola[key].ofrecidas += Math.round(ofrecidas * proporcion);
+        datosPorDiaYCola[key].contestadas += Math.round(contestadas * proporcion);
+        datosPorDiaYCola[key].umbral += Math.round(cumpleSLA * proporcion);
+        
+        // Acumular TMO (solo si hay valor)
+        if (tmoSegundos > 0) {
+          datosPorDiaYCola[key].tmoTotalSegundos += tmoSegundos;
+          datosPorDiaYCola[key].intervalosConTMO++;
+        }
       });
     }
+    
+    // Convertir el objeto agrupado en array de registros
+    const registros = Object.values(datosPorDiaYCola).map(dato => {
+      // Calcular TMO promedio
+      const tmoPromedioSegundos = dato.intervalosConTMO > 0 
+        ? Math.round(dato.tmoTotalSegundos / dato.intervalosConTMO)
+        : 0;
+      
+      return {
+        cola: dato.cola,
+        mesa: dato.mesa,
+        fecha: dato.fecha,
+        fechaTexto: dato.fechaKey,
+        ofrecidas: dato.ofrecidas,
+        contestadas: dato.contestadas,
+        umbral: dato.umbral,
+        tmo: segundosAHHMMSS(tmoPromedioSegundos),
+        tmoSegundos: tmoPromedioSegundos
+      };
+    });
+    
+    console.log(`[PARSER] Total de registros procesados: ${registros.length}`);
     
     return registros;
   } catch (error) {
