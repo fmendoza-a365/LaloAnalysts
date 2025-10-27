@@ -1007,4 +1007,11 @@ router.post('/roles/:id', checkRole(['admin']), async (req, res) => {
   }
 });
 
+// Registrar subrutas de administración
+const tarifasRouter = require('./admin/tarifas');
+router.use('/tarifas', tarifasRouter);
+
+const nominaRouter = require('./admin/nomina');
+router.use('/nomina', nominaRouter);
+
 module.exports = router;

@@ -1,0 +1,25 @@
+<%
+  // Parámetros:
+  // - title: Título de la sección
+  // - subtitle: Subtítulo (opcional)
+  // - color: Color del gradiente (blue, purple, teal, green, indigo)
+  
+  const colorSchemes = {
+    blue: 'from-blue-700 to-blue-800',
+    purple: 'from-purple-700 to-purple-800',
+    teal: 'from-teal-600 to-teal-700',
+    green: 'from-green-600 to-green-700',
+    indigo: 'from-indigo-700 to-indigo-800',
+    orange: 'from-orange-600 to-orange-700',
+    gray: 'from-gray-700 to-gray-800'
+  };
+  
+  const gradientColor = colorSchemes[color] || colorSchemes.blue;
+%>
+
+<div class="bg-gradient-to-r <%= gradientColor %> px-6 py-4">
+  <h2 class="text-lg lg:text-xl font-bold text-white"><%= title %></h2>
+  <% if (typeof subtitle !== 'undefined' && subtitle) { %>
+    <p class="text-sm text-white/80 mt-1"><%= subtitle %></p>
+  <% } %>
+</div>

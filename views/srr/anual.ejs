@@ -1,0 +1,433 @@
+<!-- Header -->
+<div class="bg-white border-b border-gray-200 mb-6">
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 px-6 py-5">
+      <div class="flex-1">
+        <h1 class="text-2xl lg:text-3xl font-bold text-gray-900 mb-1">
+          SRR Anual <%= anio %>
+        </h1>
+        <p class="text-sm text-gray-600">Vista mensual consolidada con métricas de Sales, Provisión, Payroll y Margen Bruto</p>
+      </div>
+      
+      <!-- Selector de año y navegación -->
+      <div class="flex flex-col sm:flex-row gap-2">
+        <form method="GET" action="/srr/anual" class="flex gap-2">
+          <select name="anio" class="border border-gray-300 bg-white text-gray-900 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <% for (let y = 2023; y <= 2030; y++) { %>
+              <option value="<%= y %>" <%= anio === y ? 'selected' : '' %>><%= y %></option>
+            <% } %>
+          </select>
+          <select name="mesa" class="border border-gray-300 bg-white text-gray-900 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <option value="todas" <%= mesaFiltro === 'todas' ? 'selected' : '' %>>📊 Todas las Mesas</option>
+            <% mesasDisponibles.forEach(mesa => { %>
+              <option value="<%= mesa %>" <%= mesaFiltro === mesa ? 'selected' : '' %>><%= mesa %></option>
+            <% }); %>
+          </select>
+          <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 text-sm font-medium transition">
+            Actualizar
+          </button>
+        </form>
+        <a href="/srr" class="border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-md text-sm font-medium transition flex items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Vista Mensual
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Indicador de filtro activo -->
+  <% if (mesaFiltro !== 'todas') { %>
+  <div class="mb-4 bg-blue-50 border-l-4 border-blue-400 rounded-lg p-4">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-400 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+        </svg>
+        <div>
+          <h4 class="text-sm font-semibold text-blue-900">Filtro Aplicado</h4>
+          <p class="text-sm text-blue-800">Mostrando solo datos de: <strong><%= mesaFiltro %></strong></p>
+        </div>
+      </div>
+      <a href="/srr/anual?anio=<%= anio %>&mesa=todas" class="text-sm text-blue-600 hover:text-blue-800 font-medium underline">
+        Quitar filtro
+      </a>
+    </div>
+  </div>
+  <% } %>
+
+  <!-- Tabla RESUMEN -->
+  <div class="bg-white shadow-lg rounded-lg overflow-hidden mb-6">
+    <div class="bg-gradient-to-r from-blue-700 to-blue-800 px-6 py-4">
+      <h2 class="text-lg lg:text-xl font-bold text-white">RESUMEN</h2>
+    </div>
+    
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200 text-xs">
+        <thead class="bg-gray-800 text-white">
+          <tr>
+            <th class="px-3 py-2 text-left font-bold sticky left-0 bg-gray-800 z-10" style="min-width: 150px;">Concepto</th>
+            <% for (let m = 1; m <= 12; m++) { %>
+              <th class="px-3 py-2 text-center font-bold whitespace-nowrap" style="min-width: 100px;">
+                <%= ['Enero','Feb','Marzo','Abril','Mayo','Junio','Julio','Agosto','Sept','Oct','Nov','Dic'][m-1] %>
+              </th>
+            <% } %>
+            <th class="px-3 py-2 text-center font-bold bg-yellow-100 text-gray-900" style="min-width: 120px;">Acumulado</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          <!-- Sales (Ingresos) -->
+          <tr class="hover:bg-blue-50">
+            <td class="px-3 py-2 font-semibold text-gray-900 sticky left-0 bg-white z-10 border-r">Sales (Ingresos)</td>
+            <% for (let m = 1; m <= 12; m++) {
+              const tieneDatos = meses[m] && meses[m].sales > 0;
+              const colorClass = tieneDatos ? 'text-gray-900' : 'text-gray-400';
+              const valorDisplay = tieneDatos ? 'S/ ' + meses[m].sales.toLocaleString('es-PE', {minimumFractionDigits:0, maximumFractionDigits:0}) : '--';
+            %>
+              <td class="px-3 py-2 text-center <%= colorClass %>">
+                <%= valorDisplay %>
+              </td>
+            <% } %>
+            <td class="px-3 py-2 text-center font-bold bg-yellow-50 text-gray-900">
+              S/ <%= (acumulado && acumulado.sales || 0).toLocaleString('es-PE', {minimumFractionDigits:0, maximumFractionDigits:0}) %>
+            </td>
+          </tr>
+
+          <!-- Provisión -->
+          <tr class="hover:bg-blue-50">
+            <td class="px-3 py-2 font-semibold text-gray-900 sticky left-0 bg-white z-10 border-r">Provisión</td>
+            <% for (let m = 1; m <= 12; m++) {
+              const tieneDatos = meses[m] && meses[m].provision > 0;
+              const colorClass = tieneDatos ? 'text-gray-900' : 'text-gray-400';
+              const valorDisplay = tieneDatos ? 'S/ ' + meses[m].provision.toLocaleString('es-PE', {minimumFractionDigits:0, maximumFractionDigits:0}) : '--';
+            %>
+              <td class="px-3 py-2 text-center <%= colorClass %>">
+                <%= valorDisplay %>
+              </td>
+            <% } %>
+            <td class="px-3 py-2 text-center font-bold bg-yellow-50 text-gray-900">
+              S/ <%= (acumulado && acumulado.provision || 0).toLocaleString('es-PE', {minimumFractionDigits:0, maximumFractionDigits:0}) %>
+            </td>
+          </tr>
+
+          <!-- Penal (S/) -->
+          <tr class="hover:bg-blue-50">
+            <td class="px-3 py-2 font-semibold text-gray-900 sticky left-0 bg-white z-10 border-r">Penal (S/)</td>
+            <% for (let m = 1; m <= 12; m++) { %>
+              <td class="px-3 py-2 text-center text-gray-400">--</td>
+            <% } %>
+            <td class="px-3 py-2 text-center font-bold bg-yellow-50 text-gray-900">--</td>
+          </tr>
+
+          <!-- Payroll (Nomina) -->
+          <tr class="hover:bg-green-50">
+            <td class="px-3 py-2 font-semibold text-gray-900 sticky left-0 bg-white z-10 border-r">Payroll (Nomina)</td>
+            <% for (let m = 1; m <= 12; m++) {
+              const tieneDatos = meses[m] && meses[m].payroll > 0;
+              const colorClass = tieneDatos ? 'text-green-700 font-semibold' : 'text-gray-400';
+              const valorDisplay = tieneDatos ? 'S/ ' + meses[m].payroll.toLocaleString('es-PE', {minimumFractionDigits:0, maximumFractionDigits:0}) : '--';
+            %>
+              <td class="px-3 py-2 text-center <%= colorClass %>">
+                <%= valorDisplay %>
+              </td>
+            <% } %>
+            <td class="px-3 py-2 text-center font-bold bg-yellow-50 text-green-700">
+              S/ <%= (acumulado && acumulado.payroll || 0).toLocaleString('es-PE', {minimumFractionDigits:0, maximumFractionDigits:0}) %>
+            </td>
+          </tr>
+
+          <!-- EFT's -->
+          <tr class="hover:bg-blue-50">
+            <td class="px-3 py-2 font-semibold text-gray-900 sticky left-0 bg-white z-10 border-r">EFT's</td>
+            <% for (let m = 1; m <= 12; m++) {
+              const tieneDatos = meses[m] && meses[m].eftCount > 0;
+              const colorClass = tieneDatos ? 'text-gray-900' : 'text-gray-400';
+              const valorDisplay = tieneDatos ? meses[m].eftCount : '--';
+            %>
+              <td class="px-3 py-2 text-center <%= colorClass %>">
+                <%= valorDisplay %>
+              </td>
+            <% } %>
+            <td class="px-3 py-2 text-center font-bold bg-yellow-50 text-gray-900">
+              <%= (acumulado && acumulado.eftCount || 0) %>
+            </td>
+          </tr>
+
+          <!-- Estructura Supervisor -->
+          <tr class="hover:bg-blue-50">
+            <td class="px-3 py-2 font-semibold text-gray-900 sticky left-0 bg-white z-10 border-r">Estructura Supervisor</td>
+            <% for (let m = 1; m <= 12; m++) {
+              const tieneDatos = meses[m] && meses[m].estructuraSupervisor > 0;
+              const colorClass = tieneDatos ? 'text-gray-900' : 'text-gray-400';
+              const valorDisplay = tieneDatos ? meses[m].estructuraSupervisor : '--';
+            %>
+              <td class="px-3 py-2 text-center <%= colorClass %>">
+                <%= valorDisplay %>
+              </td>
+            <% } %>
+            <td class="px-3 py-2 text-center font-bold bg-yellow-50 text-gray-900">
+              <%= (acumulado && acumulado.estructuraSupervisor || 0) %>
+            </td>
+          </tr>
+
+          <!-- Estructura Otros -->
+          <tr class="hover:bg-blue-50">
+            <td class="px-3 py-2 font-semibold text-gray-900 sticky left-0 bg-white z-10 border-r">Estructura Otros</td>
+            <% for (let m = 1; m <= 12; m++) {
+              const tieneDatos = meses[m] && meses[m].estructuraOtros > 0;
+              const colorClass = tieneDatos ? 'text-gray-900' : 'text-gray-400';
+              const valorDisplay = tieneDatos ? meses[m].estructuraOtros : '--';
+            %>
+              <td class="px-3 py-2 text-center <%= colorClass %>">
+                <%= valorDisplay %>
+              </td>
+            <% } %>
+            <td class="px-3 py-2 text-center font-bold bg-yellow-50 text-gray-900">
+              <%= (acumulado && acumulado.estructuraOtros || 0) %>
+            </td>
+          </tr>
+
+          <!-- Gross Margin (MB) S/ -->
+          <tr class="hover:bg-purple-50">
+            <td class="px-3 py-2 font-semibold text-gray-900 sticky left-0 bg-white z-10 border-r">Gross Margin (MB) S/</td>
+            <% for (let m = 1; m <= 12; m++) { 
+              let colorClass = 'text-gray-400';
+              if (meses[m] && meses[m].margenBruto !== 0) {
+                colorClass = meses[m].margenBruto > 0 ? 'text-green-700 font-semibold' : 'text-red-700 font-semibold';
+              }
+            %>
+              <td class="px-3 py-2 text-center <%= colorClass %>">
+                <%= (meses[m] && meses[m].sales > 0) ? 'S/ ' + meses[m].margenBruto.toLocaleString('es-PE', {minimumFractionDigits:0, maximumFractionDigits:0}) : '--' %>
+              </td>
+            <% } %>
+            <td class="px-3 py-2 text-center font-bold bg-yellow-50 <%= (acumulado && acumulado.margenBruto > 0) ? 'text-green-700' : 'text-red-700' %>">
+              S/ <%= (acumulado && acumulado.margenBruto || 0).toLocaleString('es-PE', {minimumFractionDigits:0, maximumFractionDigits:0}) %>
+            </td>
+          </tr>
+
+          <!-- % Gross Margin (MB) -->
+          <tr class="hover:bg-purple-50">
+            <td class="px-3 py-2 font-semibold text-gray-900 sticky left-0 bg-white z-10 border-r">% Gross Margin (MB)</td>
+            <% for (let m = 1; m <= 12; m++) { 
+              let colorClass = 'text-gray-400';
+              if (meses[m] && meses[m].porcentajeMargen !== 0) {
+                colorClass = meses[m].porcentajeMargen > 0 ? 'text-green-700 font-bold' : 'text-red-700 font-bold';
+              }
+            %>
+              <td class="px-3 py-2 text-center <%= colorClass %>">
+                <%= (meses[m] && meses[m].sales > 0) ? meses[m].porcentajeMargen.toFixed(1) + '%' : '--' %>
+              </td>
+            <% } %>
+            <td class="px-3 py-2 text-center font-bold bg-yellow-50 <%= (acumulado && acumulado.porcentajeMargen > 0) ? 'text-green-700' : 'text-red-700' %>">
+              <%= (acumulado && acumulado.porcentajeMargen || 0).toFixed(1) %>%
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Tabla DETALLE PARTICIPACIÓN -->
+  <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+    <div class="bg-gradient-to-r from-teal-600 to-teal-700 px-6 py-4">
+      <h2 class="text-lg lg:text-xl font-bold text-white">DETALLE PARTICIPACIÓN</h2>
+    </div>
+    
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200 text-xs">
+        <thead class="bg-gray-800 text-white">
+          <tr>
+            <th class="px-3 py-2 text-left font-bold sticky left-0 bg-gray-800 z-10" style="min-width: 150px;">Concepto</th>
+            <% for (let m = 1; m <= 12; m++) { %>
+              <th class="px-3 py-2 text-center font-bold whitespace-nowrap" style="min-width: 100px;">
+                <%= ['Enero','Feb','Marzo','Abril','Mayo','Junio','Julio','Agosto','Sept','Oct','Nov','Dic'][m-1] %>
+              </th>
+            <% } %>
+            <th class="px-3 py-2 text-center font-bold bg-yellow-100 text-gray-900" style="min-width: 120px;">Acumulado</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          <!-- Payroll (Nomina) S/ -->
+          <tr class="hover:bg-teal-50">
+            <td class="px-3 py-2 font-semibold text-gray-900 sticky left-0 bg-white z-10 border-r">Payroll (Nomina) S/</td>
+            <% for (let m = 1; m <= 12; m++) { 
+              const colorClass = (meses[m] && meses[m].payroll > 0) ? 'text-gray-900' : 'text-gray-400';
+              const valorDisplay = (meses[m] && meses[m].payroll > 0) ? (meses[m].payroll / 1000).toFixed(0) + 'k' : '--';
+            %>
+              <td class="px-3 py-2 text-center <%= colorClass %>">
+                <%= valorDisplay %>
+              </td>
+            <% } %>
+            <td class="px-3 py-2 text-center font-bold bg-yellow-50 text-gray-900">
+              <%= ((acumulado && acumulado.payroll || 0) / 1000).toFixed(0) %>k
+            </td>
+          </tr>
+
+          <!-- EFT -->
+          <tr class="hover:bg-teal-50">
+            <td class="px-3 py-2 font-semibold text-gray-900 sticky left-0 bg-white z-10 border-r">EFT</td>
+            <% for (let m = 1; m <= 12; m++) {
+              const tieneDatos = meses[m] && meses[m].eftCount > 0;
+              const colorClass = tieneDatos ? 'text-gray-900' : 'text-gray-400';
+              const valorDisplay = tieneDatos ? meses[m].eftCount : '--';
+            %>
+              <td class="px-3 py-2 text-center <%= colorClass %>">
+                <%= valorDisplay %>
+              </td>
+            <% } %>
+            <td class="px-3 py-2 text-center font-bold bg-yellow-50 text-gray-900">
+              <%= (acumulado && acumulado.eftCount || 0) %>
+            </td>
+          </tr>
+
+          <!-- Estructura -->
+          <tr class="hover:bg-teal-50">
+            <td class="px-3 py-2 font-semibold text-gray-900 sticky left-0 bg-white z-10 border-r">Estructura</td>
+            <% for (let m = 1; m <= 12; m++) { 
+              const estructura = (meses[m] ? (meses[m].estructuraSupervisor || 0) + (meses[m].estructuraOtros || 0) : 0);
+            %>
+              <td class="px-3 py-2 text-center <%= estructura > 0 ? 'text-gray-900' : 'text-gray-400' %>">
+                <%= estructura > 0 ? estructura : '--' %>
+              </td>
+            <% } %>
+            <td class="px-3 py-2 text-center font-bold bg-yellow-50 text-gray-900">
+              <%= ((acumulado && acumulado.estructuraSupervisor || 0) + (acumulado && acumulado.estructuraOtros || 0)) %>
+            </td>
+          </tr>
+
+          <!-- Nomina Ω -->
+          <tr class="hover:bg-teal-50">
+            <td class="px-3 py-2 font-semibold text-gray-900 sticky left-0 bg-white z-10 border-r">Nomina Ω</td>
+            <% for (let m = 1; m <= 12; m++) { 
+              const colorClass = (meses[m] && meses[m].nominaOmega > 0) ? 'text-gray-900' : 'text-gray-400';
+              const valorDisplay = (meses[m] && meses[m].nominaOmega > 0) ? (meses[m].nominaOmega / 1000).toFixed(2) : '--';
+            %>
+              <td class="px-3 py-2 text-center <%= colorClass %>">
+                <%= valorDisplay %>
+              </td>
+            <% } %>
+            <td class="px-3 py-2 text-center font-bold bg-yellow-50 text-gray-900">
+              <%= ((acumulado && acumulado.nominaOmega || 0) / 1000).toFixed(2) %>
+            </td>
+          </tr>
+
+          <!-- EFT % -->
+          <tr class="hover:bg-blue-50">
+            <td class="px-3 py-2 font-semibold text-gray-900 sticky left-0 bg-white z-10 border-r">EFT %</td>
+            <% for (let m = 1; m <= 12; m++) {
+              const tieneDatos = meses[m] && meses[m].ratioEFT > 0;
+              const colorClass = tieneDatos ? 'text-blue-700 font-semibold' : 'text-gray-400';
+              const valorDisplay = tieneDatos ? meses[m].ratioEFT.toFixed(0) + '%' : '--';
+            %>
+              <td class="px-3 py-2 text-center <%= colorClass %>">
+                <%= valorDisplay %>
+              </td>
+            <% } %>
+            <td class="px-3 py-2 text-center font-bold bg-yellow-50 text-blue-700">
+              <%= (acumulado && acumulado.ratioEFT || 0).toFixed(0) %>%
+            </td>
+          </tr>
+
+          <!-- Estructura % -->
+          <tr class="hover:bg-blue-50">
+            <td class="px-3 py-2 font-semibold text-gray-900 sticky left-0 bg-white z-10 border-r">Estructura %</td>
+            <% for (let m = 1; m <= 12; m++) {
+              const tieneDatos = meses[m] && meses[m].ratioEstructura > 0;
+              const colorClass = tieneDatos ? 'text-blue-700 font-semibold' : 'text-gray-400';
+              const valorDisplay = tieneDatos ? meses[m].ratioEstructura.toFixed(0) + '%' : '--';
+            %>
+              <td class="px-3 py-2 text-center <%= colorClass %>">
+                <%= valorDisplay %>
+              </td>
+            <% } %>
+            <td class="px-3 py-2 text-center font-bold bg-yellow-50 text-blue-700">
+              <%= (acumulado && acumulado.ratioEstructura || 0).toFixed(0) %>%
+            </td>
+          </tr>
+
+          <!-- Ratio Agentes / Super -->
+          <tr class="hover:bg-blue-50">
+            <td class="px-3 py-2 font-semibold text-gray-900 sticky left-0 bg-white z-10 border-r">Ratio Agentes / Super</td>
+            <% for (let m = 1; m <= 12; m++) {
+              const tieneDatos = meses[m] && meses[m].ratioAgentesSuper > 0;
+              const colorClass = tieneDatos ? 'text-gray-900' : 'text-gray-400';
+              const valorDisplay = tieneDatos ? meses[m].ratioAgentesSuper.toFixed(1) : '--';
+            %>
+              <td class="px-3 py-2 text-center <%= colorClass %>">
+                <%= valorDisplay %>
+              </td>
+            <% } %>
+            <td class="px-3 py-2 text-center font-bold bg-yellow-50 text-gray-900">
+              <%= (acumulado && acumulado.ratioAgentesSuper || 0).toFixed(1) %>
+            </td>
+          </tr>
+
+          <!-- S/ Ingresos por EFT -->
+          <tr class="hover:bg-green-50">
+            <td class="px-3 py-2 font-semibold text-gray-900 sticky left-0 bg-white z-10 border-r">S/ Ingresos por EFT</td>
+            <% for (let m = 1; m <= 12; m++) {
+              const tieneDatos = meses[m] && meses[m].ingresoPorEFT > 0;
+              const colorClass = tieneDatos ? 'text-green-700 font-semibold' : 'text-gray-400';
+              const valorDisplay = tieneDatos ? 'S/ ' + (meses[m].ingresoPorEFT / 1000).toFixed(2) + 'k' : '--';
+            %>
+              <td class="px-3 py-2 text-center <%= colorClass %>">
+                <%= valorDisplay %>
+              </td>
+            <% } %>
+            <td class="px-3 py-2 text-center font-bold bg-yellow-50 text-green-700">
+              S/ <%= ((acumulado && acumulado.ingresoPorEFT || 0) / 1000).toFixed(2) %>k
+            </td>
+          </tr>
+
+          <!-- S/ Comisiones / Variable -->
+          <tr class="hover:bg-green-50">
+            <td class="px-3 py-2 font-semibold text-gray-900 sticky left-0 bg-white z-10 border-r">S/ Comisiones / Variable</td>
+            <% for (let m = 1; m <= 12; m++) {
+              const tieneDatos = meses[m] && meses[m].comisionesVariable > 0;
+              const colorClass = tieneDatos ? 'text-gray-900' : 'text-gray-400';
+              const valorDisplay = tieneDatos ? 'S/ ' + (meses[m].comisionesVariable / 1000).toFixed(2) + 'k' : '--';
+            %>
+              <td class="px-3 py-2 text-center <%= colorClass %>">
+                <%= valorDisplay %>
+              </td>
+            <% } %>
+            <td class="px-3 py-2 text-center font-bold bg-yellow-50 text-gray-900">
+              S/ <%= ((acumulado && acumulado.comisionesVariable || 0) / 1000).toFixed(2) %>k
+            </td>
+          </tr>
+
+          <!-- % Comisiones / Variable -->
+          <tr class="hover:bg-green-50">
+            <td class="px-3 py-2 font-semibold text-gray-900 sticky left-0 bg-white z-10 border-r">% Comisiones / Variable</td>
+            <% for (let m = 1; m <= 12; m++) {
+              const tieneDatos = meses[m] && meses[m].porcentajeComisiones > 0;
+              const colorClass = tieneDatos ? 'text-green-700 font-semibold' : 'text-gray-400';
+              const valorDisplay = tieneDatos ? meses[m].porcentajeComisiones.toFixed(0) + '%' : '--';
+            %>
+              <td class="px-3 py-2 text-center <%= colorClass %>">
+                <%= valorDisplay %>
+              </td>
+            <% } %>
+            <td class="px-3 py-2 text-center font-bold bg-yellow-50 text-green-700">
+              <%= (acumulado && acumulado.porcentajeComisiones || 0).toFixed(0) %>%
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Info -->
+  <div class="mt-6 bg-purple-50 border-l-4 border-purple-400 rounded-lg p-4">
+    <div class="flex items-start">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-purple-400 mr-3 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <div>
+        <h4 class="text-sm font-semibold text-purple-900">Reporte Anual Consolidado</h4>
+        <p class="text-sm text-purple-800 mt-1">
+          Este reporte muestra las métricas de Sales, Provisión, Payroll y Margen Bruto para cada mes del año <%= anio %>, junto con totales acumulados.
+        </p>
+      </div>
+    </div>
+  </div>

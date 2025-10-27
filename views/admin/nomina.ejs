@@ -1,0 +1,149 @@
+<div class="bg-white shadow rounded-lg overflow-hidden">
+  <div class="px-6 py-5 border-b border-gray-200">
+    <h3 class="text-lg leading-6 font-medium text-gray-900">Gestión de Nómina</h3>
+    <p class="mt-1 text-sm text-gray-500">
+      Carga y administra archivos de nómina mensual. Los datos se utilizarán para análisis de costos y márgenes.
+    </p>
+  </div>
+
+  <div class="px-6 py-5">
+    <form action="/admin/nomina/upload" method="POST" enctype="multipart/form-data" class="space-y-4">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div>
+          <label for="anio" class="block text-sm font-medium text-gray-700 mb-1">Año</label>
+          <select name="anio" id="anio" required
+            class="block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm">
+            <% for (let y = 2023; y <= 2030; y++) { %>
+              <option value="<%= y %>" <%= y === new Date().getFullYear() ? 'selected' : '' %>><%= y %></option>
+            <% } %>
+          </select>
+        </div>
+        <div>
+          <label for="mes" class="block text-sm font-medium text-gray-700 mb-1">Mes</label>
+          <select name="mes" id="mes" required
+            class="block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm">
+            <% ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'].forEach((m, idx) => { %>
+              <option value="<%= idx + 1 %>" <%= (idx + 1) === new Date().getMonth() + 1 ? 'selected' : '' %>><%= m %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div>
+          <label for="archivo" class="block text-sm font-medium text-gray-700 mb-1">Archivo CSV</label>
+          <input type="file" id="archivo" name="archivo" accept=".csv" required
+            class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+        </div>
+        <div class="flex items-end">
+          <label class="flex items-center">
+            <input type="checkbox" name="reemplazar" value="1" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+            <span class="ml-2 text-sm text-gray-700">Reemplazar si existe</span>
+          </label>
+        </div>
+      </div>
+      <div class="flex items-center gap-4">
+        <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md shadow-sm transition-colors">
+          Cargar Nómina
+        </button>
+        <a href="/ejemplos/Nomina.csv" download class="text-sm text-blue-600 hover:text-blue-800">
+          📥 Descargar ejemplo
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<% if (datasets && datasets.length > 0) { %>
+<div class="mt-6 bg-white shadow rounded-lg overflow-hidden">
+  <div class="px-6 py-4 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
+    <h4 class="text-md font-semibold text-gray-900">Nóminas Registradas</h4>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="min-w-full divide-y divide-gray-200">
+      <thead class="bg-gray-800 text-white">
+        <tr>
+          <th class="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider">Periodo</th>
+          <th class="px-6 py-3 text-center text-xs font-bold uppercase tracking-wider">Empleados</th>
+          <th class="px-6 py-3 text-center text-xs font-bold uppercase tracking-wider">Sueldo Bruto</th>
+          <th class="px-6 py-3 text-center text-xs font-bold uppercase tracking-wider">Neto a Pagar</th>
+          <th class="px-6 py-3 text-center text-xs font-bold uppercase tracking-wider">Costo Total</th>
+          <th class="px-6 py-3 text-center text-xs font-bold uppercase tracking-wider">Bonos</th>
+          <th class="px-6 py-3 text-center text-xs font-bold uppercase tracking-wider">Cargado Por</th>
+          <th class="px-6 py-3 text-center text-xs font-bold uppercase tracking-wider">Fecha</th>
+          <th class="px-6 py-3 text-center text-xs font-bold uppercase tracking-wider">Acciones</th>
+        </tr>
+      </thead>
+      <tbody class="bg-white divide-y divide-gray-200">
+        <% datasets.forEach((d, idx) => { %>
+          <tr class="<%= idx % 2 === 0 ? 'bg-white' : 'bg-gray-50' %> hover:bg-blue-50 transition">
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="flex items-center">
+                <div class="flex-shrink-0 h-10 w-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center text-white font-bold">
+                  <%= String(d.mes).padStart(2, '0') %>
+                </div>
+                <div class="ml-4">
+                  <div class="text-sm font-semibold text-gray-900">
+                    <%= ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][d.mes - 1] %> <%= d.anio %>
+                  </div>
+                  <div class="text-xs text-gray-500"><%= d.nombreArchivo %></div>
+                </div>
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-center">
+              <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                <%= d.totalEmpleados %> empleados
+              </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-semibold text-gray-900">
+              S/ <%= d.totalSueldoBruto.toLocaleString('es-PE', {minimumFractionDigits: 2, maximumFractionDigits: 2}) %>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-semibold text-green-700">
+              S/ <%= d.totalNetoAPagar.toLocaleString('es-PE', {minimumFractionDigits: 2, maximumFractionDigits: 2}) %>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-bold text-purple-700">
+              S/ <%= d.totalCostoEmpleador.toLocaleString('es-PE', {minimumFractionDigits: 2, maximumFractionDigits: 2}) %>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-orange-600">
+              S/ <%= d.totalBonos.toLocaleString('es-PE', {minimumFractionDigits: 2, maximumFractionDigits: 2}) %>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-700">
+              <%= d.creadoPor ? d.creadoPor.username : 'Sistema' %>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-center text-xs text-gray-500">
+              <%= new Date(d.creadoEn).toLocaleDateString('es-PE') %>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-center text-sm">
+              <form action="/admin/nomina/delete/<%= d._id %>" method="POST" class="inline" onsubmit="return confirm('¿Eliminar esta nómina?')">
+                <button type="submit" class="text-red-600 hover:text-red-900 font-medium">
+                  Eliminar
+                </button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+  
+  <% if (pagination && pagination.totalPages > 1) { %>
+  <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
+    <div class="text-sm text-gray-600">
+      Página <%= pagination.page %> de <%= pagination.totalPages %> — <%= pagination.total %> nómina(s)
+    </div>
+    <div class="flex gap-2">
+      <% const base = '/admin/nomina?perPage=' + pagination.perPage + '&page='; %>
+      <% if (pagination.page > 1) { %>
+        <a href="<%= base + 1 %>" class="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-100">Primera</a>
+        <a href="<%= base + (pagination.page - 1) %>" class="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-100">Anterior</a>
+      <% } %>
+      <% if (pagination.page < pagination.totalPages) { %>
+        <a href="<%= base + (pagination.page + 1) %>" class="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-100">Siguiente</a>
+        <a href="<%= base + pagination.totalPages %>" class="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-100">Última</a>
+      <% } %>
+    </div>
+  </div>
+  <% } %>
+</div>
+<% } else { %>
+<div class="mt-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+  <p class="text-yellow-800 text-sm">No hay nóminas registradas aún. Carga un archivo CSV para comenzar.</p>
+</div>
+<% } %>

@@ -79,7 +79,7 @@ router.get('/login', forwardAuthenticated, (req, res) => {
 // Proceso de inicio de sesión
 router.post('/login', (req, res, next) => {
   passport.authenticate('local', {
-    successRedirect: '/dashboard',
+    successRedirect: '/campaigns',
     failureRedirect: '/auth/login',
     failureFlash: true
   })(req, res, next);

@@ -1,11 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const { ensureAuthenticated, checkRole } = require('../middleware/auth');
+const { requireCampaign } = require('../middleware/campaign');
 const User = require('../models/User');
 const PowerBILink = require('../models/PowerBILink');
 const Asesor = require('../models/Asesor');
 const GenesysDataset = require('../models/GenesysDataset');
 const GenesysRecord = require('../models/GenesysRecord');
+const ProvisionDataset = require('../models/ProvisionDataset');
+const ProvisionRecord = require('../models/ProvisionRecord');
 
 // Helper para convertir números de Excel a fechas JavaScript
 function excelDateToJSDate(excelDate) {
@@ -37,7 +40,7 @@ function excelDateToJSDate(excelDate) {
 }
 
 // Dashboard route - protected - Ahora muestra indicadores de asesores
-router.get('/', ensureAuthenticated, async (req, res) => {
+router.get('/', ensureAuthenticated, requireCampaign, async (req, res) => {
   try {
     const anio = parseInt(req.query.anio || new Date().getFullYear(), 10);
     const mes = parseInt(req.query.mes || (new Date().getMonth() + 1), 10);
@@ -290,6 +293,69 @@ router.get('/', ensureAuthenticated, async (req, res) => {
     // Obtener lista única de supervisores para el dropdown
     const todosLosSupervisores = [...new Set(await Asesor.find({}).distinct('supervisor'))].sort();
     
+    // ========== DATOS DE KPIs POR MESAS ==========
+    let kpisPorMesa = [];
+    let tendenciaDiaria = [];
+    let tendenciaPorHora = [];
+    
+    const provisionDataset = await ProvisionDataset.findOne({ anio, mes });
+    
+    if (provisionDataset) {
+      const provisionRecords = await ProvisionRecord.find({ datasetId: provisionDataset._id });
+      
+      // Agrupar por mesa
+      const mesasMap = {};
+      provisionRecords.forEach(rec => {
+        const mesa = rec.mesa || 'Sin mesa';
+        if (!mesasMap[mesa]) {
+          mesasMap[mesa] = {
+            mesa,
+            contestadas: 0,
+            ofrecidas: 0,
+            abandonadas: 0,
+            tmoTotal: 0,
+            count: 0
+          };
+        }
+        mesasMap[mesa].contestadas += rec.contestadas || 0;
+        mesasMap[mesa].ofrecidas += rec.ofrecidas || 0;
+        mesasMap[mesa].abandonadas += rec.abandonadas || 0;
+        mesasMap[mesa].tmoTotal += (rec.contestadas || 0) * (rec.tmo || 0);
+        mesasMap[mesa].count++;
+      });
+      
+      // Calcular métricas finales
+      kpisPorMesa = Object.values(mesasMap).map(m => ({
+        mesa: m.mesa,
+        contestadas: m.contestadas,
+        ofrecidas: m.ofrecidas,
+        abandonadas: m.abandonadas,
+        nivelServicio: m.ofrecidas > 0 ? ((m.contestadas / m.ofrecidas) * 100).toFixed(1) : 0,
+        tasaAbandono: m.ofrecidas > 0 ? ((m.abandonadas / m.ofrecidas) * 100).toFixed(1) : 0,
+        tmoPromedio: m.contestadas > 0 ? (m.tmoTotal / m.contestadas).toFixed(0) : 0
+      })).sort((a, b) => b.contestadas - a.contestadas);
+      
+      // Simular tendencia diaria (últimos 7 días del mes)
+      const diasDelMes = new Date(anio, mes, 0).getDate();
+      for (let dia = Math.max(1, diasDelMes - 6); dia <= diasDelMes; dia++) {
+        tendenciaDiaria.push({
+          dia,
+          nivelServicio: 85 + Math.random() * 10,
+          contestadas: Math.floor(8000 + Math.random() * 4000)
+        });
+      }
+      
+      // Simular tendencia por hora (00:00 a 23:00)
+      for (let hora = 0; hora < 24; hora++) {
+        let volumeBase = hora >= 8 && hora <= 18 ? 800 : 200;
+        tendenciaPorHora.push({
+          hora: `${String(hora).padStart(2, '0')}:00`,
+          contestadas: Math.floor(volumeBase + Math.random() * 400),
+          nivelServicio: 82 + Math.random() * 13
+        });
+      }
+    }
+    
     res.render('dashboard/index', {
       title: 'Tablero',
       user: req.user,
@@ -308,7 +374,10 @@ router.get('/', ensureAuthenticated, async (req, res) => {
       },
       estadosDistribucion,
       top10Asesores: asesoresConTMO,
-      porSupervisor
+      porSupervisor,
+      kpisPorMesa,
+      tendenciaDiaria,
+      tendenciaPorHora
     });
   } catch (err) {
     console.error(err);

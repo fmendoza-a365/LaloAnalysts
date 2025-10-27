@@ -1,0 +1,73 @@
+﻿Mesa de Ayuda;;;;;;;
+Rango;Min;Max;Rango Referencial Mensual a considerar;Costo Unitario Mensual (S/);Costo Unitario Mensual (S/) SIN IGV;Rango;
+1;0;200,000;200,000;S/3.03 ;S/2.57 ;1;
+2;200,001;400,000;400,000;S/2.83 ;S/2.40 ;2;
+3;400,001;600,000;600,000;S/2.63 ;S/2.23 ;3;
+4;600,001;800,000;800,000;S/2.58 ;S/2.19 ;4;
+5;800,001;1,000,000;1,000,000;S/2.53 ;S/2.14 ;5;
+6;1,000,001;>>>>>;1,000,001;S/2.48 ;S/2.10 ;6;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+Central Telefónica y Servicios;;;;;;;
+Rango;Min;Max;Rango Referencial Mensual a considerar;Costo Unitario Mensual (S/);Costo Unitario Mensual (S/) SIN IGV;Rango;
+1;0;60,000;60,000;S/0.37 ;S/0.31 ;1;
+2;60,001;80,000;80,000;S/0.32 ;S/0.27 ;2;
+3;80,001;100,000;100,000;S/0.31 ;S/0.26 ;3;
+4;100,001;120,000;120,000;S/0.30 ;S/0.25 ;4;
+5;120,001;140,000;140,000;S/0.29 ;S/0.25 ;5;
+6;140,001;>>>>>>;140,001;S/0.28 ;S/0.24 ;6;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+Monitoreo Prevención y Tratamiento de Fraude Inbound;;;;;;;
+Rango;Min;Max;Rango Referencial Mensual a considerar;Costo Unitario Mensual (S/);Costo Unitario Mensual (S/) SIN IGV;Rango;
+1;0;5,000;5,000;S/7.63 ;S/6.47 ;1;
+2;5,001;10,000;10,000;S/7.13 ;S/6.04 ;2;
+3;10,001;15,000;15,000;S/6.63 ;S/5.62 ;3;
+4;15,001;>>>>>>;15,001;S/6.13 ;S/5.19 ;4;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+Monitoreo Prevención y Tratamiento de Fraude Outbound;;;;;;;
+Rango;Min;Max;Rango Referencial Mensual a considerar;Costo Unitario Mensual (S/);Costo Unitario Mensual (S/) SIN IGV;Rango;
+1;0;5,000;5,000;S/2.32 ;S/1.97 ;1;
+2;5,001;10,000;10,000;S/2.12 ;S/1.80 ;2;
+3;10,001;15,000;15,000;S/2.11 ;S/1.79 ;3;
+4;15,001;>>>>>>;15,001;S/2.10 ;S/1.78 ;4;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+Redes Sociales - Costo del Servicio por Rango de Interacciones (Asistente Virtual - Chatbot);;;;;;;
+Rango;Min;Max;Rango Referencial Mensual a considerar;Costo Unitario Mensual (S/);Costo Unitario Mensual (S/) SIN IGV;Rango;
+1;0;550,000;550,000;S/ 0.1317;S/0.11 ;1;
+2;550,001;700,000;700,000;S/ 0.1312;S/0.11 ;2;
+3;700,001;850,000;850,000;S/ 0.1307;S/0.11 ;3;
+4;850,001;1,000,000;1,000,000;S/ 0.1302;S/0.11 ;4;
+5;1,000,001;>>>>>>;1,000,001;S/ 0.1297;S/0.11 ;5;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+Redes Sociales - Costo del Servicio por Rango (Agente);;;;;;;
+Rango;Min;Max;Rango Referencial Mensual a considerar;Costo Unitario Mensual (S/);Costo Unitario Mensual (S/) SIN IGV;Rango;
+1;0;5,000;5,000;S/3.18 ;S/2.69 ;1;
+2;5,001;7,000;7,000;S/3.13 ;S/2.65 ;2;
+3;7,001;8,500;8,500;S/3.08 ;S/2.61 ;3;
+4;8,501;10,000;10,000;S/3.03 ;S/2.57 ;4;
+5;10,001;>>>>>>;10,001;S/2.93 ;S/2.48 ;5;
+;;;;;;;
+;;;;;;;
+;;;;;;;
+Gestión de Reclamos de Primer Nivel y Requerimientos;;;;;;;
+Rango;Min;Max;Rango Referencial Mensual a considerar;Costo Unitario Mensual (S/);Costo Unitario Mensual (S/) SIN IGV;ONR CON IGV;ONR SIN IGV
+1;0;5,000;5,000;S/3.88 ;S/3.29 ;S/13.00 ;S/11.02 
+2;5,001;10,000;10,000;S/3.78 ;S/3.20 ;S/13.00 ;S/11.02 
+3;10,001;15,000;15,000;S/3.68 ;S/3.12 ;S/13.00 ;S/11.02 
+4;15,001;20,000;20,000;S/3.58 ;S/3.03 ;S/13.00 ;S/11.02 
+5;20,001;>>>>>>;20,001;S/3.53 ;S/2.99 ;S/13.00 ;S/11.02 
+;;;;;;;
+;;;;;;;
+;;;;;;;
+Envio de Comunicaciones Electrónicas Masivas (Reclamos);;;;;;;
+Rango;Min;Max;Rango Referencial Mensual a considerar;Costo Unitario Mensual (S/);Costo Unitario Mensual (S/) SIN IGV;Rango;
+1;0;>>>>>;16,000;S/0.35 ;S/0.30 ;1;

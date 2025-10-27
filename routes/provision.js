@@ -3,6 +3,7 @@ const router = express.Router();
 const { ensureAuthenticated } = require('../middleware/auth');
 const ProvisionDataset = require('../models/ProvisionDataset');
 const ProvisionRecord = require('../models/ProvisionRecord');
+const Tarifa = require('../models/Tarifa');
 
 router.use(ensureAuthenticated);
 
@@ -33,17 +34,18 @@ router.get('/', async (req, res) => {
       });
     }
 
-    // Obtener registros del mes
-    const registros = await ProvisionRecord.find({ datasetId: dataset._id }).sort({ fecha: 1 });
+    // Obtener registros del mes (ahora cada registro es una cola individual por día)
+    const registros = await ProvisionRecord.find({ datasetId: dataset._id }).sort({ fecha: 1, cola: 1 });
+    console.log('[PROVISION] Total de registros encontrados:', registros.length);
 
-    // Calcular métricas agregadas por día
+    // Calcular métricas agregadas por día y por mesa
     const datosPorDia = {};
     const mesasResumen = {};
     
     registros.forEach(reg => {
-      // Validar que tenga fecha
-      if (!reg.fecha) {
-        console.warn('[PROVISION] Registro sin fecha:', reg._id);
+      // Validar que tenga fecha y mesa
+      if (!reg.fecha || !reg.mesa || !reg.cola) {
+        console.warn('[PROVISION] Registro incompleto:', reg._id);
         return;
       }
       
@@ -55,9 +57,8 @@ router.get('/', async (req, res) => {
           dia,
           ofrecidas: 0,
           contestadas: 0,
-          umbral: 0, // Cumplen SLA
-          abandonadas: 0,
-          manejoMedioSegs: [],
+          umbral: 0,
+          tmoSegs: [],
           mesas: {}
         };
       }
@@ -65,96 +66,81 @@ router.get('/', async (req, res) => {
       // Acumular totales del día
       datosPorDia[dia].ofrecidas += reg.ofrecidas || 0;
       datosPorDia[dia].contestadas += reg.contestadas || 0;
-      datosPorDia[dia].umbral += reg.cumpleSLA || 0;
-      datosPorDia[dia].abandonadas += reg.abandonadas || 0;
+      datosPorDia[dia].umbral += reg.umbral || 0;
       
-      // Parsear TMO (Manejo Medio) - ya viene en formato HH:MM:SS desde el parser
-      if (reg.manejoMedio && reg.manejoMedio !== '00:00:00') {
-        const segs = parseTimeToSeconds(reg.manejoMedio);
-        if (segs > 0) datosPorDia[dia].manejoMedioSegs.push(segs);
+      // Acumular TMO en segundos
+      if (reg.tmoSegundos > 0) {
+        datosPorDia[dia].tmoSegs.push(reg.tmoSegundos);
       }
       
-      // Agrupar por mesas
-      if (reg.mesasData) {
-        Object.keys(reg.mesasData).forEach(mesa => {
-          const dataMesa = reg.mesasData[mesa];
-          
-          // Resumen por mesa (acumulado del mes)
-          if (!mesasResumen[mesa]) {
-            mesasResumen[mesa] = {
-              ofrecidas: 0,
-              contestadas: 0,
-              umbral: 0,
-              abandonadas: 0,
-              manejoMedioSegs: [],
-              colas: new Set(),
-              diasConDatos: 0,
-              datosPorDia: {}, // Datos por día de la mesa
-              colasPorDia: {} // Datos por día de cada cola individual
-            };
-          }
-          
-          mesasResumen[mesa].ofrecidas += dataMesa.ofrecidas || 0;
-          mesasResumen[mesa].contestadas += dataMesa.contestadas || 0;
-          mesasResumen[mesa].umbral += dataMesa.cumpleSLA || 0;
-          mesasResumen[mesa].abandonadas += dataMesa.abandonadas || 0;
-          mesasResumen[mesa].diasConDatos++;
-          
-          // Agregar colas únicas y datos por cola por día
-          if (dataMesa.colas) {
-            dataMesa.colas.forEach(c => {
-              mesasResumen[mesa].colas.add(c);
-              
-              // Inicializar estructura para esta cola si no existe
-              if (!mesasResumen[mesa].colasPorDia[c]) {
-                mesasResumen[mesa].colasPorDia[c] = {};
-              }
-              
-              // Guardar datos del día para esta cola específica
-              if (!mesasResumen[mesa].colasPorDia[c][dia]) {
-                mesasResumen[mesa].colasPorDia[c][dia] = {
-                  ofrecidas: 0,
-                  contestadas: 0,
-                  umbral: 0,
-                  tmo: reg.manejoMedio || '00:00:00'
-                };
-              }
-              
-              // Distribuir proporcionalmente entre las colas de la mesa
-              const numColas = dataMesa.colas.length;
-              mesasResumen[mesa].colasPorDia[c][dia].ofrecidas += Math.round((dataMesa.ofrecidas || 0) / numColas);
-              mesasResumen[mesa].colasPorDia[c][dia].contestadas += Math.round((dataMesa.contestadas || 0) / numColas);
-              mesasResumen[mesa].colasPorDia[c][dia].umbral += Math.round((dataMesa.cumpleSLA || 0) / numColas);
-            });
-          }
-          
-          // Datos por día de la mesa
-          if (!datosPorDia[dia].mesas[mesa]) {
-            datosPorDia[dia].mesas[mesa] = {
-              ofrecidas: 0,
-              contestadas: 0,
-              umbral: 0
-            };
-          }
-          
-          datosPorDia[dia].mesas[mesa].ofrecidas += dataMesa.ofrecidas || 0;
-          datosPorDia[dia].mesas[mesa].contestadas += dataMesa.contestadas || 0;
-          datosPorDia[dia].mesas[mesa].umbral += dataMesa.cumpleSLA || 0;
-          
-          // Guardar datos por día en mesasResumen para el resumen mensual
-          if (!mesasResumen[mesa].datosPorDia[dia]) {
-            mesasResumen[mesa].datosPorDia[dia] = {
-              ofrecidas: 0,
-              contestadas: 0,
-              umbral: 0,
-              tmo: reg.manejoMedio || '00:00:00' // Guardar TMO en formato HH:MM:SS
-            };
-          }
-          mesasResumen[mesa].datosPorDia[dia].ofrecidas += dataMesa.ofrecidas || 0;
-          mesasResumen[mesa].datosPorDia[dia].contestadas += dataMesa.contestadas || 0;
-          mesasResumen[mesa].datosPorDia[dia].umbral += dataMesa.cumpleSLA || 0;
-        });
+      const mesa = reg.mesa;
+      
+      // Inicializar mesa si no existe
+      if (!mesasResumen[mesa]) {
+        mesasResumen[mesa] = {
+          ofrecidas: 0,
+          contestadas: 0,
+          umbral: 0,
+          tmoSegs: [],
+          colas: new Set(),
+          datosPorDia: {},
+          colasPorDia: {}
+        };
       }
+      
+      // Acumular totales de la mesa
+      mesasResumen[mesa].ofrecidas += reg.ofrecidas || 0;
+      mesasResumen[mesa].contestadas += reg.contestadas || 0;
+      mesasResumen[mesa].umbral += reg.umbral || 0;
+      mesasResumen[mesa].colas.add(reg.cola);
+      
+      if (reg.tmoSegundos > 0) {
+        mesasResumen[mesa].tmoSegs.push(reg.tmoSegundos);
+      }
+      
+      // Datos por día de la mesa
+      if (!mesasResumen[mesa].datosPorDia[dia]) {
+        mesasResumen[mesa].datosPorDia[dia] = {
+          ofrecidas: 0,
+          contestadas: 0,
+          umbral: 0,
+          tmoSegs: []
+        };
+      }
+      
+      mesasResumen[mesa].datosPorDia[dia].ofrecidas += reg.ofrecidas || 0;
+      mesasResumen[mesa].datosPorDia[dia].contestadas += reg.contestadas || 0;
+      mesasResumen[mesa].datosPorDia[dia].umbral += reg.umbral || 0;
+      
+      if (reg.tmoSegundos > 0) {
+        mesasResumen[mesa].datosPorDia[dia].tmoSegs.push(reg.tmoSegundos);
+      }
+      
+      // Datos por cola por día
+      if (!mesasResumen[mesa].colasPorDia[reg.cola]) {
+        mesasResumen[mesa].colasPorDia[reg.cola] = {};
+      }
+      
+      mesasResumen[mesa].colasPorDia[reg.cola][dia] = {
+        ofrecidas: reg.ofrecidas || 0,
+        contestadas: reg.contestadas || 0,
+        umbral: reg.umbral || 0,
+        tmo: reg.tmo || '00:00:00',
+        tmoSegundos: reg.tmoSegundos || 0
+      };
+      
+      // Datos por mesa del día
+      if (!datosPorDia[dia].mesas[mesa]) {
+        datosPorDia[dia].mesas[mesa] = {
+          ofrecidas: 0,
+          contestadas: 0,
+          umbral: 0
+        };
+      }
+      
+      datosPorDia[dia].mesas[mesa].ofrecidas += reg.ofrecidas || 0;
+      datosPorDia[dia].mesas[mesa].contestadas += reg.contestadas || 0;
+      datosPorDia[dia].mesas[mesa].umbral += reg.umbral || 0;
     });
 
     // Calcular promedios y totales
@@ -163,8 +149,7 @@ router.get('/', async (req, res) => {
       ofrecidas: 0,
       contestadas: 0,
       umbral: 0,
-      abandonadas: 0,
-      manejoMedioSegs: []
+      tmoSegs: []
     };
 
     diasDelMes.forEach(dia => {
@@ -175,9 +160,9 @@ router.get('/', async (req, res) => {
       dato.nivelServicio = dato.ofrecidas > 0 ? ((dato.umbral / dato.ofrecidas) * 100).toFixed(2) : 0;
       
       // TMO promedio del día
-      if (dato.manejoMedioSegs.length > 0) {
-        const suma = dato.manejoMedioSegs.reduce((a, b) => a + b, 0);
-        dato.tmoSegundos = Math.round(suma / dato.manejoMedioSegs.length);
+      if (dato.tmoSegs.length > 0) {
+        const suma = dato.tmoSegs.reduce((a, b) => a + b, 0);
+        dato.tmoSegundos = Math.round(suma / dato.tmoSegs.length);
         dato.tmoFormato = secondsToHMS(dato.tmoSegundos);
       } else {
         dato.tmoSegundos = 0;
@@ -188,17 +173,16 @@ router.get('/', async (req, res) => {
       totales.ofrecidas += dato.ofrecidas;
       totales.contestadas += dato.contestadas;
       totales.umbral += dato.umbral;
-      totales.abandonadas += dato.abandonadas;
-      if (dato.tmoSegundos > 0) totales.manejoMedioSegs.push(dato.tmoSegundos);
+      if (dato.tmoSegundos > 0) totales.tmoSegs.push(dato.tmoSegundos);
     });
 
     // Calcular totales finales
     totales.nivelAtencion = totales.ofrecidas > 0 ? ((totales.contestadas / totales.ofrecidas) * 100).toFixed(2) : 0;
     totales.nivelServicio = totales.ofrecidas > 0 ? ((totales.umbral / totales.ofrecidas) * 100).toFixed(2) : 0;
     
-    if (totales.manejoMedioSegs.length > 0) {
-      const suma = totales.manejoMedioSegs.reduce((a, b) => a + b, 0);
-      totales.tmoSegundos = Math.round(suma / totales.manejoMedioSegs.length);
+    if (totales.tmoSegs.length > 0) {
+      const suma = totales.tmoSegs.reduce((a, b) => a + b, 0);
+      totales.tmoSegundos = Math.round(suma / totales.tmoSegs.length);
       totales.tmoFormato = secondsToHMS(totales.tmoSegundos);
     } else {
       totales.tmoSegundos = 0;
@@ -212,7 +196,64 @@ router.get('/', async (req, res) => {
       data.nivelServicio = data.ofrecidas > 0 ? ((data.umbral / data.ofrecidas) * 100).toFixed(2) : 0;
       data.colas = Array.from(data.colas);
       data.cantidadColas = data.colas.length;
+      
+      // TMO promedio de la mesa
+      if (data.tmoSegs.length > 0) {
+        const suma = data.tmoSegs.reduce((a, b) => a + b, 0);
+        data.tmoSegundos = Math.round(suma / data.tmoSegs.length);
+        data.tmoFormato = secondsToHMS(data.tmoSegundos);
+      } else {
+        data.tmoSegundos = 0;
+        data.tmoFormato = '00:00:00';
+      }
+      
+      // Calcular TMO promedio por día de la mesa
+      Object.keys(data.datosPorDia).forEach(dia => {
+        const datosDia = data.datosPorDia[dia];
+        if (datosDia.tmoSegs && datosDia.tmoSegs.length > 0) {
+          const suma = datosDia.tmoSegs.reduce((a, b) => a + b, 0);
+          datosDia.tmoSegundos = Math.round(suma / datosDia.tmoSegs.length);
+          datosDia.tmo = secondsToHMS(datosDia.tmoSegundos);
+        } else {
+          datosDia.tmoSegundos = 0;
+          datosDia.tmo = '00:00:00';
+        }
+        delete datosDia.tmoSegs; // Limpiar array temporal
+      });
     });
+
+    // Calcular costos por mesa usando tarifas
+    const fechaPeriodo = new Date(anio, mes - 1, 15); // Mitad del mes para buscar tarifa vigente
+    const costosPorMesa = {};
+    
+    for (const mesa of Object.keys(mesasResumen)) {
+      const mesaData = mesasResumen[mesa];
+      
+      // Buscar tarifa vigente para esta mesa
+      const tarifa = await Tarifa.obtenerTarifaVigente(mesa, fechaPeriodo);
+      
+      if (tarifa) {
+        const cantidadLlamadas = mesaData.contestadas; // Usar llamadas contestadas
+        const costoUnitario = tarifa.obtenerCostoUnitario(cantidadLlamadas, false); // Sin IGV
+        const costoTotal = cantidadLlamadas * costoUnitario;
+        
+        costosPorMesa[mesa] = {
+          costoUnitario: costoUnitario.toFixed(2),
+          costoTotal: costoTotal.toFixed(2),
+          cantidadLlamadas,
+          tieneONR: tarifa.onrSinIGV ? true : false,
+          onrCosto: tarifa.onrSinIGV || 0
+        };
+      } else {
+        costosPorMesa[mesa] = {
+          costoUnitario: 0,
+          costoTotal: 0,
+          cantidadLlamadas: mesaData.contestadas,
+          tieneONR: false,
+          onrCosto: 0
+        };
+      }
+    }
 
     res.render('provision/index', {
       title: 'KPIs · Dashboard',
@@ -223,6 +264,7 @@ router.get('/', async (req, res) => {
       diasDelMes,
       totales,
       mesasResumen,
+      costosPorMesa,
       vista,
       mesaSeleccionada,
       noData: false

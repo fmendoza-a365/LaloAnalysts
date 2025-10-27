@@ -83,6 +83,7 @@ async function seedDefaultRoles() {
 // Import routes
 const indexRouter = require('./routes/index');
 const authRouter = require('./routes/auth');
+const campaignsRouter = require('./routes/campaigns');
 const dashboardRouter = require('./routes/dashboard');
 const powerbiRouter = require('./routes/powerbi');
 const indicadoresRouter = require('./routes/indicadores');
@@ -90,10 +91,12 @@ const adminRouter = require('./routes/admin');
 const asesoresRouter = require('./routes/asesores');
 const asistenciaRouter = require('./routes/asistencia');
 const kpisRouter = require('./routes/provision'); // Dashboard de KPIs (Provisión Agregada)
+const srrRouter = require('./routes/srr'); // Service Results Report
 
 // Import models
 const User = require('./models/User');
 const RoleModel = require('./models/Role');
+const Campaign = require('./models/Campaign');
 
 // Create Express app
 const app = express();
@@ -170,6 +173,7 @@ passport.deserializeUser(async (id, done) => {
 app.use((req, res, next) => {
   res.locals.currentUser = req.user;
   res.locals.user = req.user;
+  res.locals.selectedCampaign = req.session.selectedCampaign || null;
   res.locals.success_msg = req.flash('success_msg');
   res.locals.error_msg = req.flash('error_msg');
   res.locals.error = req.flash('error'); // for passport
@@ -179,11 +183,13 @@ app.use((req, res, next) => {
 // Routes
 app.use('/', indexRouter);
 app.use('/auth', authRouter);
+app.use('/campaigns', campaignsRouter);
 app.use('/dashboard', dashboardRouter);
 app.use('/powerbi', powerbiRouter);
 app.use('/asesores', asesoresRouter);
 app.use('/asistencia', asistenciaRouter);
 app.use('/kpis', kpisRouter);
+app.use('/srr', srrRouter); // Service Results Report
 app.use('/admin', adminRouter);
 app.use('/api/indicadores', indicadoresRouter);
 
@@ -233,6 +239,11 @@ async function init() {
 
     // Siembra de roles base si no existen
     await seedDefaultRoles();
+    
+    // Siembra de campañas demo
+    if (process.env.SEED_DEMO !== 'false') {
+      await seedDemoCampaigns();
+    }
 
     app.listen(PORT, () => {
       console.log(`Server is running on http://localhost:${PORT}`);
@@ -272,5 +283,59 @@ async function seedDemoUsers() {
     }
   } catch (e) {
     console.warn('No se pudieron crear usuarios demo:', e.message);
+  }
+}
+
+// Crea campañas demo si no existen
+async function seedDemoCampaigns() {
+  try {
+    const demoCampaigns = [
+      {
+        nombre: 'Telecomunicaciones Premium',
+        descripcion: 'Campaña de atención al cliente premium para empresa líder de telecomunicaciones, enfocada en retención y fidelización',
+        imagen: '/images/campaign-telecom.jpg',
+        gerente: 'Carlos Mendoza Silva',
+        analista: 'Ana Torres Pérez',
+        subCampanas: [
+          { nombre: 'Soporte Técnico', descripcion: 'Atención de incidencias técnicas y configuración de servicios' },
+          { nombre: 'Retención', descripcion: 'Retención de clientes que desean cancelar servicios' },
+          { nombre: 'Ventas Cruzadas', descripcion: 'Oferta de productos complementarios a clientes actuales' }
+        ]
+      },
+      {
+        nombre: 'Banca Digital',
+        descripcion: 'Operación de contact center para banco digital, especializada en onboarding y soporte de aplicaciones móviles',
+        imagen: '/images/campaign-banking.jpg',
+        gerente: 'María Rodríguez López',
+        analista: 'Pedro Sánchez García',
+        subCampanas: [
+          { nombre: 'Onboarding Digital', descripcion: 'Asistencia en apertura de cuentas digitales' },
+          { nombre: 'Soporte App', descripcion: 'Resolución de problemas en aplicación móvil' },
+          { nombre: 'Seguridad', descripcion: 'Atención de consultas sobre seguridad y fraudes' }
+        ]
+      },
+      {
+        nombre: 'E-commerce Retail',
+        descripcion: 'Atención multicanal para plataforma de e-commerce, incluyendo seguimiento de pedidos y postventa',
+        imagen: '/images/campaign-ecommerce.jpg',
+        gerente: 'Jorge Vargas Ramos',
+        analista: 'Lucía Fernández Quispe',
+        subCampanas: [
+          { nombre: 'Seguimiento de Pedidos', descripcion: 'Consultas sobre estado y tracking de pedidos' },
+          { nombre: 'Devoluciones', descripcion: 'Gestión de devoluciones y cambios de productos' },
+          { nombre: 'Reclamos', descripcion: 'Atención de quejas y reclamos de clientes' }
+        ]
+      }
+    ];
+
+    for (const c of demoCampaigns) {
+      const exists = await Campaign.findOne({ nombre: c.nombre });
+      if (!exists) {
+        await Campaign.create(c);
+        console.log(`Campaña demo creada: ${c.nombre}`);
+      }
+    }
+  } catch (e) {
+    console.warn('No se pudieron crear campañas demo:', e.message);
   }
 }

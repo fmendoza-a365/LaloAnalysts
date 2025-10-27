@@ -1,0 +1,26 @@
+<%
+  // Header único y sobrio para todo el sistema
+  // Parámetros:
+  // - title: Título principal
+  // - subtitle: Subtítulo (opcional)
+%>
+
+<div class="bg-white border-b border-gray-200 mb-6">
+  <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 px-6 py-5">
+    <div class="flex-1">
+      <h1 class="text-2xl lg:text-3xl font-bold text-gray-900 mb-1">
+        <%= title %>
+      </h1>
+      <% if (typeof subtitle !== 'undefined' && subtitle) { %>
+        <p class="text-sm text-gray-600"><%= subtitle %></p>
+      <% } %>
+    </div>
+    
+    <!-- Slot para contenido adicional (ej: botones, filtros) -->
+    <% if (typeof extraContent !== 'undefined' && extraContent) { %>
+      <div class="flex-shrink-0">
+        <%- extraContent %>
+      </div>
+    <% } %>
+  </div>
+</div>

@@ -203,7 +203,70 @@ function showToast(message, type = 'success') {
     }, 5000);
 }
 
+// Toggle menu sections (accordion)
+function toggleSection(sectionId) {
+    const section = document.getElementById('section-' + sectionId);
+    const icon = document.getElementById('icon-' + sectionId);
+    
+    if (section && icon) {
+        const isHidden = section.classList.contains('hidden');
+        
+        if (isHidden) {
+            section.classList.remove('hidden');
+            icon.style.transform = 'rotate(90deg)';
+        } else {
+            section.classList.add('hidden');
+            icon.style.transform = 'rotate(0deg)';
+        }
+        
+        // Guardar estado en localStorage
+        localStorage.setItem('menu-section-' + sectionId, isHidden ? 'open' : 'closed');
+    }
+}
+
+// Restaurar estado del menú al cargar la página
+document.addEventListener('DOMContentLoaded', function() {
+    // Expandir todas las secciones por defecto en la primera carga
+    const sections = ['dashboards', 'reportes', 'personal', 'sistema'];
+    const mobileSections = ['mobile-dashboards', 'mobile-reportes', 'mobile-personal', 'mobile-sistema'];
+    
+    // Menú desktop
+    sections.forEach(sectionId => {
+        const savedState = localStorage.getItem('menu-section-' + sectionId);
+        const section = document.getElementById('section-' + sectionId);
+        const icon = document.getElementById('icon-' + sectionId);
+        
+        if (section && icon) {
+            // Si no hay estado guardado, expandir por defecto
+            if (!savedState || savedState === 'open') {
+                section.classList.remove('hidden');
+                icon.style.transform = 'rotate(90deg)';
+            } else {
+                section.classList.add('hidden');
+                icon.style.transform = 'rotate(0deg)';
+            }
+        }
+    });
+    
+    // Menú móvil - expandir por defecto
+    mobileSections.forEach(sectionId => {
+        const savedState = localStorage.getItem('menu-section-' + sectionId);
+        const section = document.getElementById('section-' + sectionId);
+        const icon = document.getElementById('icon-' + sectionId);
+        
+        if (section && icon) {
+            if (!savedState || savedState === 'open') {
+                section.classList.remove('hidden');
+                icon.style.transform = 'rotate(90deg)';
+            } else {
+                section.classList.add('hidden');
+                icon.style.transform = 'rotate(0deg)';
+            }
+        }
+    });
+});
+
 // Export for use in other modules if needed
-window.A365Analyst = { showToast };
+window.A365Analyst = { showToast, toggleSection };
 // Alias temporal para compatibilidad hacia atrás
 window.WindSurf = window.A365Analyst;

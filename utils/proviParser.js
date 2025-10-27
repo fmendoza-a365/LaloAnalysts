@@ -17,6 +17,84 @@ function segundosAHHMMSS(segundos) {
 }
 
 /**
+ * Verificar si una fecha es fin de semana
+ * @param {Date} fecha - Fecha a verificar
+ * @returns {boolean}
+ */
+function esFinDeSemana(fecha) {
+  const diaSemana = fecha.getDay();
+  return diaSemana === 0 || diaSemana === 6; // 0 = Domingo, 6 = Sábado
+}
+
+/**
+ * Verificar si una fecha es feriado en Perú
+ * @param {Date} fecha - Fecha a verificar
+ * @returns {boolean}
+ */
+function esFeriado(fecha) {
+  const anio = fecha.getFullYear();
+  const mes = fecha.getMonth() + 1; // 0-indexed
+  const dia = fecha.getDate();
+  
+  // Feriados de Perú 2025 (actualizar según el año)
+  const feriados2025 = [
+    '2025-01-01', // Año Nuevo
+    '2025-04-17', // Jueves Santo
+    '2025-04-18', // Viernes Santo
+    '2025-05-01', // Día del Trabajo
+    '2025-06-29', // San Pedro y San Pablo
+    '2025-07-28', // Fiestas Patrias
+    '2025-07-29', // Fiestas Patrias
+    '2025-08-30', // Santa Rosa de Lima
+    '2025-10-08', // Combate de Angamos
+    '2025-11-01', // Todos los Santos
+    '2025-12-08', // Inmaculada Concepción
+    '2025-12-25'  // Navidad
+  ];
+  
+  const fechaStr = `${anio}-${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+  return feriados2025.includes(fechaStr);
+}
+
+/**
+ * Verificar si una hora está en horario laboral (8 AM - 6 PM)
+ * @param {string} horaStr - Hora en formato "HH:MM" o "H:MM"
+ * @returns {boolean}
+ */
+function esHorarioLaboral(horaStr) {
+  if (!horaStr) return false;
+  
+  const [hora] = horaStr.split(':').map(h => parseInt(h, 10));
+  return hora >= 8 && hora < 18; // 8 AM a 6 PM (antes de las 18:00)
+}
+
+/**
+ * Verificar si un intervalo debe contabilizarse para Central Telefónica
+ * Solo se contabilizan intervalos de lunes a viernes, no feriados, de 8 AM a 6 PM
+ * @param {Date} fecha - Fecha del intervalo
+ * @param {string} horaInicio - Hora de inicio del intervalo (ej: "8:00")
+ * @returns {boolean}
+ */
+function validarIntervaloCentralTelefonica(fecha, horaInicio) {
+  // No sábados ni domingos
+  if (esFinDeSemana(fecha)) {
+    return false;
+  }
+  
+  // No feriados
+  if (esFeriado(fecha)) {
+    return false;
+  }
+  
+  // Solo horario 8 AM - 6 PM
+  if (!esHorarioLaboral(horaInicio)) {
+    return false;
+  }
+  
+  return true;
+}
+
+/**
  * Clasificar cola en su mesa correspondiente
  * @param {string} nombreCola - Nombre de la cola
  * @returns {string|null} - Nombre de la mesa o null si debe descartarse
@@ -128,18 +206,26 @@ function parseProvisionAgregada(buffer) {
         registro[header] = campos[idx] || '';
       });
       
-      // Parsear fecha
+      // Parsear fecha y hora del intervalo
       const fechaInicio = registro['Inicio del intervalo'];
       let fecha = null;
+      let horaInicio = null;
+      
       if (fechaInicio) {
         // Formato: "1/10/25 00:00"
-        const partes = fechaInicio.split(' ')[0].split('/');
+        const [fechaParte, horaParte] = fechaInicio.split(' ');
+        
+        // Parsear fecha
+        const partes = fechaParte.split('/');
         if (partes.length === 3) {
           const dia = parseInt(partes[0], 10);
           const mes = parseInt(partes[1], 10);
           const anio = parseInt('20' + partes[2], 10);
           fecha = new Date(anio, mes - 1, dia);
         }
+        
+        // Guardar hora de inicio
+        horaInicio = horaParte; // "00:00", "08:30", etc.
       }
       
       // Parsear métricas numéricas
@@ -159,9 +245,10 @@ function parseProvisionAgregada(buffer) {
       const nombresColas = registro['Nombre de cola'] ? 
         registro['Nombre de cola'].split(';').map(c => c.trim()).filter(Boolean) : [];
       
-      // Validar que no sea un registro con TODAS las colas concatenadas (más de 20 colas)
-      if (nombresColas.length > 35) {
-        console.warn('[PARSER] Registro anómalo descartado - demasiadas colas concatenadas:', nombresColas.length, 'colas');
+      // DESCARTAR registros con TODAS las colas concatenadas
+      // Los intervalos normales tienen máximo 5-10 colas, si tiene más de 15 es un registro anómalo
+      if (nombresColas.length > 15) {
+        console.warn('[PARSER] Registro anómalo descartado - demasiadas colas concatenadas:', nombresColas.length, 'colas en intervalo');
         continue;
       }
       
@@ -175,6 +262,16 @@ function parseProvisionAgregada(buffer) {
         // Ignorar colas descartadas (MA_Total, etc.)
         if (mesa === null) {
           return;
+        }
+        
+        // VALIDACIÓN ESPECIAL: Central Telefónica y Servicios Administrativos
+        // Solo contar intervalos de lunes a viernes, no feriados, de 8 AM a 6 PM
+        if (mesa === 'Central Telefónica y Servicios Generales') {
+          if (!validarIntervaloCentralTelefonica(fecha, horaInicio)) {
+            // Descartar este intervalo para esta cola
+            console.log(`[PARSER] Intervalo descartado para ${cola}: fuera de horario laboral (${fechaKey} ${horaInicio})`);
+            return;
+          }
         }
         
         // Crear clave única: fecha + cola
@@ -244,5 +341,9 @@ function parseProvisionAgregada(buffer) {
 module.exports = {
   parseProvisionAgregada,
   clasificarMesa,
-  segundosAHHMMSS
+  segundosAHHMMSS,
+  esFinDeSemana,
+  esFeriado,
+  esHorarioLaboral,
+  validarIntervaloCentralTelefonica
 };

@@ -1,14 +1,14 @@
-<div class="max-w-full mx-auto px-2 sm:px-4 py-2 sm:py-6">
-  <!-- Header con selector de periodo -->
-  <div class="bg-white shadow-sm rounded-lg p-3 sm:p-6 mb-4 sm:mb-6">
-    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-4 gap-4">
-      <div>
-        <h1 class="text-xl sm:text-2xl font-bold text-gray-900">Dashboard de KPIs</h1>
-        <p class="text-xs sm:text-sm text-gray-600 mt-1">Métricas de llamadas y nivel de servicio por mesas de trabajo</p>
-      </div>
-      
-      <!-- Selector de periodo -->
-      <form method="GET" action="/kpis" class="flex flex-col sm:flex-row gap-2">
+<!-- Header -->
+<div class="bg-white border-b border-gray-200 mb-6">
+  <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 px-6 py-5">
+    <div class="flex-1">
+      <h1 class="text-2xl lg:text-3xl font-bold text-gray-900 mb-1">Dashboard de KPIs</h1>
+      <p class="text-sm text-gray-600">Métricas de llamadas y nivel de servicio por mesas de trabajo</p>
+    </div>
+    
+    <!-- Selector de periodo -->
+    <div class="flex flex-col sm:flex-row gap-2">
+      <form method="GET" action="/kpis" class="flex gap-2">
         <select name="mes" class="border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
           <% for (let m = 1; m <= 12; m++) { %>
             <option value="<%= m %>" <%= periodo.mes === m ? 'selected' : '' %>>
@@ -16,30 +16,31 @@
             </option>
           <% } %>
         </select>
-        <select name="anio" class="border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+        <select name="anio" class="border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
           <% for (let y = 2023; y <= 2030; y++) { %>
             <option value="<%= y %>" <%= periodo.anio === y ? 'selected' : '' %>><%= y %></option>
           <% } %>
         </select>
-        <button type="submit" class="bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-md hover:bg-blue-700 text-xs sm:text-sm font-medium transition w-full sm:w-auto">
+        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 text-sm font-medium transition">
           Actualizar
         </button>
         <input type="hidden" name="vista" value="<%= vista %>">
       </form>
     </div>
-    
-    <!-- Botones de vista -->
-    <div class="flex flex-col sm:flex-row gap-2">
-      <a href="/kpis?mes=<%= periodo.mes %>&anio=<%= periodo.anio %>&vista=resumen" 
-         class="px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium text-center <%= vista === 'resumen' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300' %>">
-        Resumen Mensual
-      </a>
-      <a href="/kpis?mes=<%= periodo.mes %>&anio=<%= periodo.anio %>&vista=mesas" 
-         class="px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium text-center <%= vista === 'mesas' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300' %>">
-        Por Mesas
-      </a>
-    </div>
   </div>
+</div>
+
+<!-- Botones de vista -->
+<div class="mb-6 flex flex-col sm:flex-row gap-2">
+  <a href="/kpis?mes=<%= periodo.mes %>&anio=<%= periodo.anio %>&vista=resumen" 
+     class="px-4 py-2 rounded-md text-sm font-medium text-center <%= vista === 'resumen' ? 'bg-blue-600 text-white' : 'border border-gray-300 bg-white hover:bg-gray-50 text-gray-700' %>">
+    Resumen Mensual
+  </a>
+  <a href="/kpis?mes=<%= periodo.mes %>&anio=<%= periodo.anio %>&vista=mesas" 
+     class="px-4 py-2 rounded-md text-sm font-medium text-center <%= vista === 'mesas' ? 'bg-blue-600 text-white' : 'border border-gray-300 bg-white hover:bg-gray-50 text-gray-700' %>">
+    Por Mesas
+  </a>
+</div>
 
   <% if (noData) { %>
     <!-- Sin datos -->
@@ -122,7 +123,7 @@
               </div>
               <div class="text-right">
                 <div class="text-xs <%= colorClasses.text %> opacity-70">Nivel Atención</div>
-                <div class="font-bold <%= colorClasses.text %>"><%= mesaData.nivelAtencion %>%</div>
+                <div class="font-bold <%= parseFloat(mesaData.nivelAtencion) >= 90 ? 'text-green-600' : 'text-red-600' %>"><%= mesaData.nivelAtencion %>%</div>
               </div>
             </div>
           </div>
@@ -204,13 +205,13 @@
                 <% diasDelMes.forEach(dia => { 
                   const dato = mesaData.datosPorDia[dia] || { ofrecidas: 0, contestadas: 0, umbral: 0 };
                   const valor = dato.ofrecidas > 0 ? ((dato.contestadas / dato.ofrecidas) * 100) : 0;
-                  const colorClass = valor >= 90 ? 'text-green-700 font-semibold' : valor >= 80 ? 'text-yellow-700' : 'text-red-700';
+                  const colorClass = valor >= 90 ? 'text-green-700 font-semibold' : 'text-red-700 font-semibold';
                 %>
                   <td class="px-0.5 py-0.5 text-center border-r border-gray-100 <%= colorClass %>">
                     <%= valor.toFixed(0) %>%
                   </td>
                 <% }) %>
-                <td class="px-2 py-1 text-center font-bold text-gray-900 bg-yellow-50 border-l-2 border-blue-300">
+                <td class="px-2 py-1 text-center font-bold <%= parseFloat(mesaData.nivelAtencion) >= 90 ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50' %> border-l-2 border-blue-300">
                   <%= parseFloat(mesaData.nivelAtencion).toFixed(2) %>%
                 </td>
               </tr>
@@ -223,13 +224,13 @@
                 <% diasDelMes.forEach(dia => { 
                   const dato = mesaData.datosPorDia[dia] || { ofrecidas: 0, contestadas: 0, umbral: 0 };
                   const valor = dato.ofrecidas > 0 ? ((dato.umbral / dato.ofrecidas) * 100) : 0;
-                  const colorClass = valor >= 85 ? 'text-green-700 font-semibold' : valor >= 75 ? 'text-yellow-700' : 'text-red-700';
+                  const colorClass = valor >= 90 ? 'text-green-700 font-semibold' : 'text-red-700 font-semibold';
                 %>
                   <td class="px-0.5 py-0.5 text-center border-r border-gray-100 <%= colorClass %>">
                     <%= valor.toFixed(0) %>%
                   </td>
                 <% }) %>
-                <td class="px-2 py-1 text-center text-xs font-bold text-gray-900 bg-orange-50 border-l-2 border-blue-300">
+                <td class="px-2 py-1 text-center text-xs font-bold <%= parseFloat(mesaData.nivelServicio) >= 90 ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50' %> border-l-2 border-blue-300">
                   <%= parseFloat(mesaData.nivelServicio).toFixed(2) %>%
                 </td>
               </tr>
@@ -366,15 +367,15 @@
 
               <!-- Porcentajes y TMO -->
               <div class="grid grid-cols-3 gap-3">
-                <div class="border border-gray-200 rounded p-3">
+                <div class="border border-gray-200 rounded p-3 <%= nivelAtencion >= 90 ? 'bg-green-50 border-green-300' : 'bg-red-50 border-red-300' %>">
                   <div class="text-xs text-gray-600 mb-1">% Nivel Atención</div>
-                  <div class="text-xl font-bold <%= nivelAtencion >= 90 ? 'text-green-600' : nivelAtencion >= 80 ? 'text-yellow-600' : 'text-red-600' %>">
+                  <div class="text-xl font-bold <%= nivelAtencion >= 90 ? 'text-green-600' : 'text-red-600' %>">
                     <%= nivelAtencion.toFixed(2) %>%
                   </div>
                 </div>
-                <div class="border border-gray-200 rounded p-3">
+                <div class="border border-gray-200 rounded p-3 <%= nivelServicio >= 90 ? 'bg-green-50 border-green-300' : 'bg-red-50 border-red-300' %>">
                   <div class="text-xs text-gray-600 mb-1">% Nivel Servicio</div>
-                  <div class="text-xl font-bold <%= nivelServicio >= 85 ? 'text-green-600' : nivelServicio >= 75 ? 'text-yellow-600' : 'text-red-600' %>">
+                  <div class="text-xl font-bold <%= nivelServicio >= 90 ? 'text-green-600' : 'text-red-600' %>">
                     <%= nivelServicio.toFixed(2) %>%
                   </div>
                 </div>
@@ -542,6 +543,4 @@
         <% }) %>
       </div>
     <% } %>
-
   <% } %>
-</div>

@@ -1,0 +1,126 @@
+<div class="bg-white shadow rounded-lg overflow-hidden">
+  <div class="px-6 py-5 border-b border-gray-200">
+    <h3 class="text-lg leading-6 font-medium text-gray-900">Tarifas · Gestión de Costos</h3>
+    <p class="mt-1 text-sm text-gray-500">
+      Carga y administra las tarifas por mesa de trabajo. El sistema calculará automáticamente los costos según el volumen de llamadas.
+    </p>
+  </div>
+
+  <div class="px-6 py-5">
+    <form action="/admin/tarifas/upload" method="POST" enctype="multipart/form-data" class="space-y-4">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label for="vigenciaDesde" class="block text-sm font-medium text-gray-700 mb-1">Vigencia Desde</label>
+          <input type="date" id="vigenciaDesde" name="vigenciaDesde" required
+            class="block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm">
+        </div>
+        <div>
+          <label for="vigenciaHasta" class="block text-sm font-medium text-gray-700 mb-1">Vigencia Hasta (opcional)</label>
+          <input type="date" id="vigenciaHasta" name="vigenciaHasta"
+            class="block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm">
+        </div>
+        <div>
+          <label for="archivo" class="block text-sm font-medium text-gray-700 mb-1">Archivo CSV</label>
+          <input type="file" id="archivo" name="archivo" accept=".csv" required
+            class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+        </div>
+      </div>
+      <div class="flex items-center gap-4">
+        <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md shadow-sm transition-colors">
+          Cargar Tarifas
+        </button>
+        <a href="/admin/tarifas/ejemplo" class="text-sm text-blue-600 hover:text-blue-800">
+          📥 Descargar ejemplo
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<% if (tarifas && tarifas.length > 0) { %>
+<div class="mt-6 bg-white shadow rounded-lg overflow-hidden">
+  <div class="px-6 py-4 border-b border-gray-200">
+    <h4 class="text-md font-semibold text-gray-900">Tarifas Registradas</h4>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="min-w-full divide-y divide-gray-200">
+      <thead class="bg-gray-50">
+        <tr>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mesa</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vigencia Desde</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vigencia Hasta</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rangos</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+        </tr>
+      </thead>
+      <tbody class="bg-white divide-y divide-gray-200">
+        <% tarifas.forEach(t => { %>
+          <tr class="hover:bg-gray-50">
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+              <%= t.mesa %>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+              <%= t.vigenciaDesde ? new Date(t.vigenciaDesde).toLocaleDateString('es-PE') : '-' %>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+              <%= t.vigenciaHasta ? new Date(t.vigenciaHasta).toLocaleDateString('es-PE') : 'Indefinido' %>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+              <%= t.rangos.length %> rangos
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <% if (t.activo) { %>
+                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                  Activo
+                </span>
+              <% } else { %>
+                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                  Inactivo
+                </span>
+              <% } %>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm">
+              <div class="flex gap-2">
+                <form action="/admin/tarifas/<%= t._id %>/toggle" method="POST" class="inline">
+                  <button type="submit" class="text-blue-600 hover:text-blue-900">
+                    <%= t.activo ? 'Desactivar' : 'Activar' %>
+                  </button>
+                </form>
+                <form action="/admin/tarifas/<%= t._id %>/delete" method="POST" class="inline" onsubmit="return confirm('¿Eliminar esta tarifa?')">
+                  <button type="submit" class="text-red-600 hover:text-red-900">
+                    Eliminar
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+  
+  <% if (pagination && pagination.totalPages > 1) { %>
+  <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
+    <div class="text-sm text-gray-600">
+      Página <%= pagination.page %> de <%= pagination.totalPages %> — <%= pagination.total %> tarifa(s)
+    </div>
+    <div class="flex gap-2">
+      <% const base = '/admin/tarifas?perPage=' + pagination.perPage + '&page='; %>
+      <% if (pagination.page > 1) { %>
+        <a href="<%= base + 1 %>" class="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-100">Primera</a>
+        <a href="<%= base + (pagination.page - 1) %>" class="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-100">Anterior</a>
+      <% } %>
+      <% if (pagination.page < pagination.totalPages) { %>
+        <a href="<%= base + (pagination.page + 1) %>" class="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-100">Siguiente</a>
+        <a href="<%= base + pagination.totalPages %>" class="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-100">Última</a>
+      <% } %>
+    </div>
+  </div>
+  <% } %>
+</div>
+<% } else { %>
+<div class="mt-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+  <p class="text-yellow-800 text-sm">No hay tarifas registradas aún. Carga un archivo CSV para comenzar.</p>
+</div>
+<% } %>

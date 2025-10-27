@@ -1,8 +1,9 @@
-<div class="bg-white shadow rounded-lg">
-  <div class="px-4 py-5 sm:px-6 border-b border-gray-200 flex items-center justify-between">
+<!-- Header -->
+<div class="bg-white border-b border-gray-200 mb-6">
+  <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 px-6 py-5">
     <div class="flex-1">
-      <h3 class="text-lg leading-6 font-medium text-gray-900">Dashbords</h3>
-      <p class="mt-1 text-sm text-gray-500">Lista de tableros/mesas disponibles según tu rol.</p>
+      <h1 class="text-2xl lg:text-3xl font-bold text-gray-900 mb-1">Power BI · Dashboards</h1>
+      <p class="text-sm text-gray-600">Lista de tableros y reportes disponibles según tu rol</p>
     </div>
     <div class="flex items-center gap-3">
       <form action="/powerbi" method="GET" class="hidden sm:block">
@@ -15,11 +16,14 @@
         </div>
       </form>
       <% if (user && (user.role === 'admin' || user.role === 'analista')) { %>
-        <a href="/powerbi/nuevo" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">Nuevo enlace</a>
+        <a href="/powerbi/nuevo" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 text-sm font-medium transition">Nuevo enlace</a>
       <% } %>
     </div>
   </div>
+</div>
 
+<!-- Contenido -->
+<div class="bg-white shadow rounded-lg">
   <div class="px-4 py-5 sm:p-6">
     <% if (links && links.length) { %>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">

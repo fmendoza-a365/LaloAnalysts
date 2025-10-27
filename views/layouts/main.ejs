@@ -72,17 +72,61 @@
               <a href="/" class="block px-3 py-3 rounded-md text-base font-medium text-gray-800 hover:bg-gray-100">Inicio</a>
               <a href="/about" class="block px-3 py-3 rounded-md text-base font-medium text-gray-800 hover:bg-gray-100">Acerca de</a>
               <% if (user) { %>
+                <!-- Dashboards -->
                 <div class="pt-2 mt-2 border-t">
-                  <div class="px-3 text-sm text-gray-500 uppercase tracking-wider">Módulos</div>
-                  <a href="/dashboard" class="block px-3 py-3 rounded-md text-base font-medium text-gray-800 hover:bg-gray-100">Tablero</a>
-                  <a href="/powerbi" class="block px-3 py-3 rounded-md text-base font-medium text-gray-800 hover:bg-gray-100">Dashbords</a>
-                  <a href="/dashboard/analytics" class="block px-3 py-3 rounded-md text-base font-medium text-gray-800 hover:bg-gray-100">Análisis Avanzado</a>
-                  <a href="/asistencia" class="block px-3 py-3 rounded-md text-base font-medium text-gray-800 hover:bg-gray-100">Asistencia</a>
-                  <a href="/kpis" class="block px-3 py-3 rounded-md text-base font-medium text-gray-800 hover:bg-gray-100">KPIs</a>
-                  <% if (user.role === 'admin') { %>
-                    <a href="/admin" class="block px-3 py-3 rounded-md text-base font-medium text-gray-800 hover:bg-gray-100">Administración</a>
-                  <% } %>
+                  <button onclick="toggleSection('mobile-dashboards')" class="w-full flex items-center justify-between px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 rounded-md">
+                    <span class="flex items-center gap-2">
+                      <svg id="icon-mobile-dashboards" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                      📈 Dashboards
+                    </span>
+                  </button>
+                  <div id="section-mobile-dashboards" class="hidden">
+                    <a href="/dashboard" class="block px-3 py-2.5 rounded-md text-base font-medium text-gray-800 hover:bg-blue-50">Tablero Principal</a>
+                    <a href="/powerbi" class="block px-3 py-2.5 rounded-md text-base font-medium text-gray-800 hover:bg-blue-50">Power BI</a>
+                  </div>
                 </div>
+                <!-- Reportes -->
+                <div class="pt-2 mt-2 border-t">
+                  <button onclick="toggleSection('mobile-reportes')" class="w-full flex items-center justify-between px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 rounded-md">
+                    <span class="flex items-center gap-2">
+                      <svg id="icon-mobile-reportes" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                      📊 Reportes
+                    </span>
+                  </button>
+                  <div id="section-mobile-reportes" class="hidden">
+                    <a href="/srr" class="block px-3 py-2.5 rounded-md text-base font-medium text-gray-800 hover:bg-purple-50">SRR</a>
+                    <a href="/kpis" class="block px-3 py-2.5 rounded-md text-base font-medium text-gray-800 hover:bg-purple-50">KPIs</a>
+                    <a href="/dashboard/analytics" class="block px-3 py-2.5 rounded-md text-base font-medium text-gray-800 hover:bg-purple-50">Análisis Avanzado</a>
+                  </div>
+                </div>
+                <!-- Personal -->
+                <div class="pt-2 mt-2 border-t">
+                  <button onclick="toggleSection('mobile-personal')" class="w-full flex items-center justify-between px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 rounded-md">
+                    <span class="flex items-center gap-2">
+                      <svg id="icon-mobile-personal" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                      👥 Personal
+                    </span>
+                  </button>
+                  <div id="section-mobile-personal" class="hidden">
+                    <a href="/asesores" class="block px-3 py-2.5 rounded-md text-base font-medium text-gray-800 hover:bg-green-50">Asesores</a>
+                    <a href="/asistencia" class="block px-3 py-2.5 rounded-md text-base font-medium text-gray-800 hover:bg-green-50">Asistencia</a>
+                  </div>
+                </div>
+                <!-- Administración -->
+                <% if (user.role === 'admin') { %>
+                <div class="pt-2 mt-2 border-t">
+                  <button onclick="toggleSection('mobile-sistema')" class="w-full flex items-center justify-between px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 rounded-md">
+                    <span class="flex items-center gap-2">
+                      <svg id="icon-mobile-sistema" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                      ⚙️ Sistema
+                    </span>
+                  </button>
+                  <div id="section-mobile-sistema" class="hidden">
+                    <a href="/admin" class="block px-3 py-2.5 rounded-md text-base font-medium text-gray-800 hover:bg-orange-50">Administración</a>
+                  </div>
+                </div>
+                <% } %>
+                <!-- Sesión -->
                 <div class="pt-2 mt-2 border-t">
                   <div class="px-3 text-sm text-gray-500">Sesión</div>
                   <a href="/auth/logout" class="block mt-1 px-3 py-3 rounded-md text-base font-medium text-gray-800 hover:bg-gray-100">Cerrar sesión</a>
@@ -127,36 +171,112 @@
           <aside class="w-full lg:w-64 hidden lg:block">
             <nav class="bg-white shadow rounded-lg p-4">
               <h2 class="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-3">Módulos</h2>
-              <ul class="space-y-1">
-                <li>
-                  <a href="/dashboard" class="block px-3 py-1.5 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">Tablero</a>
-                </li>
-                <li>
-                  <a href="/powerbi" class="block px-3 py-1.5 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">Dashbords</a>
-                </li>
-                <li>
-                  <a href="/dashboard/analytics" class="block px-3 py-1.5 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">Análisis Avanzado</a>
-                </li>
-                <li>
-                  <a href="/asistencia" class="block px-3 py-1.5 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">Asistencia</a>
-                </li>
-                <li>
-                  <a href="/kpis" class="block px-3 py-1.5 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">KPIs</a>
-                </li>
-                <% if (user && user.role === 'admin') { %>
-                <li>
-                  <a href="/admin" class="block px-3 py-1.5 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">Administración</a>
-                </li>
-                <% } %>
-                <li>
-                  <a href="/asesores" class="block px-3 py-1.5 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">Asesores</a>
-                </li>
-              </ul>
+              
+              <!-- Dashboards -->
+              <div class="mb-2">
+                <button onclick="toggleSection('dashboards')" class="w-full flex items-center justify-between px-3 py-2 rounded-md text-xs font-semibold text-gray-700 hover:bg-gray-100 transition-colors">
+                  <span class="flex items-center gap-2">
+                    <svg id="icon-dashboards" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    📈 Dashboards
+                  </span>
+                </button>
+                <ul id="section-dashboards" class="space-y-1 mt-1 ml-2 hidden">
+                  <li>
+                    <a href="/dashboard" class="block px-3 py-1.5 rounded-md text-sm font-medium text-gray-700 hover:bg-blue-50 hover:text-blue-700">Tablero Principal</a>
+                  </li>
+                  <li>
+                    <a href="/powerbi" class="block px-3 py-1.5 rounded-md text-sm font-medium text-gray-700 hover:bg-blue-50 hover:text-blue-700">Power BI</a>
+                  </li>
+                </ul>
+              </div>
+
+              <!-- Reportes y Análisis -->
+              <div class="mb-2">
+                <button onclick="toggleSection('reportes')" class="w-full flex items-center justify-between px-3 py-2 rounded-md text-xs font-semibold text-gray-700 hover:bg-gray-100 transition-colors">
+                  <span class="flex items-center gap-2">
+                    <svg id="icon-reportes" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    📊 Reportes
+                  </span>
+                </button>
+                <ul id="section-reportes" class="space-y-1 mt-1 ml-2 hidden">
+                  <li>
+                    <a href="/srr" class="block px-3 py-1.5 rounded-md text-sm font-medium text-gray-700 hover:bg-purple-50 hover:text-purple-700">SRR</a>
+                  </li>
+                  <li>
+                    <a href="/kpis" class="block px-3 py-1.5 rounded-md text-sm font-medium text-gray-700 hover:bg-purple-50 hover:text-purple-700">KPIs</a>
+                  </li>
+                  <li>
+                    <a href="/dashboard/analytics" class="block px-3 py-1.5 rounded-md text-sm font-medium text-gray-700 hover:bg-purple-50 hover:text-purple-700">Análisis Avanzado</a>
+                  </li>
+                </ul>
+              </div>
+
+              <!-- Gestión de Personal -->
+              <div class="mb-2">
+                <button onclick="toggleSection('personal')" class="w-full flex items-center justify-between px-3 py-2 rounded-md text-xs font-semibold text-gray-700 hover:bg-gray-100 transition-colors">
+                  <span class="flex items-center gap-2">
+                    <svg id="icon-personal" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    👥 Personal
+                  </span>
+                </button>
+                <ul id="section-personal" class="space-y-1 mt-1 ml-2 hidden">
+                  <li>
+                    <a href="/asesores" class="block px-3 py-1.5 rounded-md text-sm font-medium text-gray-700 hover:bg-green-50 hover:text-green-700">Asesores</a>
+                  </li>
+                  <li>
+                    <a href="/asistencia" class="block px-3 py-1.5 rounded-md text-sm font-medium text-gray-700 hover:bg-green-50 hover:text-green-700">Asistencia</a>
+                  </li>
+                </ul>
+              </div>
+
+              <!-- Administración -->
+              <% if (user && user.role === 'admin') { %>
+              <div class="mb-2">
+                <button onclick="toggleSection('sistema')" class="w-full flex items-center justify-between px-3 py-2 rounded-md text-xs font-semibold text-gray-700 hover:bg-gray-100 transition-colors">
+                  <span class="flex items-center gap-2">
+                    <svg id="icon-sistema" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    ⚙️ Sistema
+                  </span>
+                </button>
+                <ul id="section-sistema" class="space-y-1 mt-1 ml-2 hidden">
+                  <li>
+                    <a href="/admin" class="block px-3 py-1.5 rounded-md text-sm font-medium text-gray-700 hover:bg-orange-50 hover:text-orange-700">Administración</a>
+                  </li>
+                </ul>
+              </div>
+              <% } %>
             </nav>
           </aside>
 
           <!-- Contenido principal -->
           <main class="flex-1 min-w-0">
+            <!-- Breadcrumb de Campaña -->
+            <% if (typeof selectedCampaign !== 'undefined' && selectedCampaign) { %>
+            <div class="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-lg shadow-lg mb-6 px-6 py-4">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3 text-white">
+                  <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                  </svg>
+                  <span class="text-xl font-bold">A365</span>
+                  <svg class="h-5 w-5 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                  </svg>
+                  <span class="text-lg font-semibold text-blue-100">Campaña: <%= selectedCampaign.nombre %></span>
+                </div>
+                <a 
+                  href="/campaigns" 
+                  class="inline-flex items-center px-4 py-2 bg-white/20 hover:bg-white/30 text-white font-bold rounded-lg transition-all"
+                >
+                  <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+                  </svg>
+                  Cambiar Campaña
+                </a>
+              </div>
+            </div>
+            <% } %>
+            
             <%- body %>
           </main>
         </div>
@@ -198,6 +318,12 @@
           <a href="/powerbi" class="flex flex-col items-center justify-center py-2 hover:bg-gray-50">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 12h16M4 18h16"/></svg>
             <span>Dashbords</span>
+          </a>
+        </li>
+        <li>
+          <a href="/srr" class="flex flex-col items-center justify-center py-2 hover:bg-gray-50">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+            <span>SRR</span>
           </a>
         </li>
         <% if (user.role === 'admin') { %>
