@@ -1142,7 +1142,20 @@ function saveWidgetConfig() {
     ...(groupByConfig && { groupBy: groupByConfig })
   };
 
-  console.log('[DEBUG] dataConfig guardado:', widget.dataConfig);
+  console.log('[DEBUG] ═══════════════════════════════════════════');
+  console.log('[DEBUG] 💾 WIDGET CONFIG GUARDADO EN MEMORIA:');
+  console.log('[DEBUG] Widget ID:', widget.id);
+  console.log('[DEBUG] Widget Title:', widget.title);
+  console.log('[DEBUG] dataConfig completo:', JSON.stringify(widget.dataConfig, null, 2));
+
+  if (widget.dataConfig?.groupBy) {
+    console.log('[DEBUG] ✅ GroupBy PRESENTE en widget:');
+    console.log('[DEBUG]   ├─ Campo:', widget.dataConfig.groupBy.field);
+    console.log('[DEBUG]   └─ Granularidad:', widget.dataConfig.groupBy.granularity);
+  } else {
+    console.log('[DEBUG] ❌ GroupBy AUSENTE en widget');
+  }
+  console.log('[DEBUG] ═══════════════════════════════════════════');
 
   // Configuración específica de KPI
   if (widget.type === 'kpi') {
@@ -1533,6 +1546,18 @@ function saveDashboard() {
 
   console.log('═══════════════════════════════════════════════════════');
 
+  // 🔍 VERIFICACIÓN CRÍTICA: ¿El groupBy está en dashboardData.widgets ANTES de enviar?
+  console.log('🔍 VERIFICACIÓN PRE-ENVÍO:');
+  dashboardData.widgets.forEach((w, i) => {
+    console.log(`Widget ${i + 1} - ${w.title}:`);
+    console.log('  dataConfig completo:', JSON.stringify(w.dataConfig, null, 2));
+    if (w.dataConfig?.groupBy) {
+      console.log('  ✅ GroupBy PRESENTE:', w.dataConfig.groupBy);
+    } else {
+      console.log('  ❌ GroupBy AUSENTE');
+    }
+  });
+
   const payload = {
     id: dashboardData.id,
     name: name,
@@ -1545,6 +1570,7 @@ function saveDashboard() {
   };
 
   console.log('📤 Enviando datos al servidor...');
+  console.log('📦 Payload.widgets (primeros 500 caracteres):', payload.widgets.substring(0, 500));
 
   fetch('/custom-dashboard/save', {
     method: 'POST',
