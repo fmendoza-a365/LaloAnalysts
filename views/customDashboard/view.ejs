@@ -179,6 +179,136 @@
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+
+/* Sistema de Modal Personalizado */
+.custom-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.custom-modal-overlay.show {
+  opacity: 1;
+}
+
+.custom-modal {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  max-width: 500px;
+  width: 90%;
+  transform: scale(0.9);
+  transition: transform 0.3s ease;
+}
+
+.custom-modal-overlay.show .custom-modal {
+  transform: scale(1);
+}
+
+.custom-modal-header {
+  padding: 24px 24px 16px 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.custom-modal-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.custom-modal-icon.success {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+}
+
+.custom-modal-icon.error {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+}
+
+.custom-modal-icon.warning {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: white;
+}
+
+.custom-modal-icon.info {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+}
+
+.custom-modal-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.custom-modal-body {
+  padding: 0 24px 24px 24px;
+}
+
+.custom-modal-message {
+  color: #4b5563;
+  line-height: 1.6;
+  white-space: pre-line;
+}
+
+.custom-modal-footer {
+  padding: 16px 24px;
+  background: #f9fafb;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  border-radius: 0 0 16px 16px;
+}
+
+.custom-modal-button {
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  outline: none;
+}
+
+.custom-modal-button.primary {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  color: white;
+  box-shadow: 0 4px 6px -1px rgba(139, 92, 246, 0.2);
+}
+
+.custom-modal-button.primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 8px -1px rgba(139, 92, 246, 0.3);
+}
+
+.custom-modal-button.secondary {
+  background: white;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+}
+
+.custom-modal-button.secondary:hover {
+  background: #f9fafb;
+}
 </style>
 
 <!-- Header -->
@@ -257,6 +387,24 @@
   <div class="grid-stack" id="dashboardCanvas"></div>
 </div>
 
+<!-- Modal Personalizado -->
+<div id="customModalOverlay" class="custom-modal-overlay" style="display: none;">
+  <div class="custom-modal">
+    <div class="custom-modal-header">
+      <div id="customModalIcon" class="custom-modal-icon success">
+        ✓
+      </div>
+      <h3 id="customModalTitle" class="custom-modal-title">Éxito</h3>
+    </div>
+    <div class="custom-modal-body">
+      <p id="customModalMessage" class="custom-modal-message">Operación completada correctamente</p>
+    </div>
+    <div class="custom-modal-footer">
+      <button id="customModalButton" class="custom-modal-button primary">Aceptar</button>
+    </div>
+  </div>
+</div>
+
 <!-- GridStack JS -->
 <script src="https://cdn.jsdelivr.net/npm/gridstack@9.5.1/dist/gridstack-all.js"></script>
 
@@ -264,6 +412,62 @@
 let grid;
 const dashboardData = <%- JSON.stringify(dashboard) %>;
 const widgetDataMap = new Map();
+
+/**
+ * Sistema de Modal Personalizado
+ * Reemplaza los alert() del navegador con modales estilizados
+ */
+function showModal(message, type = 'success', title = null, callback = null) {
+  const overlay = document.getElementById('customModalOverlay');
+  const icon = document.getElementById('customModalIcon');
+  const titleEl = document.getElementById('customModalTitle');
+  const messageEl = document.getElementById('customModalMessage');
+  const button = document.getElementById('customModalButton');
+
+  // Configurar tipo de modal
+  const types = {
+    success: { icon: '✓', title: 'Éxito', class: 'success' },
+    error: { icon: '✕', title: 'Error', class: 'error' },
+    warning: { icon: '⚠', title: 'Advertencia', class: 'warning' },
+    info: { icon: 'ℹ', title: 'Información', class: 'info' }
+  };
+
+  const config = types[type] || types.info;
+
+  // Aplicar configuración
+  icon.textContent = config.icon;
+  icon.className = `custom-modal-icon ${config.class}`;
+  titleEl.textContent = title || config.title;
+  messageEl.textContent = message;
+
+  // Mostrar modal con animación
+  overlay.style.display = 'flex';
+  setTimeout(() => overlay.classList.add('show'), 10);
+
+  // Configurar botón
+  const closeModal = () => {
+    overlay.classList.remove('show');
+    setTimeout(() => {
+      overlay.style.display = 'none';
+      if (callback) callback();
+    }, 300);
+  };
+
+  // Event listeners
+  button.onclick = closeModal;
+  overlay.onclick = (e) => {
+    if (e.target === overlay) closeModal();
+  };
+
+  // Cerrar con ESC
+  const handleEsc = (e) => {
+    if (e.key === 'Escape') {
+      closeModal();
+      document.removeEventListener('keydown', handleEsc);
+    }
+  };
+  document.addEventListener('keydown', handleEsc);
+}
 
 document.addEventListener('DOMContentLoaded', function() {
   // Inicializar GridStack en modo editable
@@ -413,19 +617,51 @@ function renderChart(widget, data) {
   console.log('[VIEW] Data recibida:', data);
   console.log('[VIEW] Tipo de gráfico:', chartType);
 
+  // 🎨 Función helper para convertir hex a rgba
+  const hexToRgba = (hex, alpha) => {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  };
+
+  // 🎨 Obtener color del primer campo calculado (si existe)
+  const firstField = widget.dataConfig?.calculatedFields?.[0];
+  const baseColor = firstField?.color || '#8b5cf6'; // Default morado
+  const fieldLabel = firstField?.label || widget.title;
+
+  console.log('[VIEW] 🎨 Color personalizado:', baseColor, '- Etiqueta:', fieldLabel);
+
   let chartData;
 
   // Verificar si hay datos agrupados (data.data es un array con elementos)
   if (data.data && Array.isArray(data.data) && data.data.length > 0) {
     console.log('[VIEW] ✅ Datos agrupados detectados:', data.data.length, 'grupos');
+
+    // Para gráficos circulares (pie/doughnut), cada segmento tiene su color
+    // Para otros gráficos, todas las barras/puntos tienen el mismo color
+    let bgColors, borderColors;
+
+    if (chartType === 'pie' || chartType === 'doughnut') {
+      // Colores diferentes para cada segmento
+      bgColors = getChartColors(data.data.length, false);
+      borderColors = getChartColors(data.data.length, true);
+    } else {
+      // Mismo color personalizado para todas las barras/líneas
+      const bgAlpha = chartType === 'line' ? 0.2 : 0.8;
+      bgColors = Array(data.data.length).fill(hexToRgba(baseColor, bgAlpha));
+      borderColors = Array(data.data.length).fill(baseColor);
+    }
+
     chartData = {
       labels: data.data.map(d => d.label),
       datasets: [{
-        label: widget.title,
+        label: fieldLabel,
         data: data.data.map(d => d.value),
-        backgroundColor: getChartColors(data.data.length),
-        borderColor: getChartColors(data.data.length, true),
-        borderWidth: 2
+        backgroundColor: bgColors,
+        borderColor: borderColors,
+        borderWidth: 2,
+        fill: chartType === 'area'
       }]
     };
   } else {
@@ -434,10 +670,10 @@ function renderChart(widget, data) {
     chartData = {
       labels: ['Valor'],
       datasets: [{
-        label: widget.title,
+        label: fieldLabel,
         data: [data.value || 0],
-        backgroundColor: ['rgba(139, 92, 246, 0.6)'],
-        borderColor: ['rgba(139, 92, 246, 1)'],
+        backgroundColor: [hexToRgba(baseColor, 0.8)],
+        borderColor: [baseColor],
         borderWidth: 2
       }]
     };
@@ -446,7 +682,7 @@ function renderChart(widget, data) {
   console.log('[VIEW] ChartData preparada:', chartData);
 
   new Chart(ctx, {
-    type: chartType,
+    type: chartType === 'area' ? 'line' : chartType,
     data: chartData,
     options: {
       responsive: true,
@@ -461,7 +697,10 @@ function renderChart(widget, data) {
             ? `${widget.title} (${data.data.length} grupos)`
             : widget.title
         }
-      }
+      },
+      scales: chartType !== 'pie' && chartType !== 'doughnut' ? {
+        y: { beginAtZero: true }
+      } : {}
     }
   });
 }
@@ -665,14 +904,14 @@ async function saveLayout() {
     });
 
     if (response.ok) {
-      alert('✓ Layout guardado exitosamente');
+      showModal('El layout del dashboard se ha guardado exitosamente', 'success', 'Layout Guardado');
     } else {
       const error = await response.json();
-      alert('Error al guardar: ' + (error.error || 'Error desconocido'));
+      showModal('Error al guardar: ' + (error.error || 'Error desconocido'), 'error', 'Error al Guardar');
     }
   } catch (error) {
     console.error('Error al guardar layout:', error);
-    alert('Error al guardar el layout');
+    showModal('Error al guardar el layout. Por favor, intenta nuevamente.', 'error', 'Error de Conexión');
   }
 }
 </script>

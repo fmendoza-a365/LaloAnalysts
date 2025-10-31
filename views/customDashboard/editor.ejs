@@ -88,6 +88,136 @@
 .grid-stack {
   min-height: 400px;
 }
+
+/* Sistema de Modal Personalizado */
+.custom-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.custom-modal-overlay.show {
+  opacity: 1;
+}
+
+.custom-modal {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  max-width: 500px;
+  width: 90%;
+  transform: scale(0.9);
+  transition: transform 0.3s ease;
+}
+
+.custom-modal-overlay.show .custom-modal {
+  transform: scale(1);
+}
+
+.custom-modal-header {
+  padding: 24px 24px 16px 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.custom-modal-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.custom-modal-icon.success {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+}
+
+.custom-modal-icon.error {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+}
+
+.custom-modal-icon.warning {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: white;
+}
+
+.custom-modal-icon.info {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+}
+
+.custom-modal-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.custom-modal-body {
+  padding: 0 24px 24px 24px;
+}
+
+.custom-modal-message {
+  color: #4b5563;
+  line-height: 1.6;
+  white-space: pre-line;
+}
+
+.custom-modal-footer {
+  padding: 16px 24px;
+  background: #f9fafb;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  border-radius: 0 0 16px 16px;
+}
+
+.custom-modal-button {
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  outline: none;
+}
+
+.custom-modal-button.primary {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  color: white;
+  box-shadow: 0 4px 6px -1px rgba(139, 92, 246, 0.2);
+}
+
+.custom-modal-button.primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 8px -1px rgba(139, 92, 246, 0.3);
+}
+
+.custom-modal-button.secondary {
+  background: white;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+}
+
+.custom-modal-button.secondary:hover {
+  background: #f9fafb;
+}
 </style>
 
 <!-- Header -->
@@ -290,6 +420,24 @@
   </div>
 </div>
 
+<!-- Modal Personalizado -->
+<div id="customModalOverlay" class="custom-modal-overlay" style="display: none;">
+  <div class="custom-modal">
+    <div class="custom-modal-header">
+      <div id="customModalIcon" class="custom-modal-icon success">
+        ✓
+      </div>
+      <h3 id="customModalTitle" class="custom-modal-title">Éxito</h3>
+    </div>
+    <div class="custom-modal-body">
+      <p id="customModalMessage" class="custom-modal-message">Operación completada correctamente</p>
+    </div>
+    <div class="custom-modal-footer">
+      <button id="customModalButton" class="custom-modal-button primary">Aceptar</button>
+    </div>
+  </div>
+</div>
+
 <!-- GridStack JS -->
 <script src="https://cdn.jsdelivr.net/npm/gridstack@9.5.1/dist/gridstack-all.js"></script>
 
@@ -305,6 +453,62 @@ const dashboardData = {
   description: '<%= dashboard.description || "" %>',
   widgets: <%- JSON.stringify(dashboard.widgets || []) %>
 };
+
+/**
+ * Sistema de Modal Personalizado
+ * Reemplaza los alert() del navegador con modales estilizados
+ */
+function showModal(message, type = 'success', title = null, callback = null) {
+  const overlay = document.getElementById('customModalOverlay');
+  const icon = document.getElementById('customModalIcon');
+  const titleEl = document.getElementById('customModalTitle');
+  const messageEl = document.getElementById('customModalMessage');
+  const button = document.getElementById('customModalButton');
+
+  // Configurar tipo de modal
+  const types = {
+    success: { icon: '✓', title: 'Éxito', class: 'success' },
+    error: { icon: '✕', title: 'Error', class: 'error' },
+    warning: { icon: '⚠', title: 'Advertencia', class: 'warning' },
+    info: { icon: 'ℹ', title: 'Información', class: 'info' }
+  };
+
+  const config = types[type] || types.info;
+
+  // Aplicar configuración
+  icon.textContent = config.icon;
+  icon.className = `custom-modal-icon ${config.class}`;
+  titleEl.textContent = title || config.title;
+  messageEl.textContent = message;
+
+  // Mostrar modal con animación
+  overlay.style.display = 'flex';
+  setTimeout(() => overlay.classList.add('show'), 10);
+
+  // Configurar botón
+  const closeModal = () => {
+    overlay.classList.remove('show');
+    setTimeout(() => {
+      overlay.style.display = 'none';
+      if (callback) callback();
+    }, 300);
+  };
+
+  // Event listeners
+  button.onclick = closeModal;
+  overlay.onclick = (e) => {
+    if (e.target === overlay) closeModal();
+  };
+
+  // Cerrar con ESC
+  const handleEsc = (e) => {
+    if (e.key === 'Escape') {
+      closeModal();
+      document.removeEventListener('keydown', handleEsc);
+    }
+  };
+  document.addEventListener('keydown', handleEsc);
+}
 
 // Inicializar GridStack
 document.addEventListener('DOMContentLoaded', function() {
@@ -748,22 +952,25 @@ async function updateFieldsForDataset() {
         console.log('[DEBUG] widget.dataConfig:', widget.dataConfig);
         console.log('[DEBUG] widget.dataConfig.groupBy:', widget.dataConfig?.groupBy);
 
-        if (widget.dataConfig && widget.dataConfig.groupBy && widget.dataConfig.groupBy.field) {
-          groupBySelect.value = widget.dataConfig.groupBy.field;
-          console.log('[DEBUG] ✅ Valor de groupBy RESTAURADO:', widget.dataConfig.groupBy.field);
+        // groupBy es un ARRAY en el schema de Mongoose
+        if (widget.dataConfig && widget.dataConfig.groupBy && Array.isArray(widget.dataConfig.groupBy) && widget.dataConfig.groupBy.length > 0) {
+          const firstGroupBy = widget.dataConfig.groupBy[0];
+          groupBySelect.value = firstGroupBy.field;
+          console.log('[DEBUG] ✅ Valor de groupBy RESTAURADO:', firstGroupBy.field);
           console.log('[DEBUG] groupBySelect.value ahora es:', groupBySelect.value);
 
           // También restaurar granularidad
           const granularitySelect = document.getElementById('widgetGranularity');
-          if (granularitySelect && widget.dataConfig.groupBy.granularity) {
-            granularitySelect.value = widget.dataConfig.groupBy.granularity;
-            console.log('[DEBUG] Granularidad restaurada:', widget.dataConfig.groupBy.granularity);
+          if (granularitySelect && firstGroupBy.granularity) {
+            granularitySelect.value = firstGroupBy.granularity;
+            console.log('[DEBUG] Granularidad restaurada:', firstGroupBy.granularity);
           }
         } else {
           console.log('[DEBUG] ❌ NO se puede restaurar groupBy');
           console.log('[DEBUG] Razón:', !widget.dataConfig ? 'dataConfig es null/undefined' :
                                          !widget.dataConfig.groupBy ? 'groupBy es null/undefined' :
-                                         !widget.dataConfig.groupBy.field ? 'groupBy.field es null/undefined' : 'desconocido');
+                                         !Array.isArray(widget.dataConfig.groupBy) ? 'groupBy no es array' :
+                                         widget.dataConfig.groupBy.length === 0 ? 'groupBy está vacío' : 'desconocido');
         }
       }
       console.log('[DEBUG] ═══════════════════════════════════════════');
@@ -883,7 +1090,24 @@ function addCalculatedFieldRow(fieldData, index) {
   fieldRow.dataset.fieldIndex = index;
   fieldRow.innerHTML = `
     <div class="flex justify-between items-start mb-3">
-      <h5 class="text-sm font-semibold text-gray-700">Campo ${index + 1}</h5>
+      <div class="flex items-center gap-2">
+        <h5 class="text-sm font-semibold text-gray-700">Campo ${index + 1}</h5>
+        <!-- Botones de reordenamiento -->
+        <div class="flex gap-1">
+          <button type="button" onclick="moveFieldUp(${index})" title="Mover arriba"
+                  class="p-1 text-gray-500 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
+            </svg>
+          </button>
+          <button type="button" onclick="moveFieldDown(${index})" title="Mover abajo"
+                  class="p-1 text-gray-500 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
       <button type="button" onclick="removeCalculatedField(${index})"
               class="text-red-500 hover:text-red-700 transition-colors">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -895,11 +1119,22 @@ function addCalculatedFieldRow(fieldData, index) {
     <div class="space-y-3">
       <!-- Etiqueta del campo -->
       <div>
-        <label class="block text-xs font-medium text-gray-600 mb-1">Etiqueta</label>
+        <label class="block text-xs font-medium text-gray-600 mb-1">Etiqueta (Nombre en gráfico)</label>
         <input type="text"
                class="calc-field-label w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
                placeholder="Ej: Total Ventas"
                value="${fieldData.label || ''}">
+      </div>
+
+      <!-- Color personalizado -->
+      <div>
+        <label class="block text-xs font-medium text-gray-600 mb-1">🎨 Color de Barra/Línea</label>
+        <div class="flex gap-2 items-center">
+          <input type="color"
+                 class="calc-field-color h-10 w-20 border border-gray-300 rounded cursor-pointer"
+                 value="${fieldData.color || '#8b5cf6'}">
+          <span class="text-xs text-gray-500">Personaliza el color de esta serie</span>
+        </div>
       </div>
 
       <!-- Tipo de agregación -->
@@ -950,7 +1185,7 @@ function removeCalculatedField(index) {
   }
 }
 
-// Renumerar los campos después de eliminar uno
+// Renumerar los campos después de eliminar o mover uno
 function renumberCalculatedFields() {
   const calculatedFieldsList = document.getElementById('calculatedFieldsList');
   if (!calculatedFieldsList) return;
@@ -961,11 +1196,17 @@ function renumberCalculatedFields() {
     const header = row.querySelector('h5');
     if (header) header.textContent = `Campo ${newIndex + 1}`;
 
+    // Actualizar botones de mover
+    const moveUpBtn = row.querySelector('button[onclick^="moveFieldUp"]');
+    const moveDownBtn = row.querySelector('button[onclick^="moveFieldDown"]');
+    if (moveUpBtn) moveUpBtn.setAttribute('onclick', `moveFieldUp(${newIndex})`);
+    if (moveDownBtn) moveDownBtn.setAttribute('onclick', `moveFieldDown(${newIndex})`);
+
     // Actualizar onclick del botón eliminar
-    const removeBtn = row.querySelector('button[onclick]');
-    if (removeBtn) {
-      removeBtn.setAttribute('onclick', `removeCalculatedField(${newIndex})`);
-    }
+    const removeBtns = row.querySelectorAll('button[onclick^="removeCalculatedField"]');
+    removeBtns.forEach(btn => {
+      btn.setAttribute('onclick', `removeCalculatedField(${newIndex})`);
+    });
 
     // Actualizar onchange del selector de agregación
     const aggSelect = row.querySelector('.calc-field-aggregation');
@@ -994,6 +1235,46 @@ function toggleFieldCustomFormula(index) {
     fieldSelectorDiv.style.display = 'block';
     customFormulaDiv.style.display = 'none';
   }
+}
+
+// Mover campo calculado hacia arriba
+function moveFieldUp(index) {
+  const calculatedFieldsList = document.getElementById('calculatedFieldsList');
+  if (!calculatedFieldsList) return;
+
+  const fieldRows = Array.from(calculatedFieldsList.querySelectorAll('[data-field-index]'));
+  if (index === 0) return; // Ya está en la primera posición
+
+  const currentRow = fieldRows[index];
+  const previousRow = fieldRows[index - 1];
+
+  // Intercambiar posiciones en el DOM
+  calculatedFieldsList.insertBefore(currentRow, previousRow);
+
+  // Renumerar
+  renumberCalculatedFields();
+}
+
+// Mover campo calculado hacia abajo
+function moveFieldDown(index) {
+  const calculatedFieldsList = document.getElementById('calculatedFieldsList');
+  if (!calculatedFieldsList) return;
+
+  const fieldRows = Array.from(calculatedFieldsList.querySelectorAll('[data-field-index]'));
+  if (index === fieldRows.length - 1) return; // Ya está en la última posición
+
+  const currentRow = fieldRows[index];
+  const nextRow = fieldRows[index + 1];
+
+  // Intercambiar posiciones en el DOM
+  if (nextRow.nextSibling) {
+    calculatedFieldsList.insertBefore(currentRow, nextRow.nextSibling);
+  } else {
+    calculatedFieldsList.appendChild(currentRow);
+  }
+
+  // Renumerar
+  renumberCalculatedFields();
 }
 
 function toggleCustomFormula() {
@@ -1128,12 +1409,14 @@ function saveWidgetConfig() {
     const fieldRows = calculatedFieldsList.querySelectorAll('[data-field-index]');
     fieldRows.forEach(row => {
       const label = row.querySelector('.calc-field-label')?.value || '';
+      const color = row.querySelector('.calc-field-color')?.value || '#8b5cf6';
       const aggregationType = row.querySelector('.calc-field-aggregation')?.value || 'sum';
       const field = row.querySelector('.calc-field-name')?.value || '';
       const customFormula = row.querySelector('.calc-field-formula')?.value || '';
 
       calculatedFields.push({
         label,
+        color,
         aggregationType,
         field,
         customFormula
@@ -1142,14 +1425,16 @@ function saveWidgetConfig() {
   }
 
   // Preparar configuración de groupBy si es un gráfico
+  // ⚠️ IMPORTANTE: groupBy debe ser un ARRAY para coincidir con el schema de Mongoose
   let groupByConfig = null;
   if (widget.type === 'chart') {
     const groupByField = document.getElementById('widgetGroupBy')?.value;
     if (groupByField) {
-      groupByConfig = {
+      groupByConfig = [{
         field: groupByField,
-        granularity: document.getElementById('widgetGranularity')?.value || 'day'
-      };
+        granularity: document.getElementById('widgetGranularity')?.value || 'day',
+        order: 1  // Para soportar agrupación múltiple en el futuro
+      }];
     }
   }
 
@@ -1173,10 +1458,14 @@ function saveWidgetConfig() {
   console.log('[DEBUG] Widget Title:', widget.title);
   console.log('[DEBUG] dataConfig completo:', JSON.stringify(widget.dataConfig, null, 2));
 
-  if (widget.dataConfig?.groupBy) {
-    console.log('[DEBUG] ✅ GroupBy PRESENTE en widget:');
-    console.log('[DEBUG]   ├─ Campo:', widget.dataConfig.groupBy.field);
-    console.log('[DEBUG]   └─ Granularidad:', widget.dataConfig.groupBy.granularity);
+  // groupBy es un ARRAY en el schema
+  if (widget.dataConfig?.groupBy && Array.isArray(widget.dataConfig.groupBy) && widget.dataConfig.groupBy.length > 0) {
+    console.log('[DEBUG] ✅ GroupBy PRESENTE en widget (array):');
+    widget.dataConfig.groupBy.forEach((gb, i) => {
+      console.log(`[DEBUG]   Grupo ${i + 1}:`);
+      console.log(`[DEBUG]     ├─ Campo: ${gb.field}`);
+      console.log(`[DEBUG]     └─ Granularidad: ${gb.granularity}`);
+    });
   } else {
     console.log('[DEBUG] ❌ GroupBy AUSENTE en widget');
   }
@@ -1237,7 +1526,7 @@ function saveWidgetConfig() {
   }
 
   closeConfigModal();
-  alert('Configuración guardada. Guarda el dashboard para aplicar los cambios.');
+  showModal('Configuración guardada. Guarda el dashboard para aplicar los cambios.', 'success', 'Widget Configurado');
 }
 
 function closeConfigModal() {
@@ -1260,7 +1549,7 @@ async function refreshWidgetPreview() {
   // Obtener configuración actual del formulario (antes de guardar)
   const dataset = document.getElementById('widgetDataset')?.value;
   if (!dataset) {
-    alert('Selecciona un dataset primero');
+    showModal('Por favor selecciona un dataset antes de previsualizar', 'warning', 'Dataset Requerido');
     return;
   }
 
@@ -1280,14 +1569,16 @@ async function refreshWidgetPreview() {
   }
 
   // Configuración de agrupación
+  // ⚠️ IMPORTANTE: groupBy debe ser un ARRAY para coincidir con el schema de Mongoose
   let groupByConfig = null;
   if (widget.type === 'chart') {
     const groupByField = document.getElementById('widgetGroupBy')?.value;
     if (groupByField) {
-      groupByConfig = {
+      groupByConfig = [{
         field: groupByField,
-        granularity: document.getElementById('widgetGranularity')?.value || 'day'
-      };
+        granularity: document.getElementById('widgetGranularity')?.value || 'day',
+        order: 1
+      }];
     }
   }
 
@@ -1393,6 +1684,18 @@ function renderChartPreview(data, config, canvas) {
 
     const chartType = config.chartConfig?.chartType || 'bar';
 
+    // 🎨 Obtener color del primer campo calculado (si existe)
+    const firstField = config.dataConfig?.calculatedFields?.[0];
+    const baseColor = firstField?.color || '#3b82f6'; // Default azul
+
+    // Convertir hex a rgba
+    const hexToRgba = (hex, alpha) => {
+      const r = parseInt(hex.slice(1, 3), 16);
+      const g = parseInt(hex.slice(3, 5), 16);
+      const b = parseInt(hex.slice(5, 7), 16);
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    };
+
     // Limpiar canvas anterior
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -1407,10 +1710,10 @@ function renderChartPreview(data, config, canvas) {
       data: {
         labels: labels,
         datasets: [{
-          label: config.title,
+          label: firstField?.label || config.title,
           data: values,
-          backgroundColor: chartType === 'line' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.8)',
-          borderColor: 'rgba(59, 130, 246, 1)',
+          backgroundColor: chartType === 'line' ? hexToRgba(baseColor, 0.2) : hexToRgba(baseColor, 0.8),
+          borderColor: baseColor,
           borderWidth: 2,
           fill: chartType === 'area'
         }]
@@ -1489,7 +1792,7 @@ function clearCanvas() {
 function saveDashboard() {
   const name = document.getElementById('dashboardName').value.trim();
   if (!name) {
-    alert('Por favor ingresa un nombre para el dashboard');
+    showModal('Por favor ingresa un nombre para el dashboard', 'warning', 'Nombre Requerido');
     return;
   }
 
@@ -1610,24 +1913,26 @@ function saveDashboard() {
       console.log('═══════════════════════════════════════════════════════');
 
       // Mensaje mejorado al usuario
-      const summary = `Dashboard "${name}" guardado exitosamente:\n\n` +
+      const widgetsWithGroupBy = dashboardData.widgets.filter(w => w.dataConfig?.groupBy && w.dataConfig.groupBy.length > 0);
+
+      const summary = `Dashboard "${name}" guardado exitosamente!\n\n` +
                       `✅ ${dashboardData.widgets.length} widget(s) configurado(s)\n` +
                       `✅ Posiciones y tamaños guardados\n` +
-                      dashboardData.widgets.filter(w => w.dataConfig?.groupBy).length > 0
-                        ? `✅ ${dashboardData.widgets.filter(w => w.dataConfig?.groupBy).length} widget(s) con agrupación\n`
-                        : '' +
-                      `\n📋 Revisa la consola para ver detalles completos`;
+                      (widgetsWithGroupBy.length > 0
+                        ? `✅ ${widgetsWithGroupBy.length} widget(s) con agrupación activa\n`
+                        : '');
 
-      alert(summary);
-      window.location.href = '/custom-dashboard/view/' + data.dashboardId;
+      showModal(summary, 'success', 'Dashboard Guardado', () => {
+        window.location.href = '/custom-dashboard/view/' + data.dashboardId;
+      });
     } else {
       console.error('❌ Error al guardar:', data.error);
-      alert('Error al guardar: ' + (data.error || 'Error desconocido'));
+      showModal('Error al guardar: ' + (data.error || 'Error desconocido'), 'error', 'Error al Guardar');
     }
   })
   .catch(err => {
     console.error('❌ Error de red:', err);
-    alert('Error al guardar el dashboard');
+    showModal('Error al guardar el dashboard. Por favor, intenta nuevamente.', 'error', 'Error de Conexión');
   });
 }
 
