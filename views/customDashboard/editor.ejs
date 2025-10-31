@@ -738,10 +738,35 @@ async function updateFieldsForDataset() {
 
       // Restaurar valor guardado si existe
       const widget = dashboardData.widgets.find(w => w.id === currentWidgetId);
-      if (widget && widget.dataConfig && widget.dataConfig.groupBy && widget.dataConfig.groupBy.field) {
-        groupBySelect.value = widget.dataConfig.groupBy.field;
-        console.log('[DEBUG] Valor de groupBy restaurado:', widget.dataConfig.groupBy.field);
+
+      console.log('[DEBUG] ═══════════════════════════════════════════');
+      console.log('[DEBUG] 🔄 RESTAURANDO CONFIGURACIÓN DE GROUPBY');
+      console.log('[DEBUG] Widget ID:', currentWidgetId);
+      console.log('[DEBUG] Widget encontrado:', widget !== null);
+
+      if (widget) {
+        console.log('[DEBUG] widget.dataConfig:', widget.dataConfig);
+        console.log('[DEBUG] widget.dataConfig.groupBy:', widget.dataConfig?.groupBy);
+
+        if (widget.dataConfig && widget.dataConfig.groupBy && widget.dataConfig.groupBy.field) {
+          groupBySelect.value = widget.dataConfig.groupBy.field;
+          console.log('[DEBUG] ✅ Valor de groupBy RESTAURADO:', widget.dataConfig.groupBy.field);
+          console.log('[DEBUG] groupBySelect.value ahora es:', groupBySelect.value);
+
+          // También restaurar granularidad
+          const granularitySelect = document.getElementById('widgetGranularity');
+          if (granularitySelect && widget.dataConfig.groupBy.granularity) {
+            granularitySelect.value = widget.dataConfig.groupBy.granularity;
+            console.log('[DEBUG] Granularidad restaurada:', widget.dataConfig.groupBy.granularity);
+          }
+        } else {
+          console.log('[DEBUG] ❌ NO se puede restaurar groupBy');
+          console.log('[DEBUG] Razón:', !widget.dataConfig ? 'dataConfig es null/undefined' :
+                                         !widget.dataConfig.groupBy ? 'groupBy es null/undefined' :
+                                         !widget.dataConfig.groupBy.field ? 'groupBy.field es null/undefined' : 'desconocido');
+        }
       }
+      console.log('[DEBUG] ═══════════════════════════════════════════');
 
       console.log('[DEBUG] widgetGroupBy actualizado con', groupBySelect.options.length, 'opciones');
       console.log('[DEBUG] Campos base:', baseFields.length, 'Campos temporales:', temporalFields.length);
