@@ -409,8 +409,15 @@ function renderChart(widget, data) {
   const ctx = canvas.getContext('2d');
   const chartType = widget.chartConfig?.chartType || 'bar';
 
+  console.log('[VIEW] Renderizando gráfico:', widget.title);
+  console.log('[VIEW] Data recibida:', data);
+  console.log('[VIEW] Tipo de gráfico:', chartType);
+
   let chartData;
-  if (data.grouped && data.data) {
+
+  // Verificar si hay datos agrupados (data.data es un array con elementos)
+  if (data.data && Array.isArray(data.data) && data.data.length > 0) {
+    console.log('[VIEW] ✅ Datos agrupados detectados:', data.data.length, 'grupos');
     chartData = {
       labels: data.data.map(d => d.label),
       datasets: [{
@@ -422,6 +429,8 @@ function renderChart(widget, data) {
       }]
     };
   } else {
+    // Sin agrupación - valor único
+    console.log('[VIEW] ⚠️ Sin agrupación, mostrando valor único:', data.value);
     chartData = {
       labels: ['Valor'],
       datasets: [{
@@ -434,6 +443,8 @@ function renderChart(widget, data) {
     };
   }
 
+  console.log('[VIEW] ChartData preparada:', chartData);
+
   new Chart(ctx, {
     type: chartType,
     data: chartData,
@@ -443,6 +454,12 @@ function renderChart(widget, data) {
       plugins: {
         legend: {
           display: chartType === 'pie' || chartType === 'doughnut'
+        },
+        title: {
+          display: true,
+          text: data.data && data.data.length > 0
+            ? `${widget.title} (${data.data.length} grupos)`
+            : widget.title
         }
       }
     }

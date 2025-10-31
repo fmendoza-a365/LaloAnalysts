@@ -191,10 +191,36 @@ router.get('/preview', (req, res) => {
 router.post('/api/widget-data', async (req, res) => {
   try {
     const { widget, filters } = req.body;
+
+    console.log('═══════════════════════════════════════════════════════');
+    console.log('[CUSTOM DASHBOARD] 📊 API /widget-data llamada');
+    console.log('[CUSTOM DASHBOARD] Widget ID:', widget.id);
+    console.log('[CUSTOM DASHBOARD] Widget Title:', widget.title);
+    console.log('[CUSTOM DASHBOARD] Widget Type:', widget.type);
+    console.log('[CUSTOM DASHBOARD] Dataset:', widget.dataConfig?.dataset);
+    console.log('[CUSTOM DASHBOARD] GroupBy configurado:', widget.dataConfig?.groupBy);
+    if (widget.dataConfig?.groupBy) {
+      console.log('  ├─ Campo:', widget.dataConfig.groupBy.field);
+      console.log('  └─ Granularidad:', widget.dataConfig.groupBy.granularity);
+    }
+    console.log('[CUSTOM DASHBOARD] Filtros:', filters);
+    console.log('───────────────────────────────────────────────────────');
+
     const data = await getWidgetData(widget, filters || {}, req);
+
+    console.log('[CUSTOM DASHBOARD] 📤 Respuesta preparada:');
+    console.log('  ├─ Tipo de respuesta:', data.data ? 'AGRUPADO' : 'VALOR ÚNICO');
+    if (data.data) {
+      console.log('  ├─ Número de grupos:', data.data.length);
+      console.log('  └─ Primeros 3 grupos:', data.data.slice(0, 3));
+    } else {
+      console.log('  └─ Valor:', data.value);
+    }
+    console.log('═══════════════════════════════════════════════════════');
+
     res.json({ success: true, data });
   } catch (error) {
-    console.error('[CUSTOM DASHBOARD] Error en widget-data:', error);
+    console.error('[CUSTOM DASHBOARD] ❌ Error en widget-data:', error);
     res.status(500).json({ error: 'Error al obtener datos del widget' });
   }
 });
