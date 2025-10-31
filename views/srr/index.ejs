@@ -163,7 +163,7 @@
         <table class="min-w-full divide-y divide-gray-200">
           <thead class="bg-gray-800 text-white">
             <tr>
-              <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider">Mesa</th>
+              <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider sticky left-0 bg-gray-800 z-10">Mesa</th>
               <th class="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider">Contestadas</th>
               <th class="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider">% Atención</th>
               <th class="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider">% Servicio</th>
@@ -171,13 +171,14 @@
               <th class="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider bg-red-700">Costos Nómina (S/)</th>
               <th class="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider bg-blue-700">Margen Bruto (S/)</th>
               <th class="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider bg-blue-800">% Margen</th>
-              <th class="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider">Empleados</th>
+              <th class="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider">HeadCount</th>
+              <th class="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider bg-purple-700">IxA (S/)</th>
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
             <% mesasData.forEach((mesa, idx) => { %>
               <tr class="<%= idx % 2 === 0 ? 'bg-white' : 'bg-gray-50' %> hover:bg-blue-50 transition">
-                <td class="px-4 py-3 text-sm font-semibold text-gray-900">
+                <td class="px-4 py-3 text-sm font-semibold text-gray-900 sticky left-0 z-10 <%= idx % 2 === 0 ? 'bg-white' : 'bg-gray-50' %>">
                   <%= mesa.mesa %>
                   <% if (!mesa.tieneTarifa) { %>
                     <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
@@ -207,12 +208,15 @@
                 <td class="px-4 py-3 text-center text-sm text-gray-700">
                   <span class="px-2 py-1 bg-gray-100 rounded-full text-xs font-medium"><%= mesa.empleados %></span>
                 </td>
+                <td class="px-4 py-3 text-center text-sm font-bold bg-purple-50 text-purple-700">
+                  S/ <%= mesa.empleados > 0 ? (mesa.ingresos / mesa.empleados).toLocaleString('es-PE', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00' %>
+                </td>
               </tr>
             <% }) %>
             
             <!-- Fila de Totales -->
             <tr class="bg-gradient-to-r from-gray-800 to-gray-900 text-white font-bold">
-              <td class="px-4 py-4 text-sm uppercase">TOTALES</td>
+              <td class="px-4 py-4 text-sm uppercase sticky left-0 bg-gray-800 z-10">TOTALES</td>
               <td class="px-4 py-4 text-center text-sm"><%= totales.contestadas.toLocaleString('es-PE') %></td>
               <td class="px-4 py-4 text-center text-sm"><%= totales.nivelAtencion %>%</td>
               <td class="px-4 py-4 text-center text-sm"><%= totales.nivelServicio %>%</td>
@@ -229,6 +233,13 @@
                 <%= totales.porcentajeMargenTotal %>%
               </td>
               <td class="px-4 py-4 text-center text-sm">-</td>
+              <td class="px-4 py-4 text-center text-sm bg-purple-700">
+                <%
+                  const totalEmpleados = mesasData.reduce((sum, m) => sum + m.empleados, 0);
+                  const ixaTotal = totalEmpleados > 0 ? (totales.ingresosTotales / totalEmpleados) : 0;
+                %>
+                S/ <%= ixaTotal.toLocaleString('es-PE', {minimumFractionDigits: 2, maximumFractionDigits: 2}) %>
+              </td>
             </tr>
           </tbody>
         </table>

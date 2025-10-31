@@ -82,14 +82,14 @@
             <% for (let m = 1; m <= 12; m++) {
               const tieneDatos = meses[m] && meses[m].sales > 0;
               const colorClass = tieneDatos ? 'text-gray-900' : 'text-gray-400';
-              const valorDisplay = tieneDatos ? 'S/ ' + meses[m].sales.toLocaleString('es-PE', {minimumFractionDigits:0, maximumFractionDigits:0}) : '--';
+              const valorDisplay = tieneDatos ? 'S/ ' + meses[m].sales.toLocaleString('es-PE', {minimumFractionDigits:0, maximumFractionDigits:2}) : '--';
             %>
               <td class="px-3 py-2 text-center <%= colorClass %>">
                 <%= valorDisplay %>
               </td>
             <% } %>
             <td class="px-3 py-2 text-center font-bold bg-yellow-50 text-gray-900">
-              S/ <%= (acumulado && acumulado.sales || 0).toLocaleString('es-PE', {minimumFractionDigits:0, maximumFractionDigits:0}) %>
+              S/ <%= (acumulado && acumulado.sales || 0).toLocaleString('es-PE', {minimumFractionDigits:0, maximumFractionDigits:2}) %>
             </td>
           </tr>
 
@@ -99,14 +99,14 @@
             <% for (let m = 1; m <= 12; m++) {
               const tieneDatos = meses[m] && meses[m].provision > 0;
               const colorClass = tieneDatos ? 'text-gray-900' : 'text-gray-400';
-              const valorDisplay = tieneDatos ? 'S/ ' + meses[m].provision.toLocaleString('es-PE', {minimumFractionDigits:0, maximumFractionDigits:0}) : '--';
+              const valorDisplay = tieneDatos ? 'S/ ' + meses[m].provision.toLocaleString('es-PE', {minimumFractionDigits:0, maximumFractionDigits:2}) : '--';
             %>
               <td class="px-3 py-2 text-center <%= colorClass %>">
                 <%= valorDisplay %>
               </td>
             <% } %>
             <td class="px-3 py-2 text-center font-bold bg-yellow-50 text-gray-900">
-              S/ <%= (acumulado && acumulado.provision || 0).toLocaleString('es-PE', {minimumFractionDigits:0, maximumFractionDigits:0}) %>
+              S/ <%= (acumulado && acumulado.provision || 0).toLocaleString('es-PE', {minimumFractionDigits:0, maximumFractionDigits:2}) %>
             </td>
           </tr>
 
@@ -125,14 +125,14 @@
             <% for (let m = 1; m <= 12; m++) {
               const tieneDatos = meses[m] && meses[m].payroll > 0;
               const colorClass = tieneDatos ? 'text-green-700 font-semibold' : 'text-gray-400';
-              const valorDisplay = tieneDatos ? 'S/ ' + meses[m].payroll.toLocaleString('es-PE', {minimumFractionDigits:0, maximumFractionDigits:0}) : '--';
+              const valorDisplay = tieneDatos ? 'S/ ' + meses[m].payroll.toLocaleString('es-PE', {minimumFractionDigits:0, maximumFractionDigits:2}) : '--';
             %>
               <td class="px-3 py-2 text-center <%= colorClass %>">
                 <%= valorDisplay %>
               </td>
             <% } %>
             <td class="px-3 py-2 text-center font-bold bg-yellow-50 text-green-700">
-              S/ <%= (acumulado && acumulado.payroll || 0).toLocaleString('es-PE', {minimumFractionDigits:0, maximumFractionDigits:0}) %>
+              S/ <%= (acumulado && acumulado.payroll || 0).toLocaleString('es-PE', {minimumFractionDigits:0, maximumFractionDigits:2}) %>
             </td>
           </tr>
 
@@ -187,6 +187,24 @@
             </td>
           </tr>
 
+          <!-- Rotación % -->
+          <tr class="hover:bg-orange-50">
+            <td class="px-3 py-2 font-semibold text-gray-900 sticky left-0 bg-white z-10 border-r">Rotación %</td>
+            <% for (let m = 1; m <= 12; m++) {
+              const tieneDatos = meses[m] && (meses[m].rotacion !== undefined);
+              const rotacionValue = (meses[m] && meses[m].rotacion) || 0;
+              const colorClass = tieneDatos ? (rotacionValue > 15 ? 'text-red-700 font-bold' : rotacionValue > 10 ? 'text-orange-700 font-semibold' : 'text-green-700') : 'text-gray-400';
+              const valorDisplay = tieneDatos ? rotacionValue.toFixed(2) + '%' : '--';
+            %>
+              <td class="px-3 py-2 text-center <%= colorClass %>">
+                <%= valorDisplay %>
+              </td>
+            <% } %>
+            <td class="px-3 py-2 text-center font-bold bg-yellow-50 text-gray-900">
+              <%= (acumulado && acumulado.rotacion) ? acumulado.rotacion.toFixed(2) + '%' : '--' %>
+            </td>
+          </tr>
+
           <!-- Gross Margin (MB) S/ -->
           <tr class="hover:bg-purple-50">
             <td class="px-3 py-2 font-semibold text-gray-900 sticky left-0 bg-white z-10 border-r">Gross Margin (MB) S/</td>
@@ -197,11 +215,11 @@
               }
             %>
               <td class="px-3 py-2 text-center <%= colorClass %>">
-                <%= (meses[m] && meses[m].sales > 0) ? 'S/ ' + meses[m].margenBruto.toLocaleString('es-PE', {minimumFractionDigits:0, maximumFractionDigits:0}) : '--' %>
+                <%= (meses[m] && meses[m].sales > 0) ? 'S/ ' + meses[m].margenBruto.toLocaleString('es-PE', {minimumFractionDigits:0, maximumFractionDigits:2}) : '--' %>
               </td>
             <% } %>
             <td class="px-3 py-2 text-center font-bold bg-yellow-50 <%= (acumulado && acumulado.margenBruto > 0) ? 'text-green-700' : 'text-red-700' %>">
-              S/ <%= (acumulado && acumulado.margenBruto || 0).toLocaleString('es-PE', {minimumFractionDigits:0, maximumFractionDigits:0}) %>
+              S/ <%= (acumulado && acumulado.margenBruto || 0).toLocaleString('es-PE', {minimumFractionDigits:0, maximumFractionDigits:2}) %>
             </td>
           </tr>
 
@@ -215,11 +233,11 @@
               }
             %>
               <td class="px-3 py-2 text-center <%= colorClass %>">
-                <%= (meses[m] && meses[m].sales > 0) ? meses[m].porcentajeMargen.toFixed(1) + '%' : '--' %>
+                <%= (meses[m] && meses[m].sales > 0) ? meses[m].porcentajeMargen.toFixed(2) + '%' : '--' %>
               </td>
             <% } %>
             <td class="px-3 py-2 text-center font-bold bg-yellow-50 <%= (acumulado && acumulado.porcentajeMargen > 0) ? 'text-green-700' : 'text-red-700' %>">
-              <%= (acumulado && acumulado.porcentajeMargen || 0).toFixed(1) %>%
+              <%= (acumulado && acumulado.porcentajeMargen || 0).toFixed(2) %>%
             </td>
           </tr>
         </tbody>
@@ -317,14 +335,14 @@
             <% for (let m = 1; m <= 12; m++) {
               const tieneDatos = meses[m] && meses[m].ratioEFT > 0;
               const colorClass = tieneDatos ? 'text-blue-700 font-semibold' : 'text-gray-400';
-              const valorDisplay = tieneDatos ? meses[m].ratioEFT.toFixed(0) + '%' : '--';
+              const valorDisplay = tieneDatos ? meses[m].ratioEFT.toFixed(2) + '%' : '--';
             %>
               <td class="px-3 py-2 text-center <%= colorClass %>">
                 <%= valorDisplay %>
               </td>
             <% } %>
             <td class="px-3 py-2 text-center font-bold bg-yellow-50 text-blue-700">
-              <%= (acumulado && acumulado.ratioEFT || 0).toFixed(0) %>%
+              <%= (acumulado && acumulado.ratioEFT || 0).toFixed(2) %>%
             </td>
           </tr>
 
@@ -334,14 +352,14 @@
             <% for (let m = 1; m <= 12; m++) {
               const tieneDatos = meses[m] && meses[m].ratioEstructura > 0;
               const colorClass = tieneDatos ? 'text-blue-700 font-semibold' : 'text-gray-400';
-              const valorDisplay = tieneDatos ? meses[m].ratioEstructura.toFixed(0) + '%' : '--';
+              const valorDisplay = tieneDatos ? meses[m].ratioEstructura.toFixed(2) + '%' : '--';
             %>
               <td class="px-3 py-2 text-center <%= colorClass %>">
                 <%= valorDisplay %>
               </td>
             <% } %>
             <td class="px-3 py-2 text-center font-bold bg-yellow-50 text-blue-700">
-              <%= (acumulado && acumulado.ratioEstructura || 0).toFixed(0) %>%
+              <%= (acumulado && acumulado.ratioEstructura || 0).toFixed(2) %>%
             </td>
           </tr>
 
@@ -351,14 +369,14 @@
             <% for (let m = 1; m <= 12; m++) {
               const tieneDatos = meses[m] && meses[m].ratioAgentesSuper > 0;
               const colorClass = tieneDatos ? 'text-gray-900' : 'text-gray-400';
-              const valorDisplay = tieneDatos ? meses[m].ratioAgentesSuper.toFixed(1) : '--';
+              const valorDisplay = tieneDatos ? meses[m].ratioAgentesSuper.toFixed(2) : '--';
             %>
               <td class="px-3 py-2 text-center <%= colorClass %>">
                 <%= valorDisplay %>
               </td>
             <% } %>
             <td class="px-3 py-2 text-center font-bold bg-yellow-50 text-gray-900">
-              <%= (acumulado && acumulado.ratioAgentesSuper || 0).toFixed(1) %>
+              <%= (acumulado && acumulado.ratioAgentesSuper || 0).toFixed(2) %>
             </td>
           </tr>
 
@@ -402,14 +420,14 @@
             <% for (let m = 1; m <= 12; m++) {
               const tieneDatos = meses[m] && meses[m].porcentajeComisiones > 0;
               const colorClass = tieneDatos ? 'text-green-700 font-semibold' : 'text-gray-400';
-              const valorDisplay = tieneDatos ? meses[m].porcentajeComisiones.toFixed(0) + '%' : '--';
+              const valorDisplay = tieneDatos ? meses[m].porcentajeComisiones.toFixed(2) + '%' : '--';
             %>
               <td class="px-3 py-2 text-center <%= colorClass %>">
                 <%= valorDisplay %>
               </td>
             <% } %>
             <td class="px-3 py-2 text-center font-bold bg-yellow-50 text-green-700">
-              <%= (acumulado && acumulado.porcentajeComisiones || 0).toFixed(0) %>%
+              <%= (acumulado && acumulado.porcentajeComisiones || 0).toFixed(2) %>%
             </td>
           </tr>
         </tbody>

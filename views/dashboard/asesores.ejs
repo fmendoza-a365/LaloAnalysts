@@ -227,7 +227,7 @@ new Chart(document.getElementById('estadosChart'), {
             const label = context.label || '';
             const value = formatSeconds(context.parsed);
             const total = estadosValues.reduce((a,b) => a+b, 0);
-            const percentage = ((context.parsed / total) * 100).toFixed(1);
+            const percentage = ((context.parsed / total) * 100).toFixed(2);
             return label + ': ' + value + ' (' + percentage + '%)';
           }
         }
