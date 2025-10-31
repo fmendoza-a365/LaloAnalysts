@@ -1,5 +1,5 @@
 const Joi = require('joi');
-const { parseAsistenciasBuffer } = require('../utils/parseAsistencias');
+const { parseAsistenciasBuffer } = require('../utils/parsers/parseAsistencias');
 const { calcularIndicadores } = require('../services/indicadoresService');
 const { buildWorkbookBase64, buildCsv } = require('../utils/reportBuilders');
 

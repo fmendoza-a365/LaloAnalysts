@@ -5,21 +5,23 @@ const path = require('path');
 const XLSX = require('xlsx');
 const fs = require('fs');
 const ExcelJS = require('exceljs');
-const Asesor = require('../models/Asesor');
-const Config = require('../models/Config');
 const { ensureAuthenticated, checkRole, checkPermission } = require('../middleware/auth');
+const { requireTenant, getTenantModelFromReq } = require('../middleware/tenant');
+
+// Modelos GLOBALES (compartidos entre todos los tenants)
+const Config = require('../models/Config');
 const PowerBILink = require('../models/PowerBILink');
 const User = require('../models/User');
 const Role = require('../models/Role');
-const GenesysDataset = require('../models/GenesysDataset');
-const GenesysRecord = require('../models/GenesysRecord');
-const AsistenciaDataset = require('../models/AsistenciaDataset');
-const AsistenciaRecord = require('../models/AsistenciaRecord');
-const ProvisionDataset = require('../models/ProvisionDataset');
-const ProvisionRecord = require('../models/ProvisionRecord');
-const { parseRendimiento, parseEstados, parseProvision, parseCalidad } = require('../utils/genesysParsers');
-const { parseAsistencia } = require('../utils/asistenciaParser');
-const { parseProvisionAgregada } = require('../utils/proviParser');
+
+// ❌ NO importar modelos multi-tenant directamente
+// Los obtendremos dinámicamente con getTenantModelFromReq() en cada ruta
+// Modelos multi-tenant: Asesor, GenesysDataset, GenesysRecord, AsistenciaDataset, AsistenciaRecord, ProvisionDataset, ProvisionRecord
+
+// Parsers
+const { parseRendimiento, parseEstados, parseProvision, parseCalidad } = require('../utils/parsers/genesysParsers');
+const { parseAsistencia } = require('../utils/parsers/asistenciaParser');
+const { parseProvisionAgregada } = require('../utils/parsers/proviParser');
 
 // Helper para convertir números de Excel a fechas JavaScript
 function excelDateToJSDate(excelDate) {
@@ -63,19 +65,23 @@ router.get('/', (req, res) => {
 // ===== Genesys Cloud: Carga de archivos (solo admin) =====
 const uploadGenesys = multer({ storage: memoryStorage, limits: { fileSize: 25 * 1024 * 1024 } });
 
-router.get('/genesys', checkRole(['admin']), async (req, res) => {
+router.get('/genesys', requireTenant, checkRole(['admin']), async (req, res) => {
   try {
+    // Obtener modelos dinámicos del tenant actual
+    const GenesysDataset = getTenantModelFromReq(req, 'GenesysDataset');
+    const ProvisionDataset = getTenantModelFromReq(req, 'ProvisionDataset');
+
     const page = Math.max(parseInt(req.query.page || '1', 10), 1);
     const perPage = Math.min(Math.max(parseInt(req.query.perPage || '12', 10), 5), 50);
     const filtroTipo = (req.query.tipo || '').trim();
-    
-    // Obtener datasets de Genesys normales
+
+    // ✅ Obtener datasets de Genesys normales (solo del tenant actual)
     const query = filtroTipo && filtroTipo !== 'provision-agregada' ? { tipo: filtroTipo } : {};
     const genesysDatasets = await GenesysDataset.find(query)
       .sort({ anio: -1, mes: -1, tipo: 1 })
       .lean();
-    
-    // Obtener datasets de Provisión Agregada
+
+    // ✅ Obtener datasets de Provisión Agregada (solo del tenant actual)
     let provisionDatasets = [];
     if (!filtroTipo || filtroTipo === 'provision-agregada') {
       provisionDatasets = await ProvisionDataset.find()
@@ -116,8 +122,14 @@ router.get('/genesys', checkRole(['admin']), async (req, res) => {
   }
 });
 
-router.post('/genesys/upload', checkRole(['admin']), uploadGenesys.single('archivo'), async (req, res) => {
+router.post('/genesys/upload', requireTenant, checkRole(['admin']), uploadGenesys.single('archivo'), async (req, res) => {
   try {
+    // Obtener modelos dinámicos del tenant actual
+    const GenesysDataset = getTenantModelFromReq(req, 'GenesysDataset');
+    const GenesysRecord = getTenantModelFromReq(req, 'GenesysRecord');
+    const ProvisionDataset = getTenantModelFromReq(req, 'ProvisionDataset');
+    const ProvisionRecord = getTenantModelFromReq(req, 'ProvisionRecord');
+
     const { tipo, anio, mes, reemplazar } = req.body;
     if (!req.file) {
       req.flash('error_msg', 'Adjunte un archivo Excel o CSV exportado de Genesys Cloud');
@@ -137,9 +149,9 @@ router.post('/genesys/upload', checkRole(['admin']), uploadGenesys.single('archi
     // Caso especial: provision-agregada usa modelos separados
     if (tipo === 'provision-agregada') {
       try {
-        console.log('[PROVISION-AGREGADA] Iniciando carga para', y, '-', m);
-        
-        // Buscar dataset en ProvisionDataset
+        console.log(`[PROVISION-AGREGADA] [Tenant: ${req.tenantId}] Iniciando carga para`, y, '-', m);
+
+        // Buscar dataset en ProvisionDataset (solo del tenant actual)
         let dataset = await ProvisionDataset.findOne({ anio: y, mes: m });
         if (dataset && !reemplazar) {
           req.flash('error_msg', 'Ya existe un dataset para ese periodo. Marque "Reemplazar" para actualizar.');
@@ -150,7 +162,7 @@ router.post('/genesys/upload', checkRole(['admin']), uploadGenesys.single('archi
         console.log('[PROVISION-AGREGADA] Parseando archivo, tamaño:', req.file.buffer.length, 'bytes');
         const registros = parseProvisionAgregada(req.file.buffer);
         console.log('[PROVISION-AGREGADA] Registros parseados:', registros.length);
-        
+
         if (registros.length === 0) {
           throw new Error('No se pudieron parsear registros del archivo CSV');
         }
@@ -164,12 +176,12 @@ router.post('/genesys/upload', checkRole(['admin']), uploadGenesys.single('archi
       fs.writeFileSync(fullPath, req.file.buffer);
 
       if (!dataset) {
-        dataset = new ProvisionDataset({ 
-          anio: y, 
-          mes: m, 
-          nombreArchivo: filename, 
+        dataset = new ProvisionDataset({
+          anio: y,
+          mes: m,
+          nombreArchivo: filename,
           creadoPor: req.user._id,
-          totalRegistros: 0 
+          totalRegistros: 0
         });
         await dataset.save();
       } else {
@@ -180,22 +192,22 @@ router.post('/genesys/upload', checkRole(['admin']), uploadGenesys.single('archi
       }
 
       // Insertar registros
-      const bulk = registros.map(r => ({ 
-        insertOne: { 
-          document: { 
-            datasetId: dataset._id, 
-            ...r 
-          } 
-        } 
+      const bulk = registros.map(r => ({
+        insertOne: {
+          document: {
+            datasetId: dataset._id,
+            ...r
+          }
+        }
       }));
-      
+
       console.log('[PROVISION-AGREGADA] Insertando', bulk.length, 'registros en la BD');
-      
+
       if (bulk.length) {
         const resultado = await ProvisionRecord.bulkWrite(bulk);
         console.log('[PROVISION-AGREGADA] Resultado bulkWrite:', resultado.insertedCount);
       }
-      
+
       dataset.totalRegistros = bulk.length;
       await dataset.save();
       
@@ -243,12 +255,19 @@ router.post('/genesys/upload', checkRole(['admin']), uploadGenesys.single('archi
     fs.writeFileSync(fullPath, req.file.buffer);
 
     if (!dataset) {
-      dataset = new GenesysDataset({ tipo, anio: y, mes: m, originalFilename: filename, totalRegistros: 0 });
+      dataset = new GenesysDataset({
+        anio: y,
+        mes: m,
+        tipo: tipo,
+        originalFilename: filename,
+        totalRegistros: 0
+      });
       await dataset.save();
     } else {
       // Reemplazo: borrar registros previos
       await GenesysRecord.deleteMany({ datasetId: dataset._id });
       dataset.originalFilename = filename;
+      dataset.totalRegistros = 0;
     }
 
     // Insertar registros normalizados
@@ -269,13 +288,18 @@ router.post('/genesys/upload', checkRole(['admin']), uploadGenesys.single('archi
 });
 
 // ===== Eliminar dataset de Genesys Cloud (solo admin) =====
-router.post('/genesys/delete/:id', checkRole(['admin']), async (req, res) => {
+router.post('/genesys/delete/:id', requireTenant, checkRole(['admin']), async (req, res) => {
   try {
     const { id } = req.params;
     const { tipo } = req.body;
-    
+
+    const ProvisionDataset = getTenantModelFromReq(req, 'ProvisionDataset');
+    const ProvisionRecord = getTenantModelFromReq(req, 'ProvisionRecord');
+    const GenesysDataset = getTenantModelFromReq(req, 'GenesysDataset');
+    const GenesysRecord = getTenantModelFromReq(req, 'GenesysRecord');
+
     console.log('[DELETE] Eliminando dataset:', id, 'tipo:', tipo);
-    
+
     if (tipo === 'provision-agregada') {
       // Eliminar dataset de Provisión Agregada
       const dataset = await ProvisionDataset.findById(id);
@@ -283,14 +307,14 @@ router.post('/genesys/delete/:id', checkRole(['admin']), async (req, res) => {
         req.flash('error_msg', 'Dataset no encontrado');
         return res.redirect('/admin/genesys');
       }
-      
+
       // Eliminar registros asociados
       const registrosEliminados = await ProvisionRecord.deleteMany({ datasetId: id });
       console.log('[DELETE] Registros eliminados:', registrosEliminados.deletedCount);
-      
+
       // Eliminar dataset
       await ProvisionDataset.findByIdAndDelete(id);
-      
+
       req.flash('success_msg', `Dataset de Provisión Agregada eliminado (${dataset.anio}-${String(dataset.mes).padStart(2,'0')})`);
     } else {
       // Eliminar dataset normal de Genesys
@@ -299,17 +323,17 @@ router.post('/genesys/delete/:id', checkRole(['admin']), async (req, res) => {
         req.flash('error_msg', 'Dataset no encontrado');
         return res.redirect('/admin/genesys');
       }
-      
+
       // Eliminar registros asociados
       const registrosEliminados = await GenesysRecord.deleteMany({ datasetId: id });
       console.log('[DELETE] Registros eliminados:', registrosEliminados.deletedCount);
-      
+
       // Eliminar dataset
       await GenesysDataset.findByIdAndDelete(id);
-      
+
       req.flash('success_msg', `Dataset de ${tipo} eliminado (${dataset.anio}-${String(dataset.mes).padStart(2,'0')})`);
     }
-    
+
     res.redirect('/admin/genesys');
   } catch (e) {
     console.error('[DELETE] Error:', e);
@@ -321,8 +345,10 @@ router.post('/genesys/delete/:id', checkRole(['admin']), async (req, res) => {
 // ===== Asistencia: Carga de archivos CSV (solo admin) =====
 const uploadAsistencia = multer({ storage: memoryStorage, limits: { fileSize: 25 * 1024 * 1024 } });
 
-router.get('/asistencia', checkRole(['admin']), async (req, res) => {
+router.get('/asistencia', requireTenant, checkRole(['admin']), async (req, res) => {
   try {
+    const AsistenciaDataset = getTenantModelFromReq(req, 'AsistenciaDataset');
+
     const page = Math.max(parseInt(req.query.page || '1', 10), 1);
     const perPage = Math.min(Math.max(parseInt(req.query.perPage || '12', 10), 5), 50);
     const total = await AsistenciaDataset.countDocuments();
@@ -344,7 +370,7 @@ router.get('/asistencia', checkRole(['admin']), async (req, res) => {
   }
 });
 
-router.post('/asistencia/upload', checkRole(['admin']), uploadAsistencia.single('file'), async (req, res) => {
+router.post('/asistencia/upload', requireTenant, checkRole(['admin']), uploadAsistencia.single('file'), async (req, res) => {
   try {
     if (!req.file) {
       req.flash('error_msg', 'No se recibió ningún archivo');
@@ -359,6 +385,10 @@ router.post('/asistencia/upload', checkRole(['admin']), uploadAsistencia.single(
       req.flash('error_msg', 'Año o mes inválido');
       return res.redirect('/admin/asistencia');
     }
+
+    // ✅ Obtener modelos del tenant actual
+    const AsistenciaDataset = getTenantModelFromReq(req, 'AsistenciaDataset');
+    const AsistenciaRecord = getTenantModelFromReq(req, 'AsistenciaRecord');
 
     // Buscar dataset existente
     let dataset = await AsistenciaDataset.findOne({ anio: y, mes: m });
@@ -379,12 +409,12 @@ router.post('/asistencia/upload', checkRole(['admin']), uploadAsistencia.single(
     fs.writeFileSync(fullPath, req.file.buffer);
 
     if (!dataset) {
-      dataset = new AsistenciaDataset({ 
-        anio: y, 
-        mes: m, 
-        nombreArchivo: filename, 
+      dataset = new AsistenciaDataset({
+        anio: y,
+        mes: m,
+        nombreArchivo: filename,
         creadoPor: req.user._id,
-        totalRegistros: 0 
+        totalRegistros: 0
       });
       await dataset.save();
     } else {
@@ -396,19 +426,19 @@ router.post('/asistencia/upload', checkRole(['admin']), uploadAsistencia.single(
     }
 
     // Insertar registros
-    const bulk = registros.map(r => ({ 
-      insertOne: { 
-        document: { 
-          datasetId: dataset._id, 
-          ...r 
-        } 
-      } 
+    const bulk = registros.map(r => ({
+      insertOne: {
+        document: {
+          datasetId: dataset._id,
+          ...r
+        }
+      }
     }));
-    
+
     if (bulk.length) {
       await AsistenciaRecord.bulkWrite(bulk);
     }
-    
+
     dataset.totalRegistros = bulk.length;
     await dataset.save();
 
@@ -422,7 +452,7 @@ router.post('/asistencia/upload', checkRole(['admin']), uploadAsistencia.single(
 });
 
 // Descargar plantilla Excel de Asesores (solo admin)
-router.get('/asesores/plantilla', checkRole(['admin']), async (req, res) => {
+router.get('/asesores/plantilla', requireTenant, checkRole(['admin']), async (req, res) => {
   try {
     const wb = new ExcelJS.Workbook();
     const ws = wb.addWorksheet('Asesores');
@@ -480,8 +510,10 @@ async function getAsesoresHeaders() {
   return arr.map(s => String(s).trim()).filter(Boolean);
 }
 
-router.get('/asesores', checkRole(['admin']), async (req, res) => {
+router.get('/asesores', requireTenant, checkRole(['admin']), async (req, res) => {
   try {
+    const Asesor = getTenantModelFromReq(req, 'Asesor');
+
     const headers = await getAsesoresHeaders();
     const page = Math.max(parseInt(req.query.page || '1', 10), 1);
     const perPage = Math.min(Math.max(parseInt(req.query.perPage || '20', 10), 5), 100);
@@ -511,7 +543,7 @@ router.get('/asesores', checkRole(['admin']), async (req, res) => {
 });
 
 // Actualizar cabeceras requeridas de Asesores (solo admin)
-router.post('/asesores/cabeceras', checkRole(['admin']), async (req, res) => {
+router.post('/asesores/cabeceras', requireTenant, checkRole(['admin']), async (req, res) => {
   try {
     const raw = req.body && req.body.headersRaw ? String(req.body.headersRaw) : '';
     const list = raw.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
@@ -538,8 +570,10 @@ router.post('/asesores/cabeceras', checkRole(['admin']), async (req, res) => {
   }
 });
 
-router.post('/asesores/carga', checkRole(['admin']), uploadExcel.single('archivo'), async (req, res) => {
+router.post('/asesores/carga', requireTenant, checkRole(['admin']), uploadExcel.single('archivo'), async (req, res) => {
   try {
+    const Asesor = getTenantModelFromReq(req, 'Asesor');
+
     if (!req.file) {
       req.flash('error_msg', 'Adjunte un archivo Excel (.xlsx/.xls)');
       return res.redirect('/admin/asesores');

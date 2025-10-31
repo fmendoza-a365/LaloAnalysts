@@ -393,6 +393,7 @@ const widgetSchema = new mongoose.Schema({
     },
     calculatedFields: [{
       label: String,
+      color: { type: String, default: '#8b5cf6' }, // Color personalizado para la serie
       aggregationType: String,
       field: String,
       customFormula: String

@@ -4,13 +4,14 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const { ensureAuthenticated, checkRole } = require('../../middleware/auth');
-const NominaDataset = require('../../models/NominaDataset');
-const NominaRecord = require('../../models/NominaRecord');
-const { parseNomina } = require('../../utils/nominaParser');
+const { requireTenant, getTenantModelFromReq } = require('../../middleware/tenant');
+const { parseNomina } = require('../../utils/parsers/nominaParser');
+
+// ❌ NO importar modelos multi-tenant directamente
+// Modelos multi-tenant: NominaDataset, NominaRecord
 
 // Middleware - Solo admins pueden gestionar nóminas
-router.use(ensureAuthenticated);
-router.use(checkRole(['admin']));
+router.use(ensureAuthenticated, requireTenant, checkRole(['admin']));
 
 // Configurar multer para archivos en memoria
 const upload = multer({ 
@@ -21,10 +22,14 @@ const upload = multer({
 // Listar datasets de nómina
 router.get('/', async (req, res) => {
   try {
+    // Obtener modelos dinámicos del tenant actual
+    const NominaDataset = getTenantModelFromReq(req, 'NominaDataset');
+
     const page = parseInt(req.query.page) || 1;
     const perPage = parseInt(req.query.perPage) || 12;
     const skip = (page - 1) * perPage;
-    
+
+    // ✅ Contar y obtener datasets (solo del tenant actual)
     const total = await NominaDataset.countDocuments();
     const datasets = await NominaDataset.find()
       .sort({ anio: -1, mes: -1 })
@@ -75,22 +80,26 @@ router.post('/upload', upload.single('archivo'), async (req, res) => {
       return res.redirect('/admin/nomina');
     }
     
+    // ✅ Obtener modelos del tenant actual
+    const NominaDataset = getTenantModelFromReq(req, 'NominaDataset');
+    const NominaRecord = getTenantModelFromReq(req, 'NominaRecord');
+
     // Buscar dataset existente
     let dataset = await NominaDataset.findOne({ anio: y, mes: m });
     if (dataset && !reemplazar) {
       req.flash('error_msg', 'Ya existe una nómina para ese periodo. Marque "Reemplazar" para actualizar.');
       return res.redirect('/admin/nomina');
     }
-    
+
     // Parsear archivo
     console.log('[ADMIN NOMINA] Parseando archivo, tamaño:', req.file.buffer.length, 'bytes');
     const registros = parseNomina(req.file.buffer);
     console.log('[ADMIN NOMINA] Registros parseados:', registros.length);
-    
+
     if (registros.length === 0) {
       throw new Error('No se pudieron parsear registros del archivo CSV');
     }
-    
+
     // Guardar archivo original
     const uploadsDir = path.join(__dirname, '../../uploads/nomina');
     try { fs.mkdirSync(uploadsDir, { recursive: true }); } catch {}
@@ -98,32 +107,28 @@ router.post('/upload', upload.single('archivo'), async (req, res) => {
     const filename = `nomina_${y}-${String(m).padStart(2,'0')}_${Date.now()}${ext}`;
     const fullPath = path.join(uploadsDir, filename);
     fs.writeFileSync(fullPath, req.file.buffer);
-    
-    // Calcular totales
-    const totales = registros.reduce((acc, reg) => {
-      acc.totalSueldoBruto += reg.sueldoBruto || 0;
-      acc.totalNetoAPagar += reg.netoAPagar || 0;
-      acc.totalCostoEmpleador += reg.costoTotalEmpleador || 0;
-      acc.totalBonos += (reg.bonoIncentivos || 0) + (reg.bonoCumplimientos || 0) + (reg.bonoNocturno || 0);
-      acc.totalComisiones += reg.comisiones || 0;
-      return acc;
-    }, {
-      totalSueldoBruto: 0,
-      totalNetoAPagar: 0,
-      totalCostoEmpleador: 0,
-      totalBonos: 0,
-      totalComisiones: 0
-    });
-    
+
+    // Calcular totales para el dataset
+    const totalEmpleados = registros.length;
+    const totalSueldoBruto = registros.reduce((sum, r) => sum + (r.sueldoBruto || 0), 0);
+    const totalNetoAPagar = registros.reduce((sum, r) => sum + (r.netoAPagar || 0), 0);
+    const totalCostoEmpleador = registros.reduce((sum, r) => sum + (r.costoTotalEmpleador || 0), 0);
+    const totalBonos = registros.reduce((sum, r) => sum + (r.bonos || 0), 0);
+    const totalComisiones = registros.reduce((sum, r) => sum + (r.comisiones || 0), 0);
+
     if (!dataset) {
-      dataset = new NominaDataset({ 
-        anio: y, 
-        mes: m, 
+      dataset = new NominaDataset({
+        anio: y,
+        mes: m,
         nombreArchivo: filename,
         creadoPor: req.user._id,
-        totalRegistros: 0,
-        totalEmpleados: 0,
-        ...totales
+        totalRegistros: totalEmpleados,
+        totalEmpleados,
+        totalSueldoBruto,
+        totalNetoAPagar,
+        totalCostoEmpleador,
+        totalBonos,
+        totalComisiones
       });
       await dataset.save();
     } else {
@@ -132,28 +137,32 @@ router.post('/upload', upload.single('archivo'), async (req, res) => {
       dataset.nombreArchivo = filename;
       dataset.creadoPor = req.user._id;
       dataset.creadoEn = new Date();
-      Object.assign(dataset, totales);
+      dataset.totalRegistros = totalEmpleados;
+      dataset.totalEmpleados = totalEmpleados;
+      dataset.totalSueldoBruto = totalSueldoBruto;
+      dataset.totalNetoAPagar = totalNetoAPagar;
+      dataset.totalCostoEmpleador = totalCostoEmpleador;
+      dataset.totalBonos = totalBonos;
+      dataset.totalComisiones = totalComisiones;
     }
-    
+
     // Insertar registros
-    const bulk = registros.map(r => ({ 
-      insertOne: { 
-        document: { 
-          datasetId: dataset._id, 
-          ...r 
-        } 
-      } 
+    const bulk = registros.map(r => ({
+      insertOne: {
+        document: {
+          datasetId: dataset._id,
+          ...r
+        }
+      }
     }));
-    
+
     console.log('[ADMIN NOMINA] Insertando', bulk.length, 'registros en la BD');
-    
+
     if (bulk.length) {
       const resultado = await NominaRecord.bulkWrite(bulk);
       console.log('[ADMIN NOMINA] Resultado bulkWrite:', resultado.insertedCount);
     }
-    
-    dataset.totalRegistros = bulk.length;
-    dataset.totalEmpleados = bulk.length;
+
     await dataset.save();
     
     console.log('[ADMIN NOMINA] Dataset guardado con ID:', dataset._id);
@@ -170,17 +179,20 @@ router.post('/upload', upload.single('archivo'), async (req, res) => {
 // Verificar datos de nómina (DEBUG)
 router.get('/verificar/:id', async (req, res) => {
   try {
+    const NominaDataset = getTenantModelFromReq(req, 'NominaDataset');
+    const NominaRecord = getTenantModelFromReq(req, 'NominaRecord');
+
     const dataset = await NominaDataset.findById(req.params.id);
     if (!dataset) {
       return res.status(404).json({ error: 'Dataset no encontrado' });
     }
-    
+
     const registros = await NominaRecord.find({ datasetId: req.params.id }).limit(10);
-    
+
     // Agrupar por campaña
     const campanasAgrupadas = await NominaRecord.aggregate([
       { $match: { datasetId: dataset._id } },
-      { 
+      {
         $group: {
           _id: '$campana',
           empleados: { $sum: 1 },
@@ -190,7 +202,7 @@ router.get('/verificar/:id', async (req, res) => {
       },
       { $sort: { costoTotal: -1 } }
     ]);
-    
+
     res.json({
       dataset: {
         id: dataset._id,
@@ -219,19 +231,22 @@ router.get('/verificar/:id', async (req, res) => {
 // Eliminar dataset de nómina
 router.post('/delete/:id', async (req, res) => {
   try {
+    const NominaDataset = getTenantModelFromReq(req, 'NominaDataset');
+    const NominaRecord = getTenantModelFromReq(req, 'NominaRecord');
+
     const dataset = await NominaDataset.findById(req.params.id);
     if (!dataset) {
       req.flash('error_msg', 'Dataset no encontrado');
       return res.redirect('/admin/nomina');
     }
-    
+
     // Eliminar registros asociados
     const registrosEliminados = await NominaRecord.deleteMany({ datasetId: req.params.id });
     console.log('[ADMIN NOMINA] Registros eliminados:', registrosEliminados.deletedCount);
-    
+
     // Eliminar dataset
     await NominaDataset.findByIdAndDelete(req.params.id);
-    
+
     req.flash('success_msg', `Nómina eliminada (${dataset.anio}-${String(dataset.mes).padStart(2,'0')})`);
     res.redirect('/admin/nomina');
   } catch (error) {

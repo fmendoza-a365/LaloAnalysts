@@ -1,10 +1,19 @@
-// Middleware para verificar que se ha seleccionado una campaña
+/**
+ * Campaign Middleware (DEPRECATED - Usa tenant.js en su lugar)
+ * Mantenido por compatibilidad hacia atrás
+ *
+ * MIGRACIÓN:
+ * - Reemplaza requireCampaign por requireTenant de tenant.js
+ * - El nuevo middleware usa req.tenantId en lugar de req.session.selectedCampaign
+ */
+
+const { requireTenant } = require('./tenant');
+
 module.exports = {
-  requireCampaign: (req, res, next) => {
-    if (!req.session.selectedCampaign) {
-      req.flash('error_msg', 'Por favor selecciona una campaña primero');
-      return res.redirect('/campaigns');
-    }
-    next();
-  }
+  // DEPRECATED: Usa requireTenant de tenant.js
+  // Mantenido por compatibilidad - delega al nuevo middleware
+  requireCampaign: requireTenant,
+
+  // NUEVO: Exportar el middleware de tenant directamente
+  requireTenant
 };
