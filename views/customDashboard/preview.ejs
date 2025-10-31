@@ -1,0 +1,608 @@
+<!-- GridStack CSS (para mantener el mismo layout) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gridstack@9.5.1/dist/gridstack.min.css" />
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+<style>
+.grid-stack-item-content {
+  background: transparent;
+  border-radius: 12px;
+  box-shadow: none;
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+}
+
+.widget-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 16px;
+  color: white;
+}
+
+.widget-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.widget-subtitle {
+  font-size: 12px;
+  opacity: 0.9;
+  margin-top: 4px;
+}
+
+.widget-body {
+  flex: 1;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.widget-body-fullscreen {
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.modern-kpi-card {
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: clamp(12px, 3%, 24px);
+}
+
+.kpi-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: clamp(8px, 2%, 16px);
+  width: 100%;
+}
+
+.kpi-text {
+  flex: 1;
+  min-width: 0; /* Permite que el texto se ajuste */
+}
+
+.kpi-title {
+  font-size: clamp(10px, 1.2vw, 14px);
+  opacity: 0.9;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: clamp(4px, 1%, 8px);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.kpi-value-display {
+  font-size: clamp(20px, 4vw, 48px);
+  font-weight: 800;
+  line-height: 1;
+  word-break: break-word;
+}
+
+.kpi-icon {
+  font-size: clamp(24px, 5vw, 64px);
+  opacity: 0.3;
+  flex-shrink: 0;
+}
+
+/* Tarjetas modernas para gráficos y tablas */
+.modern-widget-card {
+  width: 100%;
+  height: 100%;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.widget-card-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: clamp(12px, 2%, 16px);
+  flex-shrink: 0;
+}
+
+.widget-card-title {
+  font-size: clamp(14px, 1.5vw, 18px);
+  font-weight: 700;
+  color: white;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.widget-card-subtitle {
+  font-size: clamp(10px, 1vw, 12px);
+  color: rgba(255, 255, 255, 0.9);
+  display: block;
+  margin-top: 4px;
+}
+
+.widget-card-body {
+  flex: 1;
+  padding: clamp(12px, 2%, 20px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  overflow: auto;
+}
+
+.widget-card-body canvas {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.kpi-value {
+  font-size: 48px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.kpi-label {
+  font-size: 14px;
+  color: #6b7280;
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  margin-top: 8px;
+}
+
+.loading-spinner {
+  border: 3px solid #f3f4f6;
+  border-top: 3px solid #8b5cf6;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+</style>
+
+<!-- Header -->
+<div class="bg-gradient-to-r from-purple-600 to-indigo-700 rounded-lg shadow-2xl mb-6">
+  <div class="px-6 py-6">
+    <div class="flex items-center justify-between">
+      <div class="flex-1">
+        <h1 id="previewDashboardName" class="text-3xl font-bold text-white mb-2">Vista Previa</h1>
+        <p id="previewDashboardDescription" class="text-purple-100" style="display: none;"></p>
+      </div>
+      <div class="flex gap-3">
+        <button onclick="window.close()" class="inline-flex items-center px-4 py-2 bg-white/20 text-white font-semibold rounded-lg hover:bg-white/30 transition-all">
+          <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Filtros Globales -->
+<div class="bg-white rounded-lg shadow-lg p-4 mb-6">
+  <form id="filtersForm" class="flex flex-wrap gap-4 items-end">
+    <div>
+      <label class="block text-sm font-semibold text-gray-700 mb-2">Año</label>
+      <select name="anio" id="filterAnio" class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-purple-500">
+        <% for (let y = 2023; y <= 2030; y++) { %>
+          <option value="<%= y %>" <%= y === new Date().getFullYear() ? 'selected' : '' %>><%= y %></option>
+        <% } %>
+      </select>
+    </div>
+    <div>
+      <label class="block text-sm font-semibold text-gray-700 mb-2">Mes</label>
+      <select name="mes" id="filterMes" class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-purple-500">
+        <% for (let m = 1; m <= 12; m++) { %>
+          <option value="<%= m %>" <%= m === (new Date().getMonth() + 1) ? 'selected' : '' %>>
+            <%= ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][m-1] %>
+          </option>
+        <% } %>
+      </select>
+    </div>
+    <div>
+      <button type="button" onclick="applyFilters()" class="px-6 py-2 bg-purple-600 text-white font-bold rounded-lg hover:bg-purple-700 transition-all">
+        Aplicar Filtros
+      </button>
+    </div>
+  </form>
+</div>
+
+<!-- Dashboard Canvas -->
+<div class="bg-gray-50 rounded-xl p-6">
+  <div class="grid-stack" id="dashboardCanvas"></div>
+</div>
+
+<!-- GridStack JS -->
+<script src="https://cdn.jsdelivr.net/npm/gridstack@9.5.1/dist/gridstack-all.js"></script>
+
+<script>
+let grid;
+// Cargar dashboard desde localStorage
+const dashboardDataRaw = localStorage.getItem('dashboardPreview');
+if (!dashboardDataRaw) {
+  alert('No hay datos de vista previa. Vuelve al editor e intenta de nuevo.');
+  window.close();
+}
+const dashboardData = JSON.parse(dashboardDataRaw);
+const widgetDataMap = new Map();
+
+document.addEventListener('DOMContentLoaded', function() {
+  // Actualizar header con datos del dashboard
+  document.getElementById('previewDashboardName').textContent = dashboardData.name || 'Vista Previa';
+  if (dashboardData.description) {
+    const descEl = document.getElementById('previewDashboardDescription');
+    descEl.textContent = dashboardData.description;
+    descEl.style.display = 'block';
+  }
+
+  // Inicializar GridStack en modo estático (no editable)
+  grid = GridStack.init({
+    float: false,
+    cellHeight: 80,
+    minRow: 1,
+    column: 12,
+    margin: 12,
+    staticGrid: true, // No editable
+    disableDrag: true,
+    disableResize: true
+  });
+
+  // Cargar widgets
+  loadDashboard();
+});
+
+async function loadDashboard() {
+  if (!dashboardData.widgets || dashboardData.widgets.length === 0) {
+    document.getElementById('dashboardCanvas').innerHTML = `
+      <div class="text-center py-20">
+        <svg class="h-24 w-24 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
+        </svg>
+        <h3 class="text-xl font-bold text-gray-400 mb-2">Dashboard sin widgets</h3>
+        <p class="text-gray-400">Este dashboard no tiene widgets configurados</p>
+      </div>
+    `;
+    return;
+  }
+
+  // Renderizar cada widget
+  for (const widget of dashboardData.widgets) {
+    await renderWidget(widget);
+  }
+}
+
+async function renderWidget(widget) {
+  // Todos los widgets sin header - ocupan 100% del espacio
+  const content = `
+    <div class="widget-body-fullscreen" id="widget-body-${widget.id}" style="width: 100%; height: 100%; padding: 0;">
+      <div class="loading-spinner" style="margin: auto;"></div>
+    </div>
+  `;
+
+  grid.addWidget({
+    x: widget.position?.x || 0,
+    y: widget.position?.y || 0,
+    w: widget.position?.width || 4,
+    h: widget.position?.height || 3,
+    content: content,
+    id: widget.id
+  });
+
+  // Cargar datos del widget
+  await loadWidgetData(widget);
+}
+
+async function loadWidgetData(widget) {
+  try {
+    const filters = {
+      anio: document.getElementById('filterAnio').value,
+      mes: document.getElementById('filterMes').value
+    };
+
+    const response = await fetch('/custom-dashboard/api/widget-data', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ widget, filters })
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      widgetDataMap.set(widget.id, result.data);
+      displayWidget(widget, result.data);
+    } else {
+      showWidgetError(widget.id, result.error || 'Error al cargar datos');
+    }
+  } catch (error) {
+    console.error('Error loading widget data:', error);
+    showWidgetError(widget.id, 'Error de conexión');
+  }
+}
+
+function displayWidget(widget, data) {
+  const bodyEl = document.getElementById(`widget-body-${widget.id}`);
+
+  if (!bodyEl) return;
+
+  if (widget.type === 'kpi') {
+    const kpiConfig = widget.kpiConfig || {};
+    const bgColor = kpiConfig.backgroundColor || '#10b981';
+    const textColor = kpiConfig.textColor || '#ffffff';
+    const icon = kpiConfig.icon || 'fa-chart-line';
+    const format = kpiConfig.format || 'number';
+
+    bodyEl.innerHTML = `
+      <div class="modern-kpi-card" style="background: ${bgColor}; color: ${textColor};">
+        <div class="kpi-content">
+          <div class="kpi-text">
+            <div class="kpi-title">
+              ${widget.title}
+            </div>
+            <div class="kpi-value-display">
+              ${formatKpiValue(data.value, format)}
+            </div>
+          </div>
+          <div class="kpi-icon">
+            <i class="fa-solid ${icon}"></i>
+          </div>
+        </div>
+      </div>
+    `;
+  } else if (widget.type === 'chart') {
+    bodyEl.innerHTML = `
+      <div class="w-full h-full p-4 bg-white rounded-lg shadow-lg">
+        <canvas id="chart-${widget.id}"></canvas>
+      </div>
+    `;
+
+    setTimeout(() => {
+      renderChart(widget, data);
+    }, 100);
+  } else if (widget.type === 'table') {
+    bodyEl.innerHTML = `
+      <div class="w-full h-full bg-white rounded-lg shadow-lg overflow-auto" id="table-container-${widget.id}">
+      </div>
+    `;
+
+    renderTable(widget, data, document.getElementById(`table-container-${widget.id}`));
+  }
+}
+
+function renderChart(widget, data) {
+  const canvas = document.getElementById(`chart-${widget.id}`);
+  if (!canvas) return;
+
+  const ctx = canvas.getContext('2d');
+  const chartType = widget.chartConfig?.chartType || 'bar';
+
+  let chartData;
+  if (data.grouped && data.data) {
+    chartData = {
+      labels: data.data.map(d => d.label),
+      datasets: [{
+        label: widget.title,
+        data: data.data.map(d => d.value),
+        backgroundColor: getChartColors(data.data.length),
+        borderColor: getChartColors(data.data.length, true),
+        borderWidth: 2
+      }]
+    };
+  } else {
+    chartData = {
+      labels: ['Valor'],
+      datasets: [{
+        label: widget.title,
+        data: [data.value || 0],
+        backgroundColor: ['rgba(139, 92, 246, 0.6)'],
+        borderColor: ['rgba(139, 92, 246, 1)'],
+        borderWidth: 2
+      }]
+    };
+  }
+
+  new Chart(ctx, {
+    type: chartType,
+    data: chartData,
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: chartType === 'pie' || chartType === 'doughnut'
+        }
+      }
+    }
+  });
+}
+
+function renderTable(widget, data, bodyEl) {
+  // Si no hay datos agrupados, mostrar el valor único en una tabla simple
+  if (!data.data || data.data.length === 0) {
+    if (data.value !== undefined && data.value !== null) {
+      bodyEl.innerHTML = `
+        <div class="w-full overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-4 py-2 text-left text-xs font-semibold text-gray-700 uppercase">Métrica</th>
+                <th class="px-4 py-2 text-right text-xs font-semibold text-gray-700 uppercase">Valor</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white">
+              <tr>
+                <td class="px-4 py-2 text-sm text-gray-900">${widget.dataConfig?.aggregation?.type.toUpperCase() || 'TOTAL'}</td>
+                <td class="px-4 py-2 text-sm text-gray-900 text-right font-semibold">${formatValue(data.value, widget)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      `;
+      return;
+    }
+    bodyEl.innerHTML = '<p class="text-gray-500 text-center">Sin datos disponibles. Configura un campo para agrupar.</p>';
+    return;
+  }
+
+  let tableHTML = `
+    <div class="w-full overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-4 py-2 text-left text-xs font-semibold text-gray-700 uppercase">Categoría</th>
+            <th class="px-4 py-2 text-right text-xs font-semibold text-gray-700 uppercase">Valor</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+  `;
+
+  data.data.forEach(row => {
+    tableHTML += `
+      <tr>
+        <td class="px-4 py-2 text-sm text-gray-900">${row.label}</td>
+        <td class="px-4 py-2 text-sm text-gray-900 text-right font-semibold">${formatValue(row.value, widget)}</td>
+      </tr>
+    `;
+  });
+
+  tableHTML += `
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  bodyEl.innerHTML = tableHTML;
+}
+
+function formatKpiValue(value, format) {
+  if (value === null || value === undefined) return '0';
+
+  const numValue = parseFloat(value);
+
+  if (isNaN(numValue)) return '0';
+
+  switch (format) {
+    case 'percentage':
+      return numValue.toFixed(2) + '%';
+
+    case 'currency':
+      return 'S/ ' + numValue.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    case 'time':
+      // Convertir segundos a HH:MM:SS
+      const hours = Math.floor(numValue / 3600);
+      const minutes = Math.floor((numValue % 3600) / 60);
+      const seconds = Math.floor(numValue % 60);
+      return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+
+    case 'number':
+    default:
+      // Número normal - Si es entero, sin decimales; si tiene decimales, exactamente 2
+      if (Number.isInteger(numValue)) {
+        return numValue.toLocaleString('es-PE');
+      }
+      return numValue.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+}
+
+function formatValue(value, widget) {
+  if (value === null || value === undefined) return '0';
+
+  const numValue = parseFloat(value);
+
+  // Si es fórmula personalizada con %, agregar símbolo
+  if (widget.dataConfig?.aggregation?.customFormula?.includes('* 100')) {
+    return numValue.toFixed(2) + '%';
+  }
+
+  // Si el campo es moneda
+  if (widget.dataConfig?.field?.includes('costo') || widget.dataConfig?.field?.includes('sueldo')) {
+    return 'S/ ' + numValue.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  // Número normal - Si es entero, sin decimales; si tiene decimales, exactamente 2
+  if (Number.isInteger(numValue)) {
+    return numValue.toLocaleString('es-PE');
+  }
+
+  return numValue.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function getDatasetLabel(dataset) {
+  const labels = {
+    provision: 'Provisión',
+    asistencia: 'Asistencia',
+    genesys: 'Genesys',
+    nomina: 'Nómina',
+    asesores: 'Asesores'
+  };
+  return labels[dataset] || dataset;
+}
+
+function getChartColors(count, border = false) {
+  const colors = [
+    border ? 'rgba(139, 92, 246, 1)' : 'rgba(139, 92, 246, 0.6)',
+    border ? 'rgba(59, 130, 246, 1)' : 'rgba(59, 130, 246, 0.6)',
+    border ? 'rgba(16, 185, 129, 1)' : 'rgba(16, 185, 129, 0.6)',
+    border ? 'rgba(245, 158, 11, 1)' : 'rgba(245, 158, 11, 0.6)',
+    border ? 'rgba(239, 68, 68, 1)' : 'rgba(239, 68, 68, 0.6)',
+    border ? 'rgba(236, 72, 153, 1)' : 'rgba(236, 72, 153, 0.6)'
+  ];
+
+  const result = [];
+  for (let i = 0; i < count; i++) {
+    result.push(colors[i % colors.length]);
+  }
+  return result;
+}
+
+function showWidgetError(widgetId, message) {
+  const bodyEl = document.getElementById(`widget-body-${widgetId}`);
+  if (bodyEl) {
+    bodyEl.innerHTML = `
+      <div class="text-center">
+        <svg class="h-12 w-12 mx-auto text-red-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <p class="text-sm text-red-600 font-semibold">${message}</p>
+      </div>
+    `;
+  }
+}
+
+async function applyFilters() {
+  // Limpiar grid
+  grid.removeAll();
+
+  // Recargar widgets con nuevos filtros
+  for (const widget of dashboardData.widgets) {
+    await renderWidget(widget);
+  }
+}
+
+function refreshDashboard() {
+  applyFilters();
+}
+</script>

@@ -1,0 +1,1615 @@
+<!-- GridStack CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gridstack@9.5.1/dist/gridstack.min.css" />
+
+<!-- Chart.js para gráficos -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+
+<style>
+.grid-stack-item-content {
+  background: white;
+  border: 2px dashed #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.grid-stack-item-content:hover {
+  border-color: #8b5cf6;
+  box-shadow: 0 4px 6px -1px rgba(139, 92, 246, 0.1);
+}
+
+.widget-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 12px;
+  color: white;
+  font-weight: 600;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.widget-content {
+  flex: 1;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.widget-toolbar {
+  display: none;
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  gap: 4px;
+  z-index: 10;
+}
+
+.grid-stack-item:hover .widget-toolbar {
+  display: flex;
+}
+
+.sidebar-widget {
+  cursor: grab;
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+  transition: all 0.2s;
+}
+
+.sidebar-widget:hover {
+  border-color: #8b5cf6;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar-widget:active {
+  cursor: grabbing;
+}
+
+.dataset-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+#emptyState {
+  pointer-events: none;
+}
+
+.grid-stack {
+  min-height: 400px;
+}
+</style>
+
+<!-- Header -->
+<div class="bg-gradient-to-r from-purple-600 to-indigo-700 rounded-lg shadow-2xl mb-6">
+  <div class="px-6 py-6">
+    <div class="flex items-center justify-between">
+      <div class="flex-1">
+        <h1 class="text-3xl font-bold text-white mb-2">
+          <%= dashboard._id ? 'Editar Dashboard' : 'Crear Nuevo Dashboard' %>
+        </h1>
+        <p class="text-purple-100">Arrastra y configura widgets para crear tu dashboard personalizado</p>
+      </div>
+      <div class="flex gap-3">
+        <button onclick="previewDashboard()" class="inline-flex items-center px-4 py-2 bg-white/20 text-white font-semibold rounded-lg hover:bg-white/30 transition-all">
+          <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+          </svg>
+          Vista Previa
+        </button>
+        <button onclick="saveDashboard()" class="inline-flex items-center px-6 py-2 bg-white text-purple-700 font-bold rounded-lg shadow-lg hover:bg-purple-50 transition-all">
+          <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/>
+          </svg>
+          Guardar Dashboard
+        </button>
+        <a href="/custom-dashboard" class="inline-flex items-center px-4 py-2 bg-white/20 text-white font-semibold rounded-lg hover:bg-white/30 transition-all">
+          <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+          Cancelar
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="grid grid-cols-12 gap-6">
+  <!-- Sidebar con Widgets Disponibles -->
+  <div class="col-span-3">
+    <div class="bg-white rounded-xl shadow-lg p-6 sticky top-6">
+      <h3 class="text-xl font-bold text-gray-900 mb-4">Configuración</h3>
+
+      <!-- Información del Dashboard -->
+      <div class="mb-6">
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Nombre del Dashboard</label>
+        <input type="text" id="dashboardName" value="<%= dashboard.name || '' %>"
+               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+               placeholder="Ej: Análisis de Ventas">
+      </div>
+
+      <div class="mb-6">
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Descripción</label>
+        <textarea id="dashboardDescription" rows="2"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  placeholder="Describe tu dashboard..."><%= dashboard.description || '' %></textarea>
+      </div>
+
+      <hr class="my-6">
+
+      <h4 class="text-lg font-bold text-gray-900 mb-4">Widgets Disponibles</h4>
+
+      <!-- Widget Templates -->
+      <div id="widgetTemplates">
+        <!-- KPI Widget -->
+        <div class="sidebar-widget" data-widget-type="kpi" draggable="true">
+          <div class="flex items-center gap-3 mb-2">
+            <div class="bg-purple-100 p-2 rounded-lg">
+              <svg class="h-6 w-6 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/>
+              </svg>
+            </div>
+            <div>
+              <div class="font-semibold text-gray-900">KPI Card</div>
+              <div class="text-xs text-gray-500">Métrica única</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chart Widget -->
+        <div class="sidebar-widget" data-widget-type="chart" draggable="true">
+          <div class="flex items-center gap-3 mb-2">
+            <div class="bg-blue-100 p-2 rounded-lg">
+              <svg class="h-6 w-6 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z"/>
+                <path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z"/>
+              </svg>
+            </div>
+            <div>
+              <div class="font-semibold text-gray-900">Gráfico</div>
+              <div class="text-xs text-gray-500">Visualización de datos</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Table Widget -->
+        <div class="sidebar-widget" data-widget-type="table" draggable="true">
+          <div class="flex items-center gap-3 mb-2">
+            <div class="bg-green-100 p-2 rounded-lg">
+              <svg class="h-6 w-6 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M5 4a3 3 0 00-3 3v6a3 3 0 003 3h10a3 3 0 003-3V7a3 3 0 00-3-3H5zm-1 9v-1h5v2H5a1 1 0 01-1-1zm7 1h4a1 1 0 001-1v-1h-5v2zm0-4h5V8h-5v2zM9 8H4v2h5V8z"/>
+              </svg>
+            </div>
+            <div>
+              <div class="font-semibold text-gray-900">Tabla</div>
+              <div class="text-xs text-gray-500">Datos tabulares</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-6 p-4 bg-purple-50 rounded-lg border border-purple-200">
+        <p class="text-xs text-purple-900">
+          <strong>💡 Tip:</strong> Arrastra los widgets al área gris de la derecha.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Canvas Principal -->
+  <div class="col-span-9">
+    <div class="bg-gray-50 rounded-xl shadow-lg p-6 min-h-screen">
+      <div class="mb-4 flex items-center justify-between">
+        <h3 class="text-xl font-bold text-gray-900">Lienzo del Dashboard</h3>
+        <button onclick="clearCanvas()" class="text-sm text-red-600 hover:text-red-700 font-semibold">
+          🗑️ Limpiar Todo
+        </button>
+      </div>
+
+      <!-- GridStack Container -->
+      <div class="grid-stack" id="dashboardCanvas"></div>
+
+      <!-- Empty State -->
+      <div id="emptyState" class="text-center py-20">
+        <svg class="h-24 w-24 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        <h4 class="text-xl font-bold text-gray-400 mb-2">Comienza arrastrando widgets</h4>
+        <p class="text-gray-400">Arrastra un widget aquí</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Configuración de Widget -->
+<div id="widgetConfigModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+    <div class="bg-gradient-to-r from-purple-600 to-indigo-700 px-6 py-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-2xl font-bold text-white">Configurar Widget</h3>
+        <button onclick="closeConfigModal()" class="text-white hover:text-purple-200">
+          <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="p-6">
+      <!-- Grid: Configuración + Preview -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Columna Izquierda: Configuración -->
+        <div id="widgetConfigContent">
+          <!-- Se llenará dinámicamente -->
+        </div>
+
+        <!-- Columna Derecha: Vista Previa -->
+        <div class="bg-gray-50 rounded-lg p-4 border-2 border-dashed border-gray-300">
+          <div class="flex items-center justify-between mb-3">
+            <h4 class="text-sm font-bold text-gray-700">👁️ Vista Previa</h4>
+            <button onclick="refreshWidgetPreview()"
+                    class="text-xs px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
+              🔄 Actualizar
+            </button>
+          </div>
+
+          <div id="widgetPreviewContainer" class="bg-white rounded-lg shadow-sm p-4 min-h-[300px] flex items-center justify-center">
+            <div id="widgetPreviewPlaceholder" class="text-center text-gray-400">
+              <svg class="h-16 w-16 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+              </svg>
+              <p class="text-sm">Haz clic en "Actualizar" para ver el preview</p>
+            </div>
+            <canvas id="widgetPreviewCanvas" style="display: none; max-width: 100%; max-height: 300px;"></canvas>
+            <div id="widgetPreviewKPI" style="display: none;" class="w-full"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-6 flex justify-end gap-3">
+        <button onclick="closeConfigModal()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-semibold">
+          Cancelar
+        </button>
+        <button onclick="saveWidgetConfig()" class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-bold">
+          Aplicar Configuración
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- GridStack JS -->
+<script src="https://cdn.jsdelivr.net/npm/gridstack@9.5.1/dist/gridstack-all.js"></script>
+
+<!-- Advanced Charts Components (Power BI Style) -->
+<script src="/js/components/advancedCharts.js"></script>
+
+<script>
+let grid;
+let currentWidgetId = null;
+const dashboardData = {
+  id: '<%= dashboard._id || "" %>',
+  name: '<%= dashboard.name || "" %>',
+  description: '<%= dashboard.description || "" %>',
+  widgets: <%- JSON.stringify(dashboard.widgets || []) %>
+};
+
+// Inicializar GridStack
+document.addEventListener('DOMContentLoaded', function() {
+  grid = GridStack.init({
+    float: false,
+    cellHeight: 80,
+    minRow: 1,
+    column: 12,
+    margin: 12,
+    draggable: {
+      handle: '.widget-header, .widget-content',
+      cancel: 'button, a, input, textarea, select'
+    },
+    resizable: {
+      handles: 'e, se, s, sw, w, ne, n, nw',
+      autoHide: false
+    }
+  });
+
+  // Cargar widgets existentes
+  if (dashboardData.widgets) {
+    if (dashboardData.widgets.length > 0) {
+      dashboardData.widgets.forEach(widget => {
+        addWidgetToGrid(widget);
+      });
+      document.getElementById('emptyState').style.display = 'none';
+    }
+  }
+
+  // Setup drag and drop
+  setupDragAndDrop();
+});
+
+function setupDragAndDrop() {
+  const widgets = document.querySelectorAll('.sidebar-widget');
+
+  widgets.forEach(widget => {
+    widget.addEventListener('dragstart', (e) => {
+      e.dataTransfer.setData('text/plain', e.currentTarget.dataset.widgetType);
+      e.dataTransfer.effectAllowed = 'copy';
+    });
+  });
+
+  // Add drop zone to multiple elements
+  const dropZones = [
+    document.querySelector('.col-span-9'),
+    document.getElementById('dashboardCanvas'),
+    document.querySelector('.bg-gray-50')
+  ];
+
+  dropZones.forEach(dropZone => {
+    if (!dropZone) return;
+
+    dropZone.addEventListener('dragenter', (e) => {
+      e.preventDefault();
+    });
+
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const widgetType = e.dataTransfer.getData('text/plain');
+
+      if (widgetType) {
+        const newWidget = {
+          id: 'widget_' + Date.now(),
+          type: widgetType,
+          title: `Nuevo ${widgetType === 'kpi' ? 'KPI' : widgetType === 'chart' ? 'Gráfico' : 'Tabla'}`,
+          position: { x: 0, y: 0, width: 4, height: 3 },
+          dataConfig: {
+            dataset: 'provision',
+            aggregation: { type: 'sum', field: 'contestadas' }
+          }
+        };
+
+        addWidgetToGrid(newWidget);
+        document.getElementById('emptyState').style.display = 'none';
+
+        // Abrir configuración inmediatamente
+        setTimeout(() => openWidgetConfig(newWidget.id), 100);
+      }
+    });
+  });
+}
+
+function addWidgetToGrid(widget) {
+  const content = `
+    <div class="widget-header">
+      <span>${widget.title}</span>
+      <div class="widget-toolbar">
+        <button onclick="openWidgetConfig('${widget.id}')" class="text-white hover:text-purple-200">
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+          </svg>
+        </button>
+        <button onclick="deleteWidget('${widget.id}')" class="text-white hover:text-red-200">
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+    <div class="widget-content">
+      <div class="text-center">
+        <svg class="h-12 w-12 mx-auto text-gray-300 mb-2" fill="currentColor" viewBox="0 0 20 20">
+          ${getWidgetIcon(widget.type)}
+        </svg>
+        <p class="text-sm font-semibold text-gray-600">${widget.type.toUpperCase()}</p>
+        <p class="text-xs text-gray-400 mt-1">Haz clic en ⚙️ para configurar</p>
+      </div>
+    </div>
+  `;
+
+  grid.addWidget({
+    x: widget.position?.x || 0,
+    y: widget.position?.y || 0,
+    w: widget.position?.width || 4,
+    h: widget.position?.height || 3,
+    content: content,
+    id: widget.id
+  });
+
+  // Guardar referencia al widget
+  if (!dashboardData.widgets.find(w => w.id === widget.id)) {
+    dashboardData.widgets.push(widget);
+  }
+}
+
+function getWidgetIcon(type) {
+  const icons = {
+    kpi: '<path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/>',
+    chart: '<path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z"/><path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z"/>',
+    table: '<path fill-rule="evenodd" d="M5 4a3 3 0 00-3 3v6a3 3 0 003 3h10a3 3 0 003-3V7a3 3 0 00-3-3H5zm-1 9v-1h5v2H5a1 1 0 01-1-1zm7 1h4a1 1 0 001-1v-1h-5v2zm0-4h5V8h-5v2zM9 8H4v2h5V8z"/>'
+  };
+  return icons[type] || icons.kpi;
+}
+
+function openWidgetConfig(widgetId) {
+  currentWidgetId = widgetId;
+  const widget = dashboardData.widgets.find(w => w.id === widgetId);
+
+  if (!widget) return;
+
+  const datasetSchemas = <%- JSON.stringify(datasetSchemas) %>;
+
+  let configHTML = `
+    <div class="space-y-6">
+      <!-- Título -->
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Título del Widget</label>
+        <input type="text" id="widgetTitle" value="${widget.title}"
+               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+      </div>
+
+      <!-- Dataset -->
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Fuente de Datos</label>
+        <select id="widgetDataset" onchange="updateFieldsForDataset()"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+          ${Object.entries(datasetSchemas).map(([key, schema]) => `
+            <option value="${key}" ${widget.dataConfig?.dataset === key ? 'selected' : ''}>${schema.name}</option>
+          `).join('')}
+        </select>
+      </div>
+
+      <!-- Campos a Calcular (Múltiples) -->
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Campos a Calcular</label>
+        <div id="calculatedFieldsList" class="space-y-3 mb-3">
+          <!-- Los campos se agregarán dinámicamente aquí -->
+        </div>
+        <button type="button" onclick="addCalculatedField()"
+                class="w-full px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors flex items-center justify-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+          </svg>
+          Agregar Campo
+        </button>
+      </div>
+
+      <!-- Fórmula Personalizada -->
+      <div id="customFormulaDiv" style="display: ${widget.dataConfig?.aggregation?.type === 'custom' ? 'block' : 'none'}">
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Fórmula Personalizada</label>
+
+        <!-- Campos disponibles -->
+        <div id="availableFields" class="mb-3 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+          <div class="text-xs text-gray-600 mb-2"><strong>Campos disponibles:</strong></div>
+          <div class="text-xs text-gray-500">Selecciona un dataset para ver los campos disponibles</div>
+        </div>
+
+        <textarea id="widgetFormula" rows="3"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 font-mono text-sm"
+                  placeholder="Ej: COUNT(estado='Baja') / COUNT(*) * 100">${widget.dataConfig?.aggregation?.customFormula || ''}</textarea>
+        <div class="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <p class="text-xs text-blue-900"><strong>📘 Ejemplos de fórmulas:</strong></p>
+          <ul class="text-xs text-blue-800 mt-1 space-y-1">
+            <li>• <code>COUNT(estado='Baja') / COUNT(*) * 100</code> - Rotación %</li>
+            <li>• <code>SUM(contestadas) / COUNT(*)</code> - Promedio de llamadas por asesor</li>
+            <li>• <code>SUM(tmoSegundos) / SUM(contestadas)</code> - TMO promedio</li>
+          </ul>
+        </div>
+      </div>
+
+      ${widget.type === 'kpi' ? `
+      <!-- Configuración Visual de KPI -->
+      <div class="border-t pt-4 mt-4">
+        <h4 class="text-md font-bold text-gray-800 mb-3">🎨 Apariencia del KPI</h4>
+
+        <!-- Icono -->
+        <div class="mb-4">
+          <label class="block text-sm font-semibold text-gray-700 mb-2">Icono</label>
+          <select id="widgetIcon" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+            <option value="fa-users" ${widget.kpiConfig?.icon === 'fa-users' ? 'selected' : ''}>👥 Usuarios</option>
+            <option value="fa-phone" ${widget.kpiConfig?.icon === 'fa-phone' ? 'selected' : ''}>📞 Teléfono</option>
+            <option value="fa-chart-line" ${widget.kpiConfig?.icon === 'fa-chart-line' ? 'selected' : ''}>📈 Tendencia</option>
+            <option value="fa-clock" ${widget.kpiConfig?.icon === 'fa-clock' ? 'selected' : ''}>🕐 Reloj</option>
+            <option value="fa-percentage" ${widget.kpiConfig?.icon === 'fa-percentage' ? 'selected' : ''}>% Porcentaje</option>
+            <option value="fa-check-circle" ${widget.kpiConfig?.icon === 'fa-check-circle' ? 'selected' : ''}>✅ Check</option>
+            <option value="fa-times-circle" ${widget.kpiConfig?.icon === 'fa-times-circle' ? 'selected' : ''}>❌ Error</option>
+            <option value="fa-arrow-trend-up" ${widget.kpiConfig?.icon === 'fa-arrow-trend-up' ? 'selected' : ''}>↗️ Subida</option>
+            <option value="fa-arrow-trend-down" ${widget.kpiConfig?.icon === 'fa-arrow-trend-down' ? 'selected' : ''}>↘️ Bajada</option>
+            <option value="fa-dollar-sign" ${widget.kpiConfig?.icon === 'fa-dollar-sign' ? 'selected' : ''}>💵 Dinero</option>
+            <option value="fa-briefcase" ${widget.kpiConfig?.icon === 'fa-briefcase' ? 'selected' : ''}>💼 Trabajo</option>
+            <option value="fa-calendar" ${widget.kpiConfig?.icon === 'fa-calendar' ? 'selected' : ''}>📅 Calendario</option>
+          </select>
+        </div>
+
+        <!-- Color de Fondo -->
+        <div class="mb-4">
+          <label class="block text-sm font-semibold text-gray-700 mb-2">Color de Fondo</label>
+          <div class="grid grid-cols-6 gap-2">
+            <button type="button" onclick="selectKpiColor('#10b981', 'bg')" class="w-10 h-10 rounded-lg bg-green-500 hover:ring-2 ring-gray-400"></button>
+            <button type="button" onclick="selectKpiColor('#3b82f6', 'bg')" class="w-10 h-10 rounded-lg bg-blue-500 hover:ring-2 ring-gray-400"></button>
+            <button type="button" onclick="selectKpiColor('#f59e0b', 'bg')" class="w-10 h-10 rounded-lg bg-yellow-500 hover:ring-2 ring-gray-400"></button>
+            <button type="button" onclick="selectKpiColor('#ef4444', 'bg')" class="w-10 h-10 rounded-lg bg-red-500 hover:ring-2 ring-gray-400"></button>
+            <button type="button" onclick="selectKpiColor('#8b5cf6', 'bg')" class="w-10 h-10 rounded-lg bg-purple-500 hover:ring-2 ring-gray-400"></button>
+            <button type="button" onclick="selectKpiColor('#06b6d4', 'bg')" class="w-10 h-10 rounded-lg bg-cyan-500 hover:ring-2 ring-gray-400"></button>
+            <button type="button" onclick="selectKpiColor('#ec4899', 'bg')" class="w-10 h-10 rounded-lg bg-pink-500 hover:ring-2 ring-gray-400"></button>
+            <button type="button" onclick="selectKpiColor('#f97316', 'bg')" class="w-10 h-10 rounded-lg bg-orange-500 hover:ring-2 ring-gray-400"></button>
+            <button type="button" onclick="selectKpiColor('#14b8a6', 'bg')" class="w-10 h-10 rounded-lg bg-teal-500 hover:ring-2 ring-gray-400"></button>
+            <button type="button" onclick="selectKpiColor('#6366f1', 'bg')" class="w-10 h-10 rounded-lg bg-indigo-500 hover:ring-2 ring-gray-400"></button>
+            <button type="button" onclick="selectKpiColor('#64748b', 'bg')" class="w-10 h-10 rounded-lg bg-gray-500 hover:ring-2 ring-gray-400"></button>
+            <button type="button" onclick="selectKpiColor('#000000', 'bg')" class="w-10 h-10 rounded-lg bg-black hover:ring-2 ring-gray-400"></button>
+          </div>
+          <input type="hidden" id="widgetBgColor" value="${widget.kpiConfig?.backgroundColor || '#10b981'}">
+          <p class="text-xs text-gray-500 mt-2">Color seleccionado: <span id="selectedBgColor">${widget.kpiConfig?.backgroundColor || '#10b981'}</span></p>
+        </div>
+
+        <!-- Color de Texto -->
+        <div class="mb-4">
+          <label class="block text-sm font-semibold text-gray-700 mb-2">Color de Texto</label>
+          <div class="flex gap-2">
+            <button type="button" onclick="selectKpiColor('#ffffff', 'text')" class="w-10 h-10 rounded-lg bg-white border-2 border-gray-300 hover:ring-2 ring-gray-400"></button>
+            <button type="button" onclick="selectKpiColor('#000000', 'text')" class="w-10 h-10 rounded-lg bg-black hover:ring-2 ring-gray-400"></button>
+            <button type="button" onclick="selectKpiColor('#6b7280', 'text')" class="w-10 h-10 rounded-lg bg-gray-500 hover:ring-2 ring-gray-400"></button>
+          </div>
+          <input type="hidden" id="widgetTextColor" value="${widget.kpiConfig?.textColor || '#ffffff'}">
+          <p class="text-xs text-gray-500 mt-2">Color seleccionado: <span id="selectedTextColor">${widget.kpiConfig?.textColor || '#ffffff'}</span></p>
+        </div>
+
+        <!-- Formato -->
+        <div class="mb-4">
+          <label class="block text-sm font-semibold text-gray-700 mb-2">Formato de Número</label>
+          <select id="widgetFormat" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+            <option value="number" ${widget.kpiConfig?.format === 'number' ? 'selected' : ''}>Número (1,234.56)</option>
+            <option value="percentage" ${widget.kpiConfig?.format === 'percentage' ? 'selected' : ''}>Porcentaje (85.50%)</option>
+            <option value="currency" ${widget.kpiConfig?.format === 'currency' ? 'selected' : ''}>Moneda (S/ 1,234.56)</option>
+            <option value="time" ${widget.kpiConfig?.format === 'time' ? 'selected' : ''}>Tiempo (HH:MM:SS)</option>
+          </select>
+        </div>
+      </div>
+      ` : ''}
+
+      ${widget.type === 'chart' ? `
+      <!-- Tipo de Gráfico -->
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Tipo de Gráfico</label>
+        <select id="widgetChartType" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500" onchange="handleChartTypeChange()">
+          <optgroup label="📊 Gráficos Básicos">
+            <option value="bar">Barras</option>
+            <option value="line">Líneas</option>
+            <option value="area">Área</option>
+            <option value="pie">Circular</option>
+            <option value="doughnut">Dona</option>
+          </optgroup>
+          <optgroup label="🎯 Gráficos Avanzados (Power BI Style)">
+            <option value="gauge">⏱️ Gauge (Medidor)</option>
+            <option value="waterfall">📊 Waterfall (Cascada)</option>
+            <option value="funnel">🔻 Funnel (Embudo)</option>
+            <option value="treemap">🗂️ Treemap (Mapa de Árbol)</option>
+          </optgroup>
+        </select>
+      </div>
+
+      <!-- Configuración específica para Gauge -->
+      <div id="gaugeConfigDiv" style="display: none">
+        <div class="border-t pt-4 mt-4">
+          <h5 class="text-sm font-bold text-gray-800 mb-3">⚙️ Configuración del Medidor</h5>
+
+          <div class="grid grid-cols-2 gap-3 mb-3">
+            <div>
+              <label class="block text-xs font-medium text-gray-600 mb-1">Valor Mínimo</label>
+              <input type="number" id="gaugeMin" value="0" class="w-full px-2 py-1 text-sm border border-gray-300 rounded">
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-600 mb-1">Valor Máximo</label>
+              <input type="number" id="gaugeMax" value="100" class="w-full px-2 py-1 text-sm border border-gray-300 rounded">
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="block text-xs font-medium text-gray-600 mb-1">Valor Objetivo/Meta</label>
+            <input type="number" id="gaugeTarget" placeholder="Opcional" class="w-full px-2 py-1 text-sm border border-gray-300 rounded">
+          </div>
+
+          <div class="mb-3">
+            <label class="block text-xs font-medium text-gray-600 mb-1">Unidad</label>
+            <input type="text" id="gaugeUnit" placeholder="%, hrs, unidades..." class="w-full px-2 py-1 text-sm border border-gray-300 rounded">
+          </div>
+
+          <div class="mb-3">
+            <label class="block text-xs font-medium text-gray-600 mb-2">Rangos de Colores</label>
+            <div id="gaugeRangesList" class="space-y-2">
+              <!-- Rangos se agregarán dinámicamente -->
+            </div>
+            <button type="button" onclick="addGaugeRange()" class="mt-2 text-xs px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">
+              + Agregar Rango
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Agrupación -->
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Agrupar Por</label>
+        <select id="widgetGroupBy" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+          <option value="">Sin agrupación</option>
+          <!-- Se llenará dinámicamente -->
+        </select>
+      </div>
+
+      <!-- Granularidad -->
+      <div id="granularityDiv" style="display: none">
+        <label class="block text-sm font-semibold text-gray-700 mb-2">Granularidad Temporal</label>
+        <select id="widgetGranularity" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+          <option value="halfHour">Por Media Hora</option>
+          <option value="hour">Por Hora</option>
+          <option value="day" selected>Por Día</option>
+          <option value="week">Por Semana</option>
+          <option value="month">Por Mes</option>
+          <option value="year">Por Año</option>
+        </select>
+      </div>
+      ` : ''}
+    </div>
+  `;
+
+  document.getElementById('widgetConfigContent').innerHTML = configHTML;
+  document.getElementById('widgetConfigModal').classList.remove('hidden');
+
+  // Inicializar campos
+  updateFieldsForDataset();
+}
+
+// Variable global para almacenar los campos disponibles
+let availableDatasetFields = [];
+
+async function updateFieldsForDataset() {
+  const selectedDataset = document.getElementById('widgetDataset').value;
+  console.log('[DEBUG] updateFieldsForDataset - Dataset seleccionado:', selectedDataset);
+
+  if (!selectedDataset) {
+    console.log('[DEBUG] No hay dataset seleccionado, saliendo...');
+    return;
+  }
+
+  try {
+    // Obtener campos dinámicamente desde el API
+    console.log('[DEBUG] Llamando a API:', `/custom-dashboard/api/dataset-fields/${selectedDataset}`);
+    const response = await fetch(`/custom-dashboard/api/dataset-fields/${selectedDataset}`);
+    const result = await response.json();
+    console.log('[DEBUG] Respuesta del API:', result);
+
+    if (!result.success || !result.fields) {
+      console.error('[ERROR] Error al obtener campos del dataset:', result);
+      return;
+    }
+
+    // Guardar campos globalmente para uso en múltiples funciones
+    availableDatasetFields = result.fields;
+    console.log('[DEBUG] Campos obtenidos:', availableDatasetFields.length, 'campos');
+
+    // Inicializar campos calculados (cargar existentes o agregar uno vacío)
+    initializeCalculatedFields();
+
+    // Actualizar agrupación (todos los campos agrupados por tipo)
+    const groupBySelect = document.getElementById('widgetGroupBy');
+    console.log('[DEBUG] Elemento widgetGroupBy encontrado:', groupBySelect !== null);
+    if (groupBySelect) {
+      // Separar campos base de campos temporales
+      const baseFields = availableDatasetFields.filter(f => !f.isTemporalField);
+      const temporalFields = availableDatasetFields.filter(f => f.isTemporalField);
+
+      let groupByOptions = '<option value="">Sin agrupación</option>';
+
+      // Campos base
+      if (baseFields.length > 0) {
+        groupByOptions += '<optgroup label="📋 Campos Base">';
+        baseFields.forEach(field => {
+          groupByOptions += `<option value="${field.name}">${field.label}</option>`;
+        });
+        groupByOptions += '</optgroup>';
+      }
+
+      // Campos temporales (Power BI style)
+      if (temporalFields.length > 0) {
+        groupByOptions += '<optgroup label="⏰ Agrupaciones Temporales (Power BI)">';
+        temporalFields.forEach(field => {
+          groupByOptions += `<option value="${field.name}">${field.label}</option>`;
+        });
+        groupByOptions += '</optgroup>';
+      }
+
+      groupBySelect.innerHTML = groupByOptions;
+
+      // Restaurar valor guardado si existe
+      const widget = dashboardData.widgets.find(w => w.id === currentWidgetId);
+      if (widget && widget.dataConfig && widget.dataConfig.groupBy && widget.dataConfig.groupBy.field) {
+        groupBySelect.value = widget.dataConfig.groupBy.field;
+        console.log('[DEBUG] Valor de groupBy restaurado:', widget.dataConfig.groupBy.field);
+      }
+
+      console.log('[DEBUG] widgetGroupBy actualizado con', groupBySelect.options.length, 'opciones');
+      console.log('[DEBUG] Campos base:', baseFields.length, 'Campos temporales:', temporalFields.length);
+    }
+
+    // Actualizar campos disponibles para fórmulas personalizadas
+    const fieldsListDiv = document.getElementById('availableFields');
+    console.log('[DEBUG] Elemento availableFields encontrado:', fieldsListDiv !== null);
+    if (fieldsListDiv) {
+      fieldsListDiv.innerHTML = '<div class="text-xs text-gray-600 mb-2"><strong>Campos disponibles:</strong></div>' +
+        '<div class="flex flex-wrap gap-1">' +
+        availableDatasetFields.map(field => `
+          <span class="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs cursor-pointer hover:bg-purple-100"
+                onclick="insertFieldInFormula('${field.name}')"
+                title="${field.label} (${field.type})">
+            ${field.name}
+          </span>
+        `).join('') +
+        '</div>';
+      console.log('[DEBUG] availableFields actualizado con', availableDatasetFields.length, 'campos');
+    }
+  } catch (error) {
+    console.error('Error al actualizar campos:', error);
+  }
+}
+
+// Inicializar lista de campos calculados
+function initializeCalculatedFields() {
+  const widget = dashboardData.widgets.find(w => w.id === currentWidgetId);
+  if (!widget) return;
+
+  const calculatedFieldsList = document.getElementById('calculatedFieldsList');
+  if (!calculatedFieldsList) return;
+
+  // Limpiar lista
+  calculatedFieldsList.innerHTML = '';
+
+  // Cargar campos existentes o crear uno vacío
+  const existingFields = widget.dataConfig?.calculatedFields || [];
+
+  if (existingFields.length === 0) {
+    // Si no hay campos, agregar uno vacío por defecto
+    addCalculatedField();
+  } else {
+    // Cargar campos existentes
+    existingFields.forEach((field, index) => {
+      addCalculatedFieldRow(field, index);
+    });
+  }
+}
+
+// Agregar un nuevo campo calculado
+function addCalculatedField() {
+  const calculatedFieldsList = document.getElementById('calculatedFieldsList');
+  if (!calculatedFieldsList) return;
+
+  const index = calculatedFieldsList.children.length;
+  addCalculatedFieldRow({
+    label: '',
+    aggregationType: 'sum',
+    field: '',
+    customFormula: ''
+  }, index);
+}
+
+// Agregar una fila de campo calculado
+function addCalculatedFieldRow(fieldData, index) {
+  const calculatedFieldsList = document.getElementById('calculatedFieldsList');
+  if (!calculatedFieldsList) return;
+
+  // Agrupar campos por tipo
+  const numericFields = availableDatasetFields.filter(f => f.type === 'number' && !f.isTemporalField);
+  const stringFields = availableDatasetFields.filter(f => f.type === 'string' && !f.isTemporalField);
+  const dateFields = availableDatasetFields.filter(f => f.type === 'date' && !f.isTemporalField);
+  const temporalFields = availableDatasetFields.filter(f => f.isTemporalField);
+  const otherFields = availableDatasetFields.filter(f => !['number', 'string', 'date'].includes(f.type) && !f.isTemporalField);
+
+  // Construir opciones del selector de campos
+  let fieldOptions = '<option value="">Seleccionar campo</option>';
+
+  if (numericFields.length > 0) {
+    fieldOptions += '<optgroup label="📊 Campos Numéricos (recomendados)">' +
+      numericFields.map(field => `<option value="${field.name}" ${fieldData.field === field.name ? 'selected' : ''}>${field.label}</option>`).join('') +
+      '</optgroup>';
+  }
+
+  if (stringFields.length > 0) {
+    fieldOptions += '<optgroup label="📝 Campos de Texto">' +
+      stringFields.map(field => `<option value="${field.name}" ${fieldData.field === field.name ? 'selected' : ''}>${field.label}</option>`).join('') +
+      '</optgroup>';
+  }
+
+  if (dateFields.length > 0) {
+    fieldOptions += '<optgroup label="📅 Campos de Fecha">' +
+      dateFields.map(field => `<option value="${field.name}" ${fieldData.field === field.name ? 'selected' : ''}>${field.label}</option>`).join('') +
+      '</optgroup>';
+  }
+
+  // ⏰ Campos temporales derivados (Power BI style)
+  if (temporalFields.length > 0) {
+    fieldOptions += '<optgroup label="⏰ Campos Temporales (Agrupaciones Power BI)">' +
+      temporalFields.map(field => `<option value="${field.name}" ${fieldData.field === field.name ? 'selected' : ''}>${field.label}</option>`).join('') +
+      '</optgroup>';
+  }
+
+  if (otherFields.length > 0) {
+    fieldOptions += '<optgroup label="🔧 Otros Campos">' +
+      otherFields.map(field => `<option value="${field.name}" ${fieldData.field === field.name ? 'selected' : ''}>${field.label}</option>`).join('') +
+      '</optgroup>';
+  }
+
+  const fieldRow = document.createElement('div');
+  fieldRow.className = 'p-4 bg-gray-50 border border-gray-200 rounded-lg';
+  fieldRow.dataset.fieldIndex = index;
+  fieldRow.innerHTML = `
+    <div class="flex justify-between items-start mb-3">
+      <h5 class="text-sm font-semibold text-gray-700">Campo ${index + 1}</h5>
+      <button type="button" onclick="removeCalculatedField(${index})"
+              class="text-red-500 hover:text-red-700 transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+
+    <div class="space-y-3">
+      <!-- Etiqueta del campo -->
+      <div>
+        <label class="block text-xs font-medium text-gray-600 mb-1">Etiqueta</label>
+        <input type="text"
+               class="calc-field-label w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+               placeholder="Ej: Total Ventas"
+               value="${fieldData.label || ''}">
+      </div>
+
+      <!-- Tipo de agregación -->
+      <div>
+        <label class="block text-xs font-medium text-gray-600 mb-1">Tipo de Cálculo</label>
+        <select class="calc-field-aggregation w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                onchange="toggleFieldCustomFormula(${index})">
+          <option value="sum" ${fieldData.aggregationType === 'sum' ? 'selected' : ''}>Suma (SUM)</option>
+          <option value="avg" ${fieldData.aggregationType === 'avg' ? 'selected' : ''}>Promedio (AVG)</option>
+          <option value="count" ${fieldData.aggregationType === 'count' ? 'selected' : ''}>Conteo (COUNT)</option>
+          <option value="min" ${fieldData.aggregationType === 'min' ? 'selected' : ''}>Mínimo (MIN)</option>
+          <option value="max" ${fieldData.aggregationType === 'max' ? 'selected' : ''}>Máximo (MAX)</option>
+          <option value="custom" ${fieldData.aggregationType === 'custom' ? 'selected' : ''}>🧮 Fórmula Personalizada</option>
+        </select>
+      </div>
+
+      <!-- Selector de campo -->
+      <div class="field-selector-div" style="display: ${fieldData.aggregationType === 'custom' ? 'none' : 'block'}">
+        <label class="block text-xs font-medium text-gray-600 mb-1">Campo</label>
+        <select class="calc-field-name w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+          ${fieldOptions}
+        </select>
+      </div>
+
+      <!-- Fórmula personalizada -->
+      <div class="custom-formula-div" style="display: ${fieldData.aggregationType === 'custom' ? 'block' : 'none'}">
+        <label class="block text-xs font-medium text-gray-600 mb-1">Fórmula Personalizada</label>
+        <textarea class="calc-field-formula w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 font-mono"
+                  rows="2"
+                  placeholder="Ej: COUNT(estado='Baja') / COUNT(*) * 100">${fieldData.customFormula || ''}</textarea>
+      </div>
+    </div>
+  `;
+
+  calculatedFieldsList.appendChild(fieldRow);
+}
+
+// Eliminar un campo calculado
+function removeCalculatedField(index) {
+  const calculatedFieldsList = document.getElementById('calculatedFieldsList');
+  if (!calculatedFieldsList) return;
+
+  const fieldRow = calculatedFieldsList.querySelector(`[data-field-index="${index}"]`);
+  if (fieldRow) {
+    fieldRow.remove();
+    // Renumerar los campos restantes
+    renumberCalculatedFields();
+  }
+}
+
+// Renumerar los campos después de eliminar uno
+function renumberCalculatedFields() {
+  const calculatedFieldsList = document.getElementById('calculatedFieldsList');
+  if (!calculatedFieldsList) return;
+
+  const fieldRows = calculatedFieldsList.querySelectorAll('[data-field-index]');
+  fieldRows.forEach((row, newIndex) => {
+    row.dataset.fieldIndex = newIndex;
+    const header = row.querySelector('h5');
+    if (header) header.textContent = `Campo ${newIndex + 1}`;
+
+    // Actualizar onclick del botón eliminar
+    const removeBtn = row.querySelector('button[onclick]');
+    if (removeBtn) {
+      removeBtn.setAttribute('onclick', `removeCalculatedField(${newIndex})`);
+    }
+
+    // Actualizar onchange del selector de agregación
+    const aggSelect = row.querySelector('.calc-field-aggregation');
+    if (aggSelect) {
+      aggSelect.setAttribute('onchange', `toggleFieldCustomFormula(${newIndex})`);
+    }
+  });
+}
+
+// Toggle entre selector de campo y fórmula personalizada
+function toggleFieldCustomFormula(index) {
+  const calculatedFieldsList = document.getElementById('calculatedFieldsList');
+  if (!calculatedFieldsList) return;
+
+  const fieldRow = calculatedFieldsList.querySelector(`[data-field-index="${index}"]`);
+  if (!fieldRow) return;
+
+  const aggSelect = fieldRow.querySelector('.calc-field-aggregation');
+  const fieldSelectorDiv = fieldRow.querySelector('.field-selector-div');
+  const customFormulaDiv = fieldRow.querySelector('.custom-formula-div');
+
+  if (aggSelect.value === 'custom') {
+    fieldSelectorDiv.style.display = 'none';
+    customFormulaDiv.style.display = 'block';
+  } else {
+    fieldSelectorDiv.style.display = 'block';
+    customFormulaDiv.style.display = 'none';
+  }
+}
+
+function toggleCustomFormula() {
+  const aggType = document.getElementById('widgetAggregation').value;
+  const formulaDiv = document.getElementById('customFormulaDiv');
+  const fieldSelector = document.getElementById('fieldSelector');
+
+  if (aggType === 'custom') {
+    formulaDiv.style.display = 'block';
+    fieldSelector.style.display = 'none';
+  } else {
+    formulaDiv.style.display = 'none';
+    fieldSelector.style.display = 'block';
+  }
+}
+
+function insertFieldInFormula(fieldName) {
+  const formulaTextarea = document.getElementById('widgetFormula');
+  if (!formulaTextarea) return;
+
+  // Insertar el campo en la posición del cursor
+  const cursorPos = formulaTextarea.selectionStart;
+  const textBefore = formulaTextarea.value.substring(0, cursorPos);
+  const textAfter = formulaTextarea.value.substring(cursorPos);
+
+  formulaTextarea.value = textBefore + fieldName + textAfter;
+
+  // Mover el cursor después del campo insertado
+  formulaTextarea.focus();
+  formulaTextarea.selectionStart = formulaTextarea.selectionEnd = cursorPos + fieldName.length;
+}
+
+function selectKpiColor(color, type) {
+  if (type === 'bg') {
+    document.getElementById('widgetBgColor').value = color;
+    document.getElementById('selectedBgColor').textContent = color;
+  } else if (type === 'text') {
+    document.getElementById('widgetTextColor').value = color;
+    document.getElementById('selectedTextColor').textContent = color;
+  }
+}
+
+// Manejar cambio de tipo de gráfico
+function handleChartTypeChange() {
+  const chartType = document.getElementById('widgetChartType')?.value;
+  const gaugeConfigDiv = document.getElementById('gaugeConfigDiv');
+
+  // Mostrar/ocultar configuración específica de Gauge
+  if (gaugeConfigDiv) {
+    gaugeConfigDiv.style.display = chartType === 'gauge' ? 'block' : 'none';
+  }
+
+  // Inicializar rangos por defecto si es gauge y no hay rangos
+  if (chartType === 'gauge') {
+    const rangesList = document.getElementById('gaugeRangesList');
+    if (rangesList && rangesList.children.length === 0) {
+      // Agregar rangos por defecto
+      addGaugeRange({ from: 0, to: 33, color: '#dc2626', label: 'Bajo' });
+      addGaugeRange({ from: 33, to: 66, color: '#f59e0b', label: 'Medio' });
+      addGaugeRange({ from: 66, to: 100, color: '#10b981', label: 'Alto' });
+    }
+  }
+}
+
+// Agregar un rango de color para Gauge
+function addGaugeRange(rangeData = {}) {
+  const rangesList = document.getElementById('gaugeRangesList');
+  if (!rangesList) return;
+
+  const index = rangesList.children.length;
+  const rangeDiv = document.createElement('div');
+  rangeDiv.className = 'flex gap-2 items-center p-2 bg-white border border-gray-200 rounded';
+  rangeDiv.dataset.rangeIndex = index;
+
+  rangeDiv.innerHTML = `
+    <input type="number"
+           class="gauge-range-from w-20 px-2 py-1 text-xs border border-gray-300 rounded"
+           placeholder="Desde"
+           value="${rangeData.from || ''}">
+    <span class="text-xs text-gray-500">-</span>
+    <input type="number"
+           class="gauge-range-to w-20 px-2 py-1 text-xs border border-gray-300 rounded"
+           placeholder="Hasta"
+           value="${rangeData.to || ''}">
+    <input type="color"
+           class="gauge-range-color w-10 h-7 border border-gray-300 rounded cursor-pointer"
+           value="${rangeData.color || '#10b981'}">
+    <input type="text"
+           class="gauge-range-label flex-1 px-2 py-1 text-xs border border-gray-300 rounded"
+           placeholder="Etiqueta"
+           value="${rangeData.label || ''}">
+    <button type="button" onclick="removeGaugeRange(${index})"
+            class="text-red-500 hover:text-red-700 text-xs px-2">
+      ✕
+    </button>
+  `;
+
+  rangesList.appendChild(rangeDiv);
+}
+
+// Eliminar un rango de Gauge
+function removeGaugeRange(index) {
+  const rangesList = document.getElementById('gaugeRangesList');
+  if (!rangesList) return;
+
+  const rangeDiv = rangesList.querySelector(`[data-range-index="${index}"]`);
+  if (rangeDiv) {
+    rangeDiv.remove();
+    // Renumerar los rangos restantes
+    const remainingRanges = rangesList.querySelectorAll('[data-range-index]');
+    remainingRanges.forEach((range, newIndex) => {
+      range.dataset.rangeIndex = newIndex;
+      const removeBtn = range.querySelector('button[onclick]');
+      if (removeBtn) {
+        removeBtn.setAttribute('onclick', `removeGaugeRange(${newIndex})`);
+      }
+    });
+  }
+}
+
+function saveWidgetConfig() {
+  const widget = dashboardData.widgets.find(w => w.id === currentWidgetId);
+  if (!widget) return;
+
+  widget.title = document.getElementById('widgetTitle').value;
+
+  // Recopilar los campos calculados
+  const calculatedFieldsList = document.getElementById('calculatedFieldsList');
+  const calculatedFields = [];
+
+  if (calculatedFieldsList) {
+    const fieldRows = calculatedFieldsList.querySelectorAll('[data-field-index]');
+    fieldRows.forEach(row => {
+      const label = row.querySelector('.calc-field-label')?.value || '';
+      const aggregationType = row.querySelector('.calc-field-aggregation')?.value || 'sum';
+      const field = row.querySelector('.calc-field-name')?.value || '';
+      const customFormula = row.querySelector('.calc-field-formula')?.value || '';
+
+      calculatedFields.push({
+        label,
+        aggregationType,
+        field,
+        customFormula
+      });
+    });
+  }
+
+  // Preparar configuración de groupBy si es un gráfico
+  let groupByConfig = null;
+  if (widget.type === 'chart') {
+    const groupByField = document.getElementById('widgetGroupBy')?.value;
+    if (groupByField) {
+      groupByConfig = {
+        field: groupByField,
+        granularity: document.getElementById('widgetGranularity')?.value || 'day'
+      };
+    }
+  }
+
+  // Crear dataConfig con todos los campos necesarios
+  widget.dataConfig = {
+    dataset: document.getElementById('widgetDataset').value,
+    calculatedFields: calculatedFields,
+    // Mantener compatibilidad con widgets antiguos
+    aggregation: {
+      type: calculatedFields[0]?.aggregationType || 'sum',
+      field: calculatedFields[0]?.field || '',
+      customFormula: calculatedFields[0]?.customFormula || ''
+    },
+    // Agregar groupBy si existe
+    ...(groupByConfig && { groupBy: groupByConfig })
+  };
+
+  console.log('[DEBUG] dataConfig guardado:', widget.dataConfig);
+
+  // Configuración específica de KPI
+  if (widget.type === 'kpi') {
+    widget.kpiConfig = {
+      icon: document.getElementById('widgetIcon')?.value || 'fa-chart-line',
+      backgroundColor: document.getElementById('widgetBgColor')?.value || '#10b981',
+      textColor: document.getElementById('widgetTextColor')?.value || '#ffffff',
+      format: document.getElementById('widgetFormat')?.value || 'number'
+    };
+  }
+
+  // Configuración específica de gráfico
+  if (widget.type === 'chart') {
+    const chartType = document.getElementById('widgetChartType')?.value || 'bar';
+    widget.chartConfig = {
+      chartType: chartType
+    };
+
+    // Configuración específica para Gauge
+    if (chartType === 'gauge') {
+      const rangesList = document.getElementById('gaugeRangesList');
+      const ranges = [];
+
+      if (rangesList) {
+        const rangeElements = rangesList.querySelectorAll('[data-range-index]');
+        rangeElements.forEach(rangeEl => {
+          const from = parseFloat(rangeEl.querySelector('.gauge-range-from')?.value) || 0;
+          const to = parseFloat(rangeEl.querySelector('.gauge-range-to')?.value) || 0;
+          const color = rangeEl.querySelector('.gauge-range-color')?.value || '#10b981';
+          const label = rangeEl.querySelector('.gauge-range-label')?.value || '';
+
+          ranges.push({ from, to, color, label });
+        });
+      }
+
+      widget.gaugeConfig = {
+        min: parseFloat(document.getElementById('gaugeMin')?.value) || 0,
+        max: parseFloat(document.getElementById('gaugeMax')?.value) || 100,
+        target: parseFloat(document.getElementById('gaugeTarget')?.value) || null,
+        unit: document.getElementById('gaugeUnit')?.value || '',
+        ranges: ranges,
+        showValue: true,
+        showRanges: true,
+        animationDuration: 1000
+      };
+    }
+  }
+
+  // Actualizar visual del widget
+  const gridItem = document.getElementById(currentWidgetId);
+  if (gridItem) {
+    const header = gridItem.querySelector('.widget-header span');
+    if (header) header.textContent = widget.title;
+  }
+
+  closeConfigModal();
+  alert('Configuración guardada. Guarda el dashboard para aplicar los cambios.');
+}
+
+function closeConfigModal() {
+  document.getElementById('widgetConfigModal').classList.add('hidden');
+  currentWidgetId = null;
+}
+
+/**
+ * Refrescar vista previa del widget con datos reales
+ */
+async function refreshWidgetPreview() {
+  console.log('[PREVIEW] Iniciando actualización de vista previa...');
+
+  const widget = dashboardData.widgets.find(w => w.id === currentWidgetId);
+  if (!widget) {
+    console.error('[PREVIEW] Widget no encontrado');
+    return;
+  }
+
+  // Obtener configuración actual del formulario (antes de guardar)
+  const dataset = document.getElementById('widgetDataset')?.value;
+  if (!dataset) {
+    alert('Selecciona un dataset primero');
+    return;
+  }
+
+  // Recopilar campos calculados
+  const calculatedFieldsList = document.getElementById('calculatedFieldsList');
+  const calculatedFields = [];
+  if (calculatedFieldsList) {
+    const fieldRows = calculatedFieldsList.querySelectorAll('[data-field-index]');
+    fieldRows.forEach(row => {
+      calculatedFields.push({
+        label: row.querySelector('.calc-field-label')?.value || '',
+        aggregationType: row.querySelector('.calc-field-aggregation')?.value || 'sum',
+        field: row.querySelector('.calc-field-name')?.value || '',
+        customFormula: row.querySelector('.calc-field-formula')?.value || ''
+      });
+    });
+  }
+
+  // Configuración de agrupación
+  let groupByConfig = null;
+  if (widget.type === 'chart') {
+    const groupByField = document.getElementById('widgetGroupBy')?.value;
+    if (groupByField) {
+      groupByConfig = {
+        field: groupByField,
+        granularity: document.getElementById('widgetGranularity')?.value || 'day'
+      };
+    }
+  }
+
+  // Construir configuración temporal del widget
+  const tempWidgetConfig = {
+    type: widget.type,
+    title: document.getElementById('widgetTitle')?.value || 'Preview',
+    dataConfig: {
+      dataset: dataset,
+      calculatedFields: calculatedFields,
+      aggregation: {
+        type: calculatedFields[0]?.aggregationType || 'count',
+        field: calculatedFields[0]?.field || '',
+        customFormula: calculatedFields[0]?.customFormula || ''
+      },
+      ...(groupByConfig && { groupBy: groupByConfig })
+    }
+  };
+
+  console.log('[PREVIEW] Configuración temporal:', tempWidgetConfig);
+
+  // Mostrar loading
+  const placeholder = document.getElementById('widgetPreviewPlaceholder');
+  const canvas = document.getElementById('widgetPreviewCanvas');
+  const kpiContainer = document.getElementById('widgetPreviewKPI');
+
+  placeholder.innerHTML = '<div class="text-center"><div class="spinner-border text-blue-500" role="status"></div><p class="mt-2 text-sm text-gray-500">Cargando datos...</p></div>';
+  placeholder.style.display = 'block';
+  canvas.style.display = 'none';
+  kpiContainer.style.display = 'none';
+
+  try {
+    // Llamar al API para obtener datos
+    const response = await fetch('/custom-dashboard/api/widget-data', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        widget: tempWidgetConfig,
+        filters: {} // Sin filtros por ahora
+      })
+    });
+
+    const result = await response.json();
+    console.log('[PREVIEW] Datos recibidos:', result);
+
+    if (!result.success) {
+      throw new Error(result.error || 'Error al obtener datos');
+    }
+
+    // Ocultar placeholder
+    placeholder.style.display = 'none';
+
+    // Renderizar según tipo de widget
+    if (widget.type === 'kpi') {
+      renderKPIPreview(result.data, tempWidgetConfig, kpiContainer);
+    } else if (widget.type === 'chart') {
+      renderChartPreview(result.data, tempWidgetConfig, canvas);
+    }
+
+  } catch (error) {
+    console.error('[PREVIEW] Error:', error);
+    placeholder.innerHTML = `
+      <div class="text-center text-red-500">
+        <svg class="h-12 w-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <p class="text-sm font-semibold">Error al cargar preview</p>
+        <p class="text-xs mt-1">${error.message}</p>
+      </div>
+    `;
+    placeholder.style.display = 'block';
+  }
+}
+
+/**
+ * Renderizar preview de KPI
+ */
+function renderKPIPreview(data, config, container) {
+  const value = data.value || 0;
+  const kpiConfig = config.kpiConfig || {};
+
+  container.innerHTML = `
+    <div class="text-center p-6 rounded-lg" style="background-color: ${kpiConfig.backgroundColor || '#10b981'}; color: ${kpiConfig.textColor || '#ffffff'};">
+      <div class="text-sm font-semibold mb-2">${config.title}</div>
+      <div class="text-4xl font-bold">${formatKPIValue(value, kpiConfig.format)}</div>
+    </div>
+  `;
+  container.style.display = 'block';
+}
+
+/**
+ * Renderizar preview de gráfico
+ */
+function renderChartPreview(data, config, canvas) {
+  canvas.style.display = 'block';
+
+  // Si hay datos agrupados
+  if (data.data && data.data.length > 0) {
+    const labels = data.data.map(d => d.label);
+    const values = data.data.map(d => d.value);
+
+    console.log('[PREVIEW] Renderizando gráfico - Labels:', labels.length, 'Values:', values.length);
+
+    const chartType = config.chartConfig?.chartType || 'bar';
+
+    // Limpiar canvas anterior
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Crear gráfico con Chart.js
+    if (window.previewChart) {
+      window.previewChart.destroy();
+    }
+
+    window.previewChart = new Chart(ctx, {
+      type: chartType === 'area' ? 'line' : chartType,
+      data: {
+        labels: labels,
+        datasets: [{
+          label: config.title,
+          data: values,
+          backgroundColor: chartType === 'line' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.8)',
+          borderColor: 'rgba(59, 130, 246, 1)',
+          borderWidth: 2,
+          fill: chartType === 'area'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: { display: false },
+          title: {
+            display: true,
+            text: `${config.title} (${values.length} grupos)`
+          }
+        },
+        scales: chartType !== 'pie' && chartType !== 'doughnut' ? {
+          y: { beginAtZero: true }
+        } : {}
+      }
+    });
+  } else {
+    // Valor único sin agrupación
+    canvas.style.display = 'none';
+    const placeholder = document.getElementById('widgetPreviewPlaceholder');
+    placeholder.innerHTML = `
+      <div class="text-center">
+        <div class="text-4xl font-bold text-gray-700">${data.value || 0}</div>
+        <p class="text-sm text-gray-500 mt-2">Valor sin agrupación</p>
+      </div>
+    `;
+    placeholder.style.display = 'block';
+  }
+}
+
+/**
+ * Formatear valor de KPI
+ */
+function formatKPIValue(value, format) {
+  switch (format) {
+    case 'percentage':
+      return `${Math.round(value * 100) / 100}%`;
+    case 'currency':
+      return `S/ ${value.toLocaleString('es-PE', { minimumFractionDigits: 2 })}`;
+    case 'time':
+      const hours = Math.floor(value / 3600);
+      const minutes = Math.floor((value % 3600) / 60);
+      const seconds = Math.floor(value % 60);
+      return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    default:
+      return value.toLocaleString('es-PE');
+  }
+}
+
+function deleteWidget(widgetId) {
+  if (!confirm('¿Eliminar este widget?')) return;
+
+  const element = document.getElementById(widgetId);
+  if (element) {
+    grid.removeWidget(element);
+  }
+
+  dashboardData.widgets = dashboardData.widgets.filter(w => w.id !== widgetId);
+
+  if (dashboardData.widgets.length === 0) {
+    document.getElementById('emptyState').style.display = 'block';
+  }
+}
+
+function clearCanvas() {
+  if (!confirm('¿Limpiar todo el lienzo?')) return;
+
+  grid.removeAll();
+  dashboardData.widgets = [];
+  document.getElementById('emptyState').style.display = 'block';
+}
+
+function saveDashboard() {
+  const name = document.getElementById('dashboardName').value.trim();
+  if (!name) {
+    alert('Por favor ingresa un nombre para el dashboard');
+    return;
+  }
+
+  // Capturar posiciones actuales
+  grid.engine.nodes.forEach(node => {
+    const widget = dashboardData.widgets.find(w => w.id === node.el.id);
+    if (widget) {
+      widget.position = {
+        x: node.x,
+        y: node.y,
+        width: node.w,
+        height: node.h
+      };
+    }
+  });
+
+  // 📊 GENERAR RESUMEN DE INFORMACIÓN PARA EL USUARIO
+  console.log('═══════════════════════════════════════════════════════');
+  console.log('📊 GUARDANDO DASHBOARD - RESUMEN DE CONFIGURACIÓN');
+  console.log('═══════════════════════════════════════════════════════');
+  console.log('📝 Nombre:', name);
+  console.log('📄 Descripción:', document.getElementById('dashboardDescription').value || 'Sin descripción');
+  console.log('🧩 Total de Widgets:', dashboardData.widgets.length);
+  console.log('');
+
+  // Analizar cada widget
+  dashboardData.widgets.forEach((widget, index) => {
+    console.log(`Widget ${index + 1}: ${widget.title || 'Sin título'}`);
+    console.log(`  ├─ Tipo: ${widget.type === 'kpi' ? '📈 KPI' : '📊 Gráfico'}`);
+    console.log(`  ├─ ID: ${widget.id}`);
+    console.log(`  ├─ Posición: (x:${widget.position?.x || 0}, y:${widget.position?.y || 0})`);
+    console.log(`  ├─ Tamaño: ${widget.position?.width || 4}×${widget.position?.height || 2}`);
+
+    if (widget.dataConfig) {
+      console.log(`  ├─ Dataset: ${widget.dataConfig.dataset || 'No configurado'}`);
+
+      // Mostrar campos calculados
+      if (widget.dataConfig.calculatedFields && widget.dataConfig.calculatedFields.length > 0) {
+        console.log(`  ├─ Campos Calculados (${widget.dataConfig.calculatedFields.length}):`);
+        widget.dataConfig.calculatedFields.forEach((field, i) => {
+          const prefix = i === widget.dataConfig.calculatedFields.length - 1 ? '  │   └─' : '  │   ├─';
+          console.log(`${prefix} "${field.label}": ${field.aggregationType.toUpperCase()}(${field.field || 'custom'})`);
+          if (field.customFormula) {
+            console.log(`  │       Formula: ${field.customFormula}`);
+          }
+        });
+      }
+
+      // Mostrar agrupación (¡IMPORTANTE!)
+      if (widget.dataConfig.groupBy) {
+        console.log(`  ├─ ⭐ AGRUPACIÓN CONFIGURADA:`);
+        console.log(`  │   ├─ Campo: ${widget.dataConfig.groupBy.field}`);
+        console.log(`  │   └─ Granularidad: ${widget.dataConfig.groupBy.granularity || 'day'}`);
+      } else {
+        console.log(`  ├─ Agrupación: Sin agrupar (valor único)`);
+      }
+
+      // Mostrar filtros
+      if (widget.dataConfig.filters && widget.dataConfig.filters.length > 0) {
+        console.log(`  ├─ Filtros (${widget.dataConfig.filters.length}):`);
+        widget.dataConfig.filters.forEach((filter, i) => {
+          const prefix = i === widget.dataConfig.filters.length - 1 ? '  │   └─' : '  │   ├─';
+          console.log(`${prefix} ${filter.field} ${filter.operator} ${filter.value}`);
+        });
+      }
+    }
+
+    // Configuración de gráfico
+    if (widget.type === 'chart' && widget.chartConfig) {
+      console.log(`  ├─ Tipo de Gráfico: ${widget.chartConfig.chartType || 'bar'}`);
+      if (widget.chartConfig.chartType === 'gauge' && widget.gaugeConfig) {
+        console.log(`  │   └─ Configuración Gauge: ${widget.gaugeConfig.min}-${widget.gaugeConfig.max} ${widget.gaugeConfig.unit || ''}`);
+      }
+    }
+
+    console.log(`  └─ Estado: Listo para guardar ✅`);
+    console.log('');
+  });
+
+  console.log('═══════════════════════════════════════════════════════');
+
+  const payload = {
+    id: dashboardData.id,
+    name: name,
+    description: document.getElementById('dashboardDescription').value,
+    widgets: JSON.stringify(dashboardData.widgets),
+    config: JSON.stringify({
+      layout: 'grid',
+      columns: 12
+    })
+  };
+
+  console.log('📤 Enviando datos al servidor...');
+
+  fetch('/custom-dashboard/save', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams(payload)
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      console.log('✅ Dashboard guardado exitosamente en la base de datos');
+      console.log('🔗 ID del Dashboard:', data.dashboardId);
+      console.log('═══════════════════════════════════════════════════════');
+
+      // Mensaje mejorado al usuario
+      const summary = `Dashboard "${name}" guardado exitosamente:\n\n` +
+                      `✅ ${dashboardData.widgets.length} widget(s) configurado(s)\n` +
+                      `✅ Posiciones y tamaños guardados\n` +
+                      dashboardData.widgets.filter(w => w.dataConfig?.groupBy).length > 0
+                        ? `✅ ${dashboardData.widgets.filter(w => w.dataConfig?.groupBy).length} widget(s) con agrupación\n`
+                        : '' +
+                      `\n📋 Revisa la consola para ver detalles completos`;
+
+      alert(summary);
+      window.location.href = '/custom-dashboard/view/' + data.dashboardId;
+    } else {
+      console.error('❌ Error al guardar:', data.error);
+      alert('Error al guardar: ' + (data.error || 'Error desconocido'));
+    }
+  })
+  .catch(err => {
+    console.error('❌ Error de red:', err);
+    alert('Error al guardar el dashboard');
+  });
+}
+
+function previewDashboard() {
+  // Capturar posiciones actuales
+  grid.engine.nodes.forEach(node => {
+    const widget = dashboardData.widgets.find(w => w.id === node.el.id);
+    if (widget) {
+      widget.position = {
+        x: node.x,
+        y: node.y,
+        width: node.w,
+        height: node.h
+      };
+    }
+  });
+
+  // Crear un objeto temporal con el dashboard
+  const previewData = {
+    _id: dashboardData.id || 'preview',
+    name: document.getElementById('dashboardName').value.trim() || 'Vista Previa',
+    description: document.getElementById('dashboardDescription').value,
+    widgets: dashboardData.widgets,
+    config: {
+      layout: 'grid',
+      columns: 12
+    }
+  };
+
+  // Guardar en localStorage para que la vista previa lo lea
+  localStorage.setItem('dashboardPreview', JSON.stringify(previewData));
+
+  // Abrir vista previa en nueva ventana
+  window.open('/custom-dashboard/preview', '_blank', 'width=1400,height=900');
+}
+</script>

@@ -11,6 +11,7 @@ const morgan = require('morgan');
 const methodOverride = require('method-override');
 const flash = require('connect-flash');
 const expressLayouts = require('express-ejs-layouts');
+const { registerGlobalHelpers } = require('./utils/helpers');
 let MongoMemoryServer;
 try {
   ({ MongoMemoryServer } = require('mongodb-memory-server'));
@@ -92,12 +93,18 @@ const asesoresRouter = require('./routes/asesores');
 const asistenciaRouter = require('./routes/asistencia');
 const kpisRouter = require('./routes/provision'); // Dashboard de KPIs (Provisión Agregada)
 const srrRouter = require('./routes/srr'); // Service Results Report
-const docsRouter = require('./routes/docs'); // Documentación
+const customDashboardRouter = require('./routes/customDashboard'); // Dashboards Personalizados
 
 // Import models
 const User = require('./models/User');
 const RoleModel = require('./models/Role');
 const Campaign = require('./models/Campaign');
+
+// Import tenant system (registra schemas multi-tenant)
+require('./models/tenantModels');
+
+// Import tenant middleware
+const { detectTenant } = require('./middleware/tenant');
 
 // Create Express app
 const app = express();
@@ -109,6 +116,9 @@ app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
 app.use(expressLayouts);
 app.set('layout', 'layouts/main');
+
+// Registrar helpers globales para vistas EJS
+registerGlobalHelpers(app);
 
 // Middleware
 app.use(morgan('dev'));
@@ -170,11 +180,17 @@ passport.deserializeUser(async (id, done) => {
   }
 });
 
+// Tenant detection middleware (ANTES de las rutas, DESPUÉS de session)
+// Detecta automáticamente el tenant (campaignId) desde URL, session o query
+app.use(detectTenant);
+
 // Make user available to all templates
 app.use((req, res, next) => {
   res.locals.currentUser = req.user;
   res.locals.user = req.user;
   res.locals.selectedCampaign = req.session.selectedCampaign || null;
+  res.locals.tenantId = req.tenantId || null; // Agregar tenantId a las vistas
+  res.locals.tenant = req.tenant || null; // Información completa de la campaña
   res.locals.success_msg = req.flash('success_msg');
   res.locals.error_msg = req.flash('error_msg');
   res.locals.error = req.flash('error'); // for passport
@@ -194,9 +210,9 @@ app.get('/health', (req, res) => {
 // Routes
 app.use('/', indexRouter);
 app.use('/auth', authRouter);
-app.use('/docs', docsRouter);
 app.use('/campaigns', campaignsRouter);
 app.use('/dashboard', dashboardRouter);
+app.use('/custom-dashboard', customDashboardRouter); // Dashboards Personalizados
 app.use('/powerbi', powerbiRouter);
 app.use('/asesores', asesoresRouter);
 app.use('/asistencia', asistenciaRouter);
@@ -298,56 +314,10 @@ async function seedDemoUsers() {
   }
 }
 
-// Crea campañas demo si no existen
+// Función para crear campañas demo (DESHABILITADA - comenzar con campañas limpias)
 async function seedDemoCampaigns() {
-  try {
-    const demoCampaigns = [
-      {
-        nombre: 'Telecomunicaciones Premium',
-        descripcion: 'Campaña de atención al cliente premium para empresa líder de telecomunicaciones, enfocada en retención y fidelización',
-        imagen: '/images/campaign-telecom.jpg',
-        gerente: 'Carlos Mendoza Silva',
-        analista: 'Ana Torres Pérez',
-        subCampanas: [
-          { nombre: 'Soporte Técnico', descripcion: 'Atención de incidencias técnicas y configuración de servicios' },
-          { nombre: 'Retención', descripcion: 'Retención de clientes que desean cancelar servicios' },
-          { nombre: 'Ventas Cruzadas', descripcion: 'Oferta de productos complementarios a clientes actuales' }
-        ]
-      },
-      {
-        nombre: 'Banca Digital',
-        descripcion: 'Operación de contact center para banco digital, especializada en onboarding y soporte de aplicaciones móviles',
-        imagen: '/images/campaign-banking.jpg',
-        gerente: 'María Rodríguez López',
-        analista: 'Pedro Sánchez García',
-        subCampanas: [
-          { nombre: 'Onboarding Digital', descripcion: 'Asistencia en apertura de cuentas digitales' },
-          { nombre: 'Soporte App', descripcion: 'Resolución de problemas en aplicación móvil' },
-          { nombre: 'Seguridad', descripcion: 'Atención de consultas sobre seguridad y fraudes' }
-        ]
-      },
-      {
-        nombre: 'E-commerce Retail',
-        descripcion: 'Atención multicanal para plataforma de e-commerce, incluyendo seguimiento de pedidos y postventa',
-        imagen: '/images/campaign-ecommerce.jpg',
-        gerente: 'Jorge Vargas Ramos',
-        analista: 'Lucía Fernández Quispe',
-        subCampanas: [
-          { nombre: 'Seguimiento de Pedidos', descripcion: 'Consultas sobre estado y tracking de pedidos' },
-          { nombre: 'Devoluciones', descripcion: 'Gestión de devoluciones y cambios de productos' },
-          { nombre: 'Reclamos', descripcion: 'Atención de quejas y reclamos de clientes' }
-        ]
-      }
-    ];
-
-    for (const c of demoCampaigns) {
-      const exists = await Campaign.findOne({ nombre: c.nombre });
-      if (!exists) {
-        await Campaign.create(c);
-        console.log(`Campaña demo creada: ${c.nombre}`);
-      }
-    }
-  } catch (e) {
-    console.warn('No se pudieron crear campañas demo:', e.message);
-  }
+  // ❌ Campañas demo deshabilitadas
+  // El sistema multi-tenant requiere que crees tus propias campañas desde la interfaz
+  // Para crear una nueva campaña, ve a /campaigns y haz clic en "Nueva Campaña"
+  console.log('[CAMPAIGNS] Sistema multi-tenant listo. Crea tus campañas desde /campaigns');
 }

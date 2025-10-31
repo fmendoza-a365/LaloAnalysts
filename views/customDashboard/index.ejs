@@ -1,0 +1,193 @@
+<!-- Header -->
+<div class="bg-gradient-to-r from-purple-600 to-indigo-700 rounded-lg shadow-2xl mb-8">
+  <div class="px-6 py-8">
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+      <div class="flex-1">
+        <h1 class="text-3xl lg:text-4xl font-bold text-white flex items-center gap-4 mb-3">
+          <svg class="h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+          </svg>
+          Mis Dashboards Personalizados
+        </h1>
+        <p class="text-purple-100 text-lg">Crea y gestiona dashboards personalizados con tus propias métricas y visualizaciones</p>
+      </div>
+      <div>
+        <a href="/custom-dashboard/editor" class="inline-flex items-center px-6 py-3 bg-white text-purple-700 font-bold rounded-lg shadow-lg hover:bg-purple-50 transition-all">
+          <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+          </svg>
+          Crear Nuevo Dashboard
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<% if (dashboards && dashboards.length > 0) { %>
+  <!-- Grid de Dashboards -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <% dashboards.forEach(dashboard => { %>
+      <div class="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-200 overflow-hidden">
+        <!-- Header del Dashboard Card -->
+        <div class="bg-gradient-to-r from-purple-500 to-indigo-600 px-6 py-4">
+          <div class="flex items-start justify-between">
+            <div class="flex-1">
+              <h3 class="text-xl font-bold text-white mb-1"><%= dashboard.name %></h3>
+              <% if (dashboard.description) { %>
+                <p class="text-purple-100 text-sm"><%= dashboard.description %></p>
+              <% } %>
+            </div>
+            <% if (dashboard.isDefault) { %>
+              <span class="bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-1 rounded-full">
+                Predeterminado
+              </span>
+            <% } %>
+          </div>
+        </div>
+
+        <!-- Contenido del Card -->
+        <div class="px-6 py-4">
+          <!-- Estadísticas -->
+          <div class="flex items-center gap-4 mb-4">
+            <div class="flex items-center text-sm text-gray-600">
+              <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>
+              </svg>
+              <%= dashboard.widgets ? dashboard.widgets.length : 0 %> widgets
+            </div>
+            <div class="flex items-center text-sm text-gray-600">
+              <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              <%= new Date(dashboard.updatedAt).toLocaleDateString('es-PE') %>
+            </div>
+          </div>
+
+          <!-- Preview de Widgets -->
+          <% if (dashboard.widgets && dashboard.widgets.length > 0) { %>
+            <div class="mb-4">
+              <p class="text-xs font-semibold text-gray-500 uppercase mb-2">Widgets incluidos:</p>
+              <div class="flex flex-wrap gap-1">
+                <% dashboard.widgets.slice(0, 5).forEach(widget => { %>
+                  <span class="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">
+                    <% if (widget.type === 'kpi') { %>
+                      <svg class="h-3 w-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/>
+                      </svg>
+                    <% } else if (widget.type === 'chart') { %>
+                      <svg class="h-3 w-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z"/>
+                        <path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z"/>
+                      </svg>
+                    <% } else { %>
+                      <svg class="h-3 w-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M5 4a3 3 0 00-3 3v6a3 3 0 003 3h10a3 3 0 003-3V7a3 3 0 00-3-3H5zm-1 9v-1h5v2H5a1 1 0 01-1-1zm7 1h4a1 1 0 001-1v-1h-5v2zm0-4h5V8h-5v2zM9 8H4v2h5V8z"/>
+                      </svg>
+                    <% } %>
+                    <%= widget.title %>
+                  </span>
+                <% }); %>
+                <% if (dashboard.widgets.length > 5) { %>
+                  <span class="inline-flex items-center px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full font-semibold">
+                    +<%= dashboard.widgets.length - 5 %> más
+                  </span>
+                <% } %>
+              </div>
+            </div>
+          <% } %>
+
+          <!-- Acciones -->
+          <div class="flex gap-2">
+            <a href="/custom-dashboard/view/<%= dashboard._id %>" class="flex-1 inline-flex items-center justify-center px-4 py-2 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 transition-all">
+              <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+              </svg>
+              Ver
+            </a>
+            <% if (dashboard.createdBy.toString() === user._id.toString()) { %>
+              <a href="/custom-dashboard/editor?id=<%= dashboard._id %>" class="inline-flex items-center justify-center px-4 py-2 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 transition-all">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                </svg>
+              </a>
+              <button onclick="cloneDashboard('<%= dashboard._id %>', '<%= dashboard.name %>')" class="inline-flex items-center justify-center px-4 py-2 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 transition-all">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                </svg>
+              </button>
+              <button onclick="deleteDashboard('<%= dashboard._id %>', '<%= dashboard.name %>')" class="inline-flex items-center justify-center px-4 py-2 bg-red-100 text-red-700 font-semibold rounded-lg hover:bg-red-200 transition-all">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+              </button>
+            <% } %>
+          </div>
+        </div>
+      </div>
+    <% }); %>
+  </div>
+<% } else { %>
+  <!-- Estado vacío -->
+  <div class="bg-white rounded-xl shadow-lg p-12 text-center">
+    <svg class="h-24 w-24 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+    </svg>
+    <h3 class="text-2xl font-bold text-gray-900 mb-2">No tienes dashboards personalizados</h3>
+    <p class="text-gray-600 mb-6">Crea tu primer dashboard para visualizar tus datos de forma personalizada</p>
+    <a href="/custom-dashboard/editor" class="inline-flex items-center px-6 py-3 bg-purple-600 text-white font-bold rounded-lg shadow-lg hover:bg-purple-700 transition-all">
+      <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+      </svg>
+      Crear Mi Primer Dashboard
+    </a>
+  </div>
+<% } %>
+
+<script>
+function cloneDashboard(id, name) {
+  const newName = prompt(`Ingresa el nombre para la copia de "${name}":`, `${name} (Copia)`);
+  if (!newName) return;
+
+  fetch(`/custom-dashboard/clone/${id}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: newName })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      alert('Dashboard clonado exitosamente');
+      location.reload();
+    } else {
+      alert('Error al clonar dashboard: ' + (data.error || 'Error desconocido'));
+    }
+  })
+  .catch(err => {
+    console.error('Error:', err);
+    alert('Error al clonar dashboard');
+  });
+}
+
+function deleteDashboard(id, name) {
+  if (!confirm(`¿Estás seguro de eliminar el dashboard "${name}"?`)) return;
+
+  fetch(`/custom-dashboard/delete/${id}`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' }
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      alert('Dashboard eliminado exitosamente');
+      location.reload();
+    } else {
+      alert('Error al eliminar dashboard: ' + (data.error || 'Error desconocido'));
+    }
+  })
+  .catch(err => {
+    console.error('Error:', err);
+    alert('Error al eliminar dashboard');
+  });
+}
+</script>
