@@ -11,7 +11,7 @@ Plataforma web completa de gestión y análisis para contact centers, con sistem
 
 [Características](#-características-principales) •
 [Instalación](#-instalación) •
-[Documentación](#-documentación-completa) •
+[Documentación](#-documentación) •
 [Arquitectura](#-arquitectura)
 
 </div>
@@ -272,6 +272,40 @@ User:     user_demo     / demo12345
 
 ---
 
+## 📚 Documentación
+
+Toda la documentación del proyecto se encuentra organizada en la carpeta `docs/`:
+
+### 📖 Documentos Principales
+
+| Documento | Descripción |
+|-----------|-------------|
+| **[Índice de Documentación](docs/README.md)** | Índice completo de toda la documentación |
+| **[Estructura del Proyecto](docs/ESTRUCTURA_PROYECTO.md)** | Organización de carpetas y archivos |
+| **[Widget Editor Guide](docs/WIDGET_EDITOR_GUIDE.md)** | Sistema avanzado de widgets (similar a Power BI) |
+| **[Cambios Implementados](docs/CAMBIOS_IMPLEMENTADOS.md)** | Historial de mejoras y nuevas funcionalidades |
+| **[Dashboards Personalizados](docs/DASHBOARDS_PERSONALIZADOS.md)** | Crear dashboards personalizados |
+| **[Sistema de Campañas](docs/CAMPAÑAS.md)** | Gestión multi-campaña |
+| **[Design Standards](docs/DESIGN_STANDARDS.md)** | Estándares de diseño y código |
+| **[Docker](docs/DOCKER.md)** | Despliegue con Docker |
+
+### 🚀 Lectura Recomendada por Rol
+
+#### Para Desarrolladores
+1. [Estructura del Proyecto](docs/ESTRUCTURA_PROYECTO.md) - Entender la organización
+2. [Widget Editor Guide](docs/WIDGET_EDITOR_GUIDE.md) - Sistema de dashboards
+3. [Design Standards](docs/DESIGN_STANDARDS.md) - Estándares de código
+
+#### Para Administradores
+1. [Docker](docs/DOCKER.md) - Despliegue
+2. [Sistema de Campañas](docs/CAMPAÑAS.md) - Configuración multi-tenant
+
+#### Para Usuarios
+1. [Dashboards Personalizados](docs/DASHBOARDS_PERSONALIZADOS.md) - Crear dashboards
+2. [Widget Editor Guide](docs/WIDGET_EDITOR_GUIDE.md) - Configurar widgets
+
+---
+
 ## ⚙️ Configuración
 
 ### Variables de Entorno Completas
@@ -318,8 +352,6 @@ SEED_DEMO=true
 # Iniciar MongoDB localmente
 mongod --dbpath /ruta/a/tu/db
 
-# O usar MongoDB Atlas (cloud)
-MONGO_URI=mongodb+srv://usuario:password@cluster.mongodb.net/a365-db
 ```
 
 ---
@@ -448,7 +480,16 @@ a365-contact-center/
 ├── .env.example              # Ejemplo de variables de entorno
 ├── .gitignore               # Archivos ignorados por Git
 ├── README.md                # Este archivo
-└── CAMPAÑAS.md              # Documentación del sistema multi-campaña
+└── docs/                    # 📚 Documentación completa
+    ├── README.md            # Índice de documentación
+    ├── ESTRUCTURA_PROYECTO.md
+    ├── WIDGET_EDITOR_GUIDE.md
+    ├── CAMBIOS_IMPLEMENTADOS.md
+    ├── CAMPAÑAS.md
+    ├── DASHBOARDS_PERSONALIZADOS.md
+    ├── DESIGN_STANDARDS.md
+    ├── DOCKER.md
+    └── UPDATE_HEADERS.md
 ```
 
 ---
