@@ -1,19 +1,25 @@
 const express = require('express');
 const router = express.Router();
 const { ensureAuthenticated } = require('../middleware/auth');
-const Asesor = require('../models/Asesor');
-const AsistenciaDataset = require('../models/AsistenciaDataset');
-const AsistenciaRecord = require('../models/AsistenciaRecord');
+const { requireTenant, getTenantModelFromReq } = require('../middleware/tenant');
 
-router.use(ensureAuthenticated);
+// ❌ NO importar modelos multi-tenant directamente
+// Modelos multi-tenant: Asesor, AsistenciaDataset, AsistenciaRecord
+
+router.use(ensureAuthenticated, requireTenant);
 
 router.get('/', async (req, res) => {
   try {
+    // Obtener modelos dinámicos del tenant actual
+    const Asesor = getTenantModelFromReq(req, 'Asesor');
+    const AsistenciaDataset = getTenantModelFromReq(req, 'AsistenciaDataset');
+    const AsistenciaRecord = getTenantModelFromReq(req, 'AsistenciaRecord');
+
     const anio = parseInt(req.query.anio || new Date().getFullYear(), 10);
     const mes = parseInt(req.query.mes || (new Date().getMonth() + 1), 10);
     const supervisorFiltro = req.query.supervisor || '';
 
-    // Buscar dataset del periodo
+    // ✅ Buscar dataset del periodo (solo del tenant actual)
     const dataset = await AsistenciaDataset.findOne({ anio, mes }).sort({ creadoEn: -1 });
     
     if (!dataset) {
@@ -64,8 +70,8 @@ router.get('/', async (req, res) => {
     const faltasInjustificadas = registrosFiltrados.filter(r => r.regAsistencia === 'FI').length;
     const tardanzas = registrosFiltrados.filter(r => r.tardanza && parseFloat(r.tardanza) > 0).length;
     
-    const porcentajeAsistencia = totalRegistros > 0 ? ((asistenciasPuntuales / totalRegistros) * 100).toFixed(1) : 0;
-    const porcentajeFaltas = totalRegistros > 0 ? ((faltasInjustificadas / totalRegistros) * 100).toFixed(1) : 0;
+    const porcentajeAsistencia = totalRegistros > 0 ? ((asistenciasPuntuales / totalRegistros) * 100).toFixed(2) : 0;
+    const porcentajeFaltas = totalRegistros > 0 ? ((faltasInjustificadas / totalRegistros) * 100).toFixed(2) : 0;
 
     // Agrupar por DNI para obtener resumen por asesor
     const asesorMap = new Map();
@@ -96,7 +102,7 @@ router.get('/', async (req, res) => {
     const asistenciaPorAsesor = Array.from(asesorMap.values())
       .map(a => ({
         ...a,
-        porcentajeAsistencia: a.totalDias > 0 ? ((a.puntuales / a.totalDias) * 100).toFixed(1) : 0
+        porcentajeAsistencia: a.totalDias > 0 ? ((a.puntuales / a.totalDias) * 100).toFixed(2) : 0
       }))
       .sort((a, b) => b.porcentajeAsistencia - a.porcentajeAsistencia)
       .slice(0, 20); // Top 20

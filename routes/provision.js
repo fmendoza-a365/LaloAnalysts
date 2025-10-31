@@ -1,28 +1,34 @@
 const express = require('express');
 const router = express.Router();
 const { ensureAuthenticated } = require('../middleware/auth');
-const ProvisionDataset = require('../models/ProvisionDataset');
-const ProvisionRecord = require('../models/ProvisionRecord');
-const Tarifa = require('../models/Tarifa');
+const { requireTenant, getTenantModelFromReq } = require('../middleware/tenant');
 
-router.use(ensureAuthenticated);
+// ❌ NO importar modelos multi-tenant directamente
+// Modelos multi-tenant: ProvisionDataset, ProvisionRecord, Tarifa
+
+router.use(ensureAuthenticated, requireTenant);
 
 // Dashboard principal de provisión
 router.get('/', async (req, res) => {
   try {
-    console.log('[PROVISION] Acceso a dashboard de KPIs');
+    // Obtener modelos dinámicos del tenant actual
+    const ProvisionDataset = getTenantModelFromReq(req, 'ProvisionDataset');
+    const ProvisionRecord = getTenantModelFromReq(req, 'ProvisionRecord');
+    const Tarifa = getTenantModelFromReq(req, 'Tarifa');
+
+    console.log(`[PROVISION] [Tenant: ${req.tenantId}] Acceso a dashboard de KPIs`);
     const hoy = new Date();
     const anio = parseInt(req.query.anio || hoy.getFullYear(), 10);
     const mes = parseInt(req.query.mes || (hoy.getMonth() + 1), 10);
     const vista = req.query.vista || 'resumen'; // resumen | mesas | cola
     const mesaSeleccionada = req.query.mesa || null;
-    
-    console.log('[PROVISION] Buscando dataset para:', anio, '-', mes);
 
-    // Buscar dataset del periodo
-    const dataset = await ProvisionDataset.findOne({ anio, mes }).sort({ creadoEn: -1 });
-    console.log('[PROVISION] Dataset encontrado:', dataset ? dataset._id : 'ninguno');
-    
+    console.log(`[PROVISION] [Tenant: ${req.tenantId}] Buscando dataset para:`, anio, '-', mes);
+
+    // ✅ Buscar dataset del periodo (solo del tenant actual)
+    const dataset = await ProvisionDataset.findOne({ anio: anio, mes }).sort({ creadoEn: -1 });
+    console.log(`[PROVISION] [Tenant: ${req.tenantId}] Dataset encontrado:`, dataset ? dataset._id : 'ninguno');
+
     if (!dataset) {
       return res.render('provision/index', {
         title: 'KPIs · Dashboard',
@@ -34,7 +40,7 @@ router.get('/', async (req, res) => {
       });
     }
 
-    // Obtener registros del mes (ahora cada registro es una cola individual por día)
+    // ✅ Obtener registros del mes (solo del tenant actual)
     const registros = await ProvisionRecord.find({ datasetId: dataset._id }).sort({ fecha: 1, cola: 1 });
     console.log('[PROVISION] Total de registros encontrados:', registros.length);
 

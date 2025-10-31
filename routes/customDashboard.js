@@ -199,10 +199,16 @@ router.post('/api/widget-data', async (req, res) => {
     console.log('[CUSTOM DASHBOARD] Widget Type:', widget.type);
     console.log('[CUSTOM DASHBOARD] Dataset:', widget.dataConfig?.dataset);
     console.log('[CUSTOM DASHBOARD] GroupBy configurado:', widget.dataConfig?.groupBy);
-    if (widget.dataConfig?.groupBy) {
-      console.log('  ├─ Campo:', widget.dataConfig.groupBy.field);
-      console.log('  └─ Granularidad:', widget.dataConfig.groupBy.granularity);
+
+    // groupBy es un ARRAY en el schema
+    if (widget.dataConfig?.groupBy && Array.isArray(widget.dataConfig.groupBy) && widget.dataConfig.groupBy.length > 0) {
+      widget.dataConfig.groupBy.forEach((gb, i) => {
+        console.log(`  Grupo ${i + 1}:`);
+        console.log(`    ├─ Campo: ${gb.field}`);
+        console.log(`    └─ Granularidad: ${gb.granularity}`);
+      });
     }
+
     console.log('[CUSTOM DASHBOARD] Filtros:', filters);
     console.log('───────────────────────────────────────────────────────');
 
@@ -489,22 +495,28 @@ function performAggregation(records, aggregation, groupBy) {
   console.log('[CUSTOM DASHBOARD] performAggregation - groupBy:', groupBy);
   console.log('[CUSTOM DASHBOARD] performAggregation - records count:', records.length);
 
+  // ⚠️ IMPORTANTE: groupBy es un ARRAY en el schema de Mongoose
+  // Extraer el primer elemento para agrupación simple (soporte de múltiple en el futuro)
+  const firstGroupBy = Array.isArray(groupBy) && groupBy.length > 0 ? groupBy[0] : groupBy;
+
+  console.log('[CUSTOM DASHBOARD] firstGroupBy extraído:', firstGroupBy);
+
   // Si hay agrupación
-  if (groupBy && groupBy.field) {
-    console.log('[CUSTOM DASHBOARD] Agrupando por campo:', groupBy.field);
+  if (firstGroupBy && firstGroupBy.field) {
+    console.log('[CUSTOM DASHBOARD] Agrupando por campo:', firstGroupBy.field);
 
     const grouped = {};
     let exampleValues = [];
 
     records.forEach((record, index) => {
-      const fieldValue = record[groupBy.field];
+      const fieldValue = record[firstGroupBy.field];
 
       // Guardar ejemplos para debug
       if (index < 3) {
         exampleValues.push(fieldValue);
       }
 
-      const groupKey = getGroupKey(fieldValue, groupBy.granularity);
+      const groupKey = getGroupKey(fieldValue, firstGroupBy.granularity);
 
       if (!grouped[groupKey]) {
         grouped[groupKey] = [];

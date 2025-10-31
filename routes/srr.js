@@ -1,14 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const { ensureAuthenticated } = require('../middleware/auth');
-const ProvisionDataset = require('../models/ProvisionDataset');
-const ProvisionRecord = require('../models/ProvisionRecord');
-const Tarifa = require('../models/Tarifa');
-const NominaDataset = require('../models/NominaDataset');
-const NominaRecord = require('../models/NominaRecord');
+const { requireTenant, getTenantModelFromReq } = require('../middleware/tenant');
 const ExcelJS = require('exceljs');
 
-router.use(ensureAuthenticated);
+// ❌ NO importar modelos multi-tenant directamente
+// Modelos multi-tenant: ProvisionDataset, ProvisionRecord, Tarifa, NominaDataset, NominaRecord
+
+router.use(ensureAuthenticated, requireTenant);
 
 // Mapeo de nombres de campaña (nómina) a nombres de mesa (provisión)
 const MAPEO_CAMPANA_MESA = {
@@ -93,17 +92,24 @@ function mapearCampanaAMesa(campanaNomina) {
 // Vista Anual del SRR - Reporte mensual con acumulado
 router.get('/anual', async (req, res) => {
   try {
+    // Obtener modelos dinámicos del tenant actual
+    const ProvisionDataset = getTenantModelFromReq(req, 'ProvisionDataset');
+    const ProvisionRecord = getTenantModelFromReq(req, 'ProvisionRecord');
+    const NominaDataset = getTenantModelFromReq(req, 'NominaDataset');
+    const NominaRecord = getTenantModelFromReq(req, 'NominaRecord');
+    const Tarifa = getTenantModelFromReq(req, 'Tarifa');
+
     const hoy = new Date();
     const anio = parseInt(req.query.anio || hoy.getFullYear(), 10);
     const mesaFiltro = req.query.mesa || 'todas'; // Filtro por mesa
-    
-    console.log(`[SRR ANUAL] Procesando año ${anio}, Mesa: ${mesaFiltro}`);
-    
-    // Obtener todos los datasets de provisión del año
-    const datasets = await ProvisionDataset.find({ anio }).sort({ mes: 1 });
-    
-    // Obtener todos los datasets de nómina del año
-    const nominasDatasets = await NominaDataset.find({ anio }).sort({ mes: 1 });
+
+    console.log(`[SRR ANUAL] [Tenant: ${req.tenantId}] Procesando año ${anio}, Mesa: ${mesaFiltro}`);
+
+    // ✅ Obtener todos los datasets de provisión del año (solo del tenant actual)
+    const datasets = await ProvisionDataset.find({ anio: anio }).sort({ mes: 1 });
+
+    // ✅ Obtener todos los datasets de nómina del año (solo del tenant actual)
+    const nominasDatasets = await NominaDataset.find({ anio: anio }).sort({ mes: 1 });
     
     console.log(`[SRR ANUAL] Datasets provisión: ${datasets.length}, Nóminas: ${nominasDatasets.length}`);
     
@@ -136,6 +142,7 @@ router.get('/anual', async (req, res) => {
         estructuraOtros: 0,
         margenBruto: 0,
         porcentajeMargen: 0,
+        rotacion: 0,
         // Detalle participación
         payrollEFT: 0,
         payrollEstructura: 0,
@@ -185,8 +192,8 @@ router.get('/anual', async (req, res) => {
         }
       }
       
-      meses[mes].sales = ingresosMes;
-      meses[mes].provision = ingresosMes; // Provisión = Sales
+      meses[mes].sales = Math.round(ingresosMes * 100) / 100;
+      meses[mes].provision = Math.round(ingresosMes * 100) / 100; // Provisión = Sales
       
       console.log(`[SRR ANUAL] Mes ${mes}: Sales = S/ ${ingresosMes.toFixed(2)}`);
     }
@@ -249,27 +256,27 @@ router.get('/anual', async (req, res) => {
         }
       });
       
-      meses[mes].payroll = payrollTotal;
-      meses[mes].eftCount = countEFT;
-      meses[mes].estructuraSupervisor = countSupervisor;
-      meses[mes].estructuraOtros = countOtros;
-      meses[mes].payrollEFT = payrollEFT;
-      meses[mes].payrollEstructura = payrollEstructura;
-      meses[mes].nominaOmega = payrollTotal;
-      meses[mes].comisionesVariable = comisionesTotal;
+      meses[mes].payroll = Math.round(payrollTotal * 100) / 100;
+      meses[mes].eftCount = Math.round(countEFT * 100) / 100;
+      meses[mes].estructuraSupervisor = Math.round(countSupervisor);
+      meses[mes].estructuraOtros = Math.round(countOtros);
+      meses[mes].payrollEFT = Math.round(payrollEFT * 100) / 100;
+      meses[mes].payrollEstructura = Math.round(payrollEstructura * 100) / 100;
+      meses[mes].nominaOmega = Math.round(payrollTotal * 100) / 100;
+      meses[mes].comisionesVariable = Math.round(comisionesTotal * 100) / 100;
       
       // Calcular margen bruto
-      meses[mes].margenBruto = meses[mes].sales - payrollTotal;
-      meses[mes].porcentajeMargen = meses[mes].sales > 0 
-        ? ((meses[mes].margenBruto / meses[mes].sales) * 100) 
+      meses[mes].margenBruto = Math.round((meses[mes].sales - payrollTotal) * 100) / 100;
+      meses[mes].porcentajeMargen = meses[mes].sales > 0
+        ? Math.round(((meses[mes].margenBruto / meses[mes].sales) * 100) * 100) / 100
         : 0;
-      
+
       // Ratios
-      meses[mes].ratioEFT = payrollTotal > 0 ? (payrollEFT / payrollTotal * 100) : 0;
-      meses[mes].ratioEstructura = payrollTotal > 0 ? (payrollEstructura / payrollTotal * 100) : 0;
-      meses[mes].ratioAgentesSuper = countSupervisor > 0 ? (countEFT / countSupervisor) : 0;
-      meses[mes].ingresoPorEFT = countEFT > 0 ? (meses[mes].sales / countEFT) : 0;
-      meses[mes].porcentajeComisiones = payrollTotal > 0 ? (comisionesTotal / payrollTotal * 100) : 0;
+      meses[mes].ratioEFT = payrollTotal > 0 ? Math.round((payrollEFT / payrollTotal * 100) * 100) / 100 : 0;
+      meses[mes].ratioEstructura = payrollTotal > 0 ? Math.round((payrollEstructura / payrollTotal * 100) * 100) / 100 : 0;
+      meses[mes].ratioAgentesSuper = countSupervisor > 0 ? Math.round((countEFT / countSupervisor) * 100) / 100 : 0;
+      meses[mes].ingresoPorEFT = countEFT > 0 ? Math.round((meses[mes].sales / countEFT) * 100) / 100 : 0;
+      meses[mes].porcentajeComisiones = payrollTotal > 0 ? Math.round((comisionesTotal / payrollTotal * 100) * 100) / 100 : 0;
       
       console.log(`[SRR ANUAL] Mes ${mes}: Payroll = S/ ${payrollTotal.toFixed(2)}, EFT = ${countEFT}`);
     }
@@ -286,6 +293,7 @@ router.get('/anual', async (req, res) => {
       estructuraOtros: 0,
       margenBruto: 0,
       porcentajeMargen: 0,
+      rotacion: 0,
       payrollEFT: 0,
       payrollEstructura: 0,
       nominaOmega: 0,
@@ -308,15 +316,26 @@ router.get('/anual', async (req, res) => {
       acumulado.payrollEstructura += meses[m].payrollEstructura;
       acumulado.comisionesVariable += meses[m].comisionesVariable;
     }
-    
-    acumulado.margenBruto = acumulado.sales - acumulado.payroll;
-    acumulado.porcentajeMargen = acumulado.sales > 0 ? ((acumulado.margenBruto / acumulado.sales) * 100) : 0;
+
+    // Redondear acumulados a 2 decimales
+    acumulado.sales = Math.round(acumulado.sales * 100) / 100;
+    acumulado.provision = Math.round(acumulado.provision * 100) / 100;
+    acumulado.payroll = Math.round(acumulado.payroll * 100) / 100;
+    acumulado.eftCount = Math.round(acumulado.eftCount * 100) / 100;
+    acumulado.estructuraSupervisor = Math.round(acumulado.estructuraSupervisor);
+    acumulado.estructuraOtros = Math.round(acumulado.estructuraOtros);
+    acumulado.payrollEFT = Math.round(acumulado.payrollEFT * 100) / 100;
+    acumulado.payrollEstructura = Math.round(acumulado.payrollEstructura * 100) / 100;
+    acumulado.comisionesVariable = Math.round(acumulado.comisionesVariable * 100) / 100;
+
+    acumulado.margenBruto = Math.round((acumulado.sales - acumulado.payroll) * 100) / 100;
+    acumulado.porcentajeMargen = acumulado.sales > 0 ? Math.round(((acumulado.margenBruto / acumulado.sales) * 100) * 100) / 100 : 0;
     acumulado.nominaOmega = acumulado.payroll;
-    acumulado.ratioEFT = acumulado.payroll > 0 ? (acumulado.payrollEFT / acumulado.payroll * 100) : 0;
-    acumulado.ratioEstructura = acumulado.payroll > 0 ? (acumulado.payrollEstructura / acumulado.payroll * 100) : 0;
-    acumulado.ratioAgentesSuper = acumulado.estructuraSupervisor > 0 ? (acumulado.eftCount / acumulado.estructuraSupervisor) : 0;
-    acumulado.ingresoPorEFT = acumulado.eftCount > 0 ? (acumulado.sales / acumulado.eftCount) : 0;
-    acumulado.porcentajeComisiones = acumulado.payroll > 0 ? (acumulado.comisionesVariable / acumulado.payroll * 100) : 0;
+    acumulado.ratioEFT = acumulado.payroll > 0 ? Math.round((acumulado.payrollEFT / acumulado.payroll * 100) * 100) / 100 : 0;
+    acumulado.ratioEstructura = acumulado.payroll > 0 ? Math.round((acumulado.payrollEstructura / acumulado.payroll * 100) * 100) / 100 : 0;
+    acumulado.ratioAgentesSuper = acumulado.estructuraSupervisor > 0 ? Math.round((acumulado.eftCount / acumulado.estructuraSupervisor) * 100) / 100 : 0;
+    acumulado.ingresoPorEFT = acumulado.eftCount > 0 ? Math.round((acumulado.sales / acumulado.eftCount) * 100) / 100 : 0;
+    acumulado.porcentajeComisiones = acumulado.payroll > 0 ? Math.round((acumulado.comisionesVariable / acumulado.payroll * 100) * 100) / 100 : 0;
     
     console.log('[SRR ANUAL] Renderizando vista con', Object.keys(meses).length, 'meses');
     console.log('[SRR ANUAL] Acumulado sales:', acumulado.sales);
@@ -349,13 +368,19 @@ router.get('/anual', async (req, res) => {
 // Dashboard SRR - Service Results Report
 router.get('/', async (req, res) => {
   try {
+    const ProvisionDataset = getTenantModelFromReq(req, 'ProvisionDataset');
+    const ProvisionRecord = getTenantModelFromReq(req, 'ProvisionRecord');
+    const NominaDataset = getTenantModelFromReq(req, 'NominaDataset');
+    const NominaRecord = getTenantModelFromReq(req, 'NominaRecord');
+    const Tarifa = getTenantModelFromReq(req, 'Tarifa');
+
     console.log('[SRR] Acceso a Service Results Report');
     const hoy = new Date();
     const anio = parseInt(req.query.anio || hoy.getFullYear(), 10);
     const mes = parseInt(req.query.mes || (hoy.getMonth() + 1), 10);
-    
+
     // Buscar dataset del periodo
-    const dataset = await ProvisionDataset.findOne({ anio, mes });
+    const dataset = await ProvisionDataset.findOne({ anio: anio, mes });
     
     if (!dataset) {
       return res.render('srr/index', {
@@ -673,23 +698,41 @@ router.get('/', async (req, res) => {
   } catch (e) {
     console.error('[SRR] Error:', e);
     console.error('[SRR] Stack:', e.stack);
-    req.flash('error_msg', 'Error cargando Service Results Report: ' + e.message);
-    res.redirect('/');
+
+    // En lugar de redirigir, mostrar la vista con el error
+    const hoy = new Date();
+    const anio = parseInt(req.query.anio || hoy.getFullYear(), 10);
+    const mes = parseInt(req.query.mes || (hoy.getMonth() + 1), 10);
+
+    res.render('srr/index', {
+      title: 'SRR · Service Results Report',
+      user: req.user,
+      periodo: { anio, mes },
+      noData: true,
+      mesasData: [],
+      totales: {},
+      detalleNomina: [],
+      error: e.message
+    });
   }
 });
 
 // Exportar a Excel
 router.get('/export/excel', async (req, res) => {
   try {
+    const ProvisionDataset = getTenantModelFromReq(req, 'ProvisionDataset');
+    const ProvisionRecord = getTenantModelFromReq(req, 'ProvisionRecord');
+    const Tarifa = getTenantModelFromReq(req, 'Tarifa');
+
     const anio = parseInt(req.query.anio, 10);
     const mes = parseInt(req.query.mes, 10);
-    
-    const dataset = await ProvisionDataset.findOne({ anio, mes });
+
+    const dataset = await ProvisionDataset.findOne({ anio: anio, mes });
     if (!dataset) {
       req.flash('error_msg', 'No hay datos para este periodo');
       return res.redirect('/srr');
     }
-    
+
     // Obtener datos (mismo proceso que arriba pero simplificado)
     const registros = await ProvisionRecord.find({ datasetId: dataset._id });
     const mesasResumen = {};

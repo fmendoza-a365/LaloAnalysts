@@ -28,15 +28,18 @@ router.get('/select/:id', ensureAuthenticated, async (req, res) => {
       req.flash('error_msg', 'Campaña no encontrada');
       return res.redirect('/campaigns');
     }
-    
-    // Guardar campaña seleccionada en sesión
-    req.session.selectedCampaign = {
-      id: campaign._id.toString(),
-      nombre: campaign.nombre
-    };
-    
+
+    // ✅ CORREGIDO: Guardar solo el ID (string) para compatibilidad con tenant middleware
+    req.session.selectedCampaign = campaign._id.toString();
+
+    console.log(`[CAMPAIGNS] Usuario ${req.user.username} seleccionó campaña: ${campaign.nombre} (${campaign._id})`);
+
     req.flash('success_msg', `Campaña "${campaign.nombre}" seleccionada`);
-    res.redirect('/dashboard');
+
+    // Redirigir a la URL original si existe, sino al dashboard
+    const returnTo = req.session.returnTo || '/dashboard';
+    delete req.session.returnTo; // Limpiar después de usar
+    res.redirect(returnTo);
   } catch (err) {
     console.error(err);
     req.flash('error_msg', 'Error al seleccionar campaña');
@@ -140,9 +143,9 @@ router.post('/delete/:id', ensureAuthenticated, async (req, res) => {
     }
     
     await Campaign.findByIdAndDelete(req.params.id);
-    
+
     // Si la campaña eliminada era la seleccionada, limpiar sesión
-    if (req.session.selectedCampaign && req.session.selectedCampaign.id === req.params.id) {
+    if (req.session.selectedCampaign === req.params.id) {
       req.session.selectedCampaign = null;
     }
     

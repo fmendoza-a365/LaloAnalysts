@@ -1,13 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const { ensureAuthenticated } = require('../middleware/auth');
-const Asesor = require('../models/Asesor');
-const GenesysDataset = require('../models/GenesysDataset');
-const GenesysRecord = require('../models/GenesysRecord');
-const AsistenciaDataset = require('../models/AsistenciaDataset');
-const AsistenciaRecord = require('../models/AsistenciaRecord');
+const { requireTenant, getTenantModelFromReq } = require('../middleware/tenant');
 
-router.use(ensureAuthenticated);
+// ❌ NO importar modelos multi-tenant directamente
+// Modelos multi-tenant: Asesor, GenesysDataset, GenesysRecord, AsistenciaDataset, AsistenciaRecord
+
+router.use(ensureAuthenticated, requireTenant);
 
 // Helper para formatear segundos a HH:MM:SS
 function formatSeconds(val) {
@@ -34,19 +33,28 @@ const metricasPorcentaje = ['No Responde'];
 
 router.get('/', async (req, res) => {
   try {
+    // Obtener modelos dinámicos del tenant actual
+    const Asesor = getTenantModelFromReq(req, 'Asesor');
+    const GenesysDataset = getTenantModelFromReq(req, 'GenesysDataset');
+    const GenesysRecord = getTenantModelFromReq(req, 'GenesysRecord');
+    const AsistenciaDataset = getTenantModelFromReq(req, 'AsistenciaDataset');
+    const AsistenciaRecord = getTenantModelFromReq(req, 'AsistenciaRecord');
+
     const page = Math.max(parseInt(req.query.page || '1', 10), 1);
     const perPage = Math.min(Math.max(parseInt(req.query.perPage || '20', 10), 5), 100);
     const anio = parseInt(req.query.anio || new Date().getFullYear(), 10);
     const mes = parseInt(req.query.mes || (new Date().getMonth() + 1), 10);
+
+    // ✅ Contar asesores (solo del tenant actual)
     const total = await Asesor.countDocuments();
-    
-    // Obtener TODOS los asesores para cálculos de supervisores
+
+    // ✅ Obtener TODOS los asesores para cálculos de supervisores (solo del tenant actual)
     const todosLosAsesores = await Asesor.find({}).sort({ apellidosNombres: 1 });
-    
+
     // Obtener asesores paginados solo para mostrar en la tabla
     const asesores = todosLosAsesores.slice((page - 1) * perPage, page * perPage);
 
-    // Indicadores Genesys por periodo
+    // ✅ Indicadores Genesys por periodo (solo del tenant actual)
     const datasets = await GenesysDataset.find({ anio, mes, tipo: { $in: ['rendimiento','estados'] } });
     const dsR = datasets.find(d => d.tipo === 'rendimiento');
     const dsE = datasets.find(d => d.tipo === 'estados');

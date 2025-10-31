@@ -1,14 +1,15 @@
 const express = require('express');
 const router = express.Router();
 const { ensureAuthenticated, checkRole } = require('../middleware/auth');
-const { requireCampaign } = require('../middleware/campaign');
+const { requireTenant, getTenantModelFromReq } = require('../middleware/tenant');
+
+// Modelos GLOBALES (compartidos entre todos los tenants)
 const User = require('../models/User');
 const PowerBILink = require('../models/PowerBILink');
-const Asesor = require('../models/Asesor');
-const GenesysDataset = require('../models/GenesysDataset');
-const GenesysRecord = require('../models/GenesysRecord');
-const ProvisionDataset = require('../models/ProvisionDataset');
-const ProvisionRecord = require('../models/ProvisionRecord');
+
+// ❌ NO importar modelos multi-tenant directamente
+// Los obtendremos dinámicamente con getTenantModelFromReq() en cada ruta
+// Modelos multi-tenant: Asesor, GenesysDataset, GenesysRecord, ProvisionDataset, ProvisionRecord
 
 // Helper para convertir números de Excel a fechas JavaScript
 function excelDateToJSDate(excelDate) {
@@ -40,14 +41,22 @@ function excelDateToJSDate(excelDate) {
 }
 
 // Dashboard route - protected - Ahora muestra indicadores de asesores
-router.get('/', ensureAuthenticated, requireCampaign, async (req, res) => {
+router.get('/', ensureAuthenticated, requireTenant, async (req, res) => {
   try {
+    // Obtener modelos dinámicos del tenant actual
+    const Asesor = getTenantModelFromReq(req, 'Asesor');
+    const GenesysDataset = getTenantModelFromReq(req, 'GenesysDataset');
+    const GenesysRecord = getTenantModelFromReq(req, 'GenesysRecord');
+    const ProvisionDataset = getTenantModelFromReq(req, 'ProvisionDataset');
+    const ProvisionRecord = getTenantModelFromReq(req, 'ProvisionRecord');
+
     const anio = parseInt(req.query.anio || new Date().getFullYear(), 10);
     const mes = parseInt(req.query.mes || (new Date().getMonth() + 1), 10);
     const supervisorFiltro = req.query.supervisor || '';
     const antiguedadFiltro = req.query.antiguedad || '';
-    
-    // Obtener todos los asesores
+    const mesaFiltro = req.query.mesa || '';
+
+    // ✅ Obtener todos los asesores (solo del tenant actual)
     let asesores = await Asesor.find({}).sort({ apellidosNombres: 1 });
     
     // Aplicar filtro por supervisor
@@ -101,7 +110,7 @@ router.get('/', ensureAuthenticated, requireCampaign, async (req, res) => {
     const fullTime = asesoresActivos.length - partTime;
     
     // Calcular rotación: (bajas / total general) * 100
-    const rotacion = totalGeneral > 0 ? ((totalBaja / totalGeneral) * 100).toFixed(1) : 0;
+    const rotacion = totalGeneral > 0 ? ((totalBaja / totalGeneral) * 100).toFixed(2) : 0;
     
     // Obtener datasets del periodo
     const dsE = await GenesysDataset.findOne({ anio, mes, tipo: 'estados' }).sort({ creadoEn: -1 });
@@ -292,16 +301,25 @@ router.get('/', ensureAuthenticated, requireCampaign, async (req, res) => {
     
     // Obtener lista única de supervisores para el dropdown
     const todosLosSupervisores = [...new Set(await Asesor.find({}).distinct('supervisor'))].sort();
-    
+
     // ========== DATOS DE KPIs POR MESAS ==========
     let kpisPorMesa = [];
     let tendenciaDiaria = [];
     let tendenciaPorHora = [];
-    
-    const provisionDataset = await ProvisionDataset.findOne({ anio, mes });
-    
+    let todasLasMesas = [];
+
+    const provisionDataset = await ProvisionDataset.findOne({ anio: anio, mes });
+
     if (provisionDataset) {
-      const provisionRecords = await ProvisionRecord.find({ datasetId: provisionDataset._id });
+      // Obtener todas las mesas únicas para el dropdown
+      todasLasMesas = [...new Set(await ProvisionRecord.find({ datasetId: provisionDataset._id }).distinct('mesa'))].sort();
+
+      // Aplicar filtro por mesa si existe
+      let query = { datasetId: provisionDataset._id };
+      if (mesaFiltro) {
+        query.mesa = mesaFiltro;
+      }
+      const provisionRecords = await ProvisionRecord.find(query);
       
       // Agrupar por mesa
       const mesasMap = {};
@@ -330,8 +348,8 @@ router.get('/', ensureAuthenticated, requireCampaign, async (req, res) => {
         contestadas: m.contestadas,
         ofrecidas: m.ofrecidas,
         abandonadas: m.abandonadas,
-        nivelServicio: m.ofrecidas > 0 ? ((m.contestadas / m.ofrecidas) * 100).toFixed(1) : 0,
-        tasaAbandono: m.ofrecidas > 0 ? ((m.abandonadas / m.ofrecidas) * 100).toFixed(1) : 0,
+        nivelServicio: m.ofrecidas > 0 ? ((m.contestadas / m.ofrecidas) * 100).toFixed(2) : 0,
+        tasaAbandono: m.ofrecidas > 0 ? ((m.abandonadas / m.ofrecidas) * 100).toFixed(2) : 0,
         tmoPromedio: m.contestadas > 0 ? (m.tmoTotal / m.contestadas).toFixed(0) : 0
       })).sort((a, b) => b.contestadas - a.contestadas);
       
@@ -360,8 +378,9 @@ router.get('/', ensureAuthenticated, requireCampaign, async (req, res) => {
       title: 'Tablero',
       user: req.user,
       periodo: { anio, mes },
-      filtros: { supervisor: supervisorFiltro, antiguedad: antiguedadFiltro },
+      filtros: { supervisor: supervisorFiltro, antiguedad: antiguedadFiltro, mesa: mesaFiltro },
       todosLosSupervisores,
+      todasLasMesas,
       kpis: {
         totalAsesores,
         totalBaja,
@@ -465,16 +484,21 @@ router.get('/admin', ensureAuthenticated, checkRole(['admin']), (req, res) => {
 });
 
 // Dashboard de Asesores con KPIs y gráficos
-router.get('/asesores', ensureAuthenticated, async (req, res) => {
+router.get('/asesores', ensureAuthenticated, requireTenant, async (req, res) => {
   try {
+    // Obtener modelos dinámicos del tenant actual
+    const Asesor = getTenantModelFromReq(req, 'Asesor');
+    const GenesysDataset = getTenantModelFromReq(req, 'GenesysDataset');
+    const GenesysRecord = getTenantModelFromReq(req, 'GenesysRecord');
+
     const anio = parseInt(req.query.anio || new Date().getFullYear(), 10);
     const mes = parseInt(req.query.mes || (new Date().getMonth() + 1), 10);
-    
-    // Obtener todos los asesores activos
+
+    // ✅ Obtener todos los asesores activos (solo del tenant actual)
     const asesores = await Asesor.find({}).sort({ apellidosNombres: 1 });
     const totalAsesores = asesores.filter(a => a.estado && a.estado.toLowerCase().includes('activo')).length;
-    
-    // Obtener datasets del periodo
+
+    // ✅ Obtener datasets del periodo (solo del tenant actual)
     const dsE = await GenesysDataset.findOne({ anio, mes, tipo: 'estados' }).sort({ creadoEn: -1 });
     const dsR = await GenesysDataset.findOne({ anio, mes, tipo: 'rendimiento' }).sort({ creadoEn: -1 });
     
@@ -661,14 +685,19 @@ router.get('/asesores', ensureAuthenticated, async (req, res) => {
 });
 
 // Análisis Avanzado - Gráficos comparativos y evolutivos
-router.get('/analytics', ensureAuthenticated, async (req, res) => {
+router.get('/analytics', ensureAuthenticated, requireTenant, async (req, res) => {
   try {
+    // Obtener modelos dinámicos del tenant actual
+    const Asesor = getTenantModelFromReq(req, 'Asesor');
+    const GenesysDataset = getTenantModelFromReq(req, 'GenesysDataset');
+    const GenesysRecord = getTenantModelFromReq(req, 'GenesysRecord');
+
     const anio = parseInt(req.query.anio || new Date().getFullYear(), 10);
     const mes = parseInt(req.query.mes || (new Date().getMonth() + 1), 10);
     const supervisorFiltro = req.query.supervisor || '';
     const antiguedadFiltro = req.query.antiguedad || '';
-    
-    // Obtener todos los asesores
+
+    // ✅ Obtener todos los asesores (solo del tenant actual)
     let asesores = await Asesor.find({}).sort({ apellidosNombres: 1 });
     
     // Aplicar filtro por supervisor
