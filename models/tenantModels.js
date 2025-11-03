@@ -416,7 +416,41 @@ const widgetSchema = new mongoose.Schema({
     }],
     sortBy: [{ field: String, direction: { type: String, enum: ['asc', 'desc'], default: 'asc' } }],
     limit: Number,
-    calculations: [{ name: String, formula: String, label: String, format: String }]
+    calculations: [{ name: String, formula: String, label: String, format: String }],
+    // Configuración de período temporal
+    periodConfig: {
+      mode: {
+        type: String,
+        enum: ['current', 'single', 'range', 'comparison', 'accumulated'],
+        default: 'current'
+      },
+      // Para modo 'single': período específico
+      single: {
+        year: Number,
+        month: Number
+      },
+      // Para modo 'range': rango de períodos
+      range: {
+        startYear: Number,
+        startMonth: Number,
+        endYear: Number,
+        endMonth: Number
+      },
+      // Para modo 'comparison': múltiples períodos a comparar
+      comparison: [{
+        year: Number,
+        month: Number,
+        label: String // ej: "Enero 2024"
+      }],
+      // Para modo 'accumulated': acumular datos desde/hasta
+      accumulated: {
+        startYear: Number,
+        startMonth: Number,
+        endYear: Number,
+        endMonth: Number,
+        aggregationType: { type: String, enum: ['sum', 'avg', 'count'], default: 'sum' }
+      }
+    }
   },
   chartConfig: {
     chartType: { type: String, enum: ['line', 'bar', 'horizontalBar', 'pie', 'doughnut', 'area', 'scatter', 'radar', 'polarArea', 'bubble', 'mixed', 'gauge', 'waterfall', 'funnel', 'treemap'] },

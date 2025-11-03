@@ -365,73 +365,197 @@ function getDatasetSchemas() {
 }
 
 /**
+ * Obtener datos de un solo período (mes/año específico)
+ */
+async function getDataForPeriod(dataset, anio, mes, req) {
+  const ProvisionDataset = getTenantModelFromReq(req, 'ProvisionDataset');
+  const ProvisionRecord = getTenantModelFromReq(req, 'ProvisionRecord');
+  const AsistenciaDataset = getTenantModelFromReq(req, 'AsistenciaDataset');
+  const AsistenciaRecord = getTenantModelFromReq(req, 'AsistenciaRecord');
+  const GenesysDataset = getTenantModelFromReq(req, 'GenesysDataset');
+  const GenesysRecord = getTenantModelFromReq(req, 'GenesysRecord');
+  const NominaDataset = getTenantModelFromReq(req, 'NominaDataset');
+  const NominaRecord = getTenantModelFromReq(req, 'NominaRecord');
+  const Asesor = getTenantModelFromReq(req, 'Asesor');
+
+  let datasetDoc, records;
+
+  switch (dataset) {
+    case 'provision':
+      datasetDoc = await ProvisionDataset.findOne({ anio, mes });
+      if (datasetDoc) {
+        records = await ProvisionRecord.find({ datasetId: datasetDoc._id });
+      }
+      break;
+
+    case 'asistencia':
+      datasetDoc = await AsistenciaDataset.findOne({ anio, mes });
+      if (datasetDoc) {
+        records = await AsistenciaRecord.find({ datasetId: datasetDoc._id });
+      }
+      break;
+
+    case 'genesys':
+      datasetDoc = await GenesysDataset.findOne({ anio, mes });
+      if (datasetDoc) {
+        records = await GenesysRecord.find({ datasetId: datasetDoc._id });
+      }
+      break;
+
+    case 'nomina':
+      datasetDoc = await NominaDataset.findOne({ anio, mes });
+      if (datasetDoc) {
+        records = await NominaRecord.find({ datasetId: datasetDoc._id });
+      }
+      break;
+
+    case 'asesores':
+      records = await Asesor.find({});
+      break;
+  }
+
+  return records || [];
+}
+
+/**
+ * Obtener lista de períodos según la configuración
+ */
+function getPeriodsFromConfig(periodConfig, filters) {
+  const currentYear = new Date().getFullYear();
+  const currentMonth = new Date().getMonth() + 1;
+
+  if (!periodConfig || periodConfig.mode === 'current') {
+    // Modo current: usar filtros globales o período actual
+    return [{
+      year: parseInt(filters.anio || currentYear, 10),
+      month: parseInt(filters.mes || currentMonth, 10),
+      label: 'Actual'
+    }];
+  }
+
+  switch (periodConfig.mode) {
+    case 'single':
+      // Un período específico
+      return [{
+        year: periodConfig.single.year,
+        month: periodConfig.single.month,
+        label: `${getMonthName(periodConfig.single.month)} ${periodConfig.single.year}`
+      }];
+
+    case 'range':
+      // Rango de períodos
+      const periods = [];
+      let y = periodConfig.range.startYear;
+      let m = periodConfig.range.startMonth;
+      const endY = periodConfig.range.endYear;
+      const endM = periodConfig.range.endMonth;
+
+      while (y < endY || (y === endY && m <= endM)) {
+        periods.push({
+          year: y,
+          month: m,
+          label: `${getMonthName(m)} ${y}`
+        });
+        m++;
+        if (m > 12) {
+          m = 1;
+          y++;
+        }
+      }
+      return periods;
+
+    case 'comparison':
+      // Períodos específicos para comparar
+      return periodConfig.comparison.map(p => ({
+        year: p.year,
+        month: p.month,
+        label: p.label || `${getMonthName(p.month)} ${p.year}`
+      }));
+
+    case 'accumulated':
+      // Igual que range para obtener los datos, pero se agregará diferente
+      const accPeriods = [];
+      let ya = periodConfig.accumulated.startYear;
+      let ma = periodConfig.accumulated.startMonth;
+      const endYa = periodConfig.accumulated.endYear;
+      const endMa = periodConfig.accumulated.endMonth;
+
+      while (ya < endYa || (ya === endYa && ma <= endMa)) {
+        accPeriods.push({
+          year: ya,
+          month: ma,
+          label: `${getMonthName(ma)} ${ya}`
+        });
+        ma++;
+        if (ma > 12) {
+          ma = 1;
+          ya++;
+        }
+      }
+      return accPeriods;
+
+    default:
+      return [{
+        year: currentYear,
+        month: currentMonth,
+        label: 'Actual'
+      }];
+  }
+}
+
+/**
+ * Helper para obtener nombre del mes
+ */
+function getMonthName(month) {
+  const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+  return months[month - 1] || month.toString();
+}
+
+/**
  * Función auxiliar para obtener datos de un widget
  */
 async function getWidgetData(widget, filters = {}, req) {
-  const { dataset, aggregation, fields, groupBy, filters: widgetFilters } = widget.dataConfig;
+  const { dataset, aggregation, fields, groupBy, filters: widgetFilters, periodConfig } = widget.dataConfig;
 
-  // Obtener período de filtros globales
+  // Obtener período de filtros globales (fallback)
   const anio = parseInt(filters.anio || new Date().getFullYear(), 10);
   const mes = parseInt(filters.mes || (new Date().getMonth() + 1), 10);
 
   try {
-    // Obtener modelos dinámicos del tenant actual
-    const ProvisionDataset = getTenantModelFromReq(req, 'ProvisionDataset');
-    const ProvisionRecord = getTenantModelFromReq(req, 'ProvisionRecord');
-    const AsistenciaDataset = getTenantModelFromReq(req, 'AsistenciaDataset');
-    const AsistenciaRecord = getTenantModelFromReq(req, 'AsistenciaRecord');
-    const GenesysDataset = getTenantModelFromReq(req, 'GenesysDataset');
-    const GenesysRecord = getTenantModelFromReq(req, 'GenesysRecord');
-    const NominaDataset = getTenantModelFromReq(req, 'NominaDataset');
-    const NominaRecord = getTenantModelFromReq(req, 'NominaRecord');
-    const Asesor = getTenantModelFromReq(req, 'Asesor');
+    // 🔹 PASO 1: Determinar períodos a consultar según configuración
+    const periods = getPeriodsFromConfig(periodConfig, filters);
+    console.log('[CUSTOM DASHBOARD] 📅 Períodos a consultar:', periods.length, periods);
 
-    let datasetDoc, records;
+    // 🔹 PASO 2: Obtener datos de todos los períodos
+    let allRecords = [];
 
-    // Obtener dataset y registros según el tipo
-    switch (dataset) {
-      case 'provision':
-        datasetDoc = await ProvisionDataset.findOne({ anio: anio, mes });
-        if (datasetDoc) {
-          records = await ProvisionRecord.find({ datasetId: datasetDoc._id });
-        }
-        break;
+    for (const period of periods) {
+      const periodRecords = await getDataForPeriod(dataset, period.year, period.month, req);
 
-      case 'asistencia':
-        datasetDoc = await AsistenciaDataset.findOne({ anio, mes });
-        if (datasetDoc) {
-          records = await AsistenciaRecord.find({ datasetId: datasetDoc._id });
-        }
-        break;
+      if (periodRecords && periodRecords.length > 0) {
+        // Agregar metadatos de período a cada registro
+        const recordsWithPeriod = periodRecords.map(r => {
+          const record = r.toObject ? r.toObject() : r;
+          return {
+            ...record,
+            _period_year: period.year,
+            _period_month: period.month,
+            _period_label: period.label
+          };
+        });
 
-      case 'genesys':
-        datasetDoc = await GenesysDataset.findOne({ anio, mes });
-        if (datasetDoc) {
-          records = await GenesysRecord.find({ datasetId: datasetDoc._id });
-        }
-        break;
-
-      case 'nomina':
-        datasetDoc = await NominaDataset.findOne({ anio, mes });
-        if (datasetDoc) {
-          records = await NominaRecord.find({ datasetId: datasetDoc._id });
-        }
-        break;
-
-      case 'asesores':
-        records = await Asesor.find({});
-        break;
+        allRecords = allRecords.concat(recordsWithPeriod);
+      }
     }
 
-    if (!records || records.length === 0) {
-      return { value: 0, data: [] };
+    if (allRecords.length === 0) {
+      return { value: 0, data: [], periods };
     }
 
-    // Convertir a objetos planos (si son documentos de Mongoose)
-    const plainRecords = records.map(r => r.toObject ? r.toObject() : r);
+    console.log('[CUSTOM DASHBOARD] Total registros obtenidos:', allRecords.length);
 
-    // ✨ PROCESAR DATASET: Convertir tipos y agregar campos temporales
-    const processedRecords = processDataset(plainRecords);
+    // 🔹 PASO 3: Procesar dataset (convertir tipos y agregar campos temporales)
+    const processedRecords = processDataset(allRecords);
 
     console.log('[CUSTOM DASHBOARD] Registros procesados:', processedRecords.length);
     if (processedRecords.length > 0) {
@@ -439,14 +563,29 @@ async function getWidgetData(widget, filters = {}, req) {
         Object.keys(processedRecords[0]).filter(k => k.includes('_')).slice(0, 5));
     }
 
-    // Aplicar filtros del widget
+    // 🔹 PASO 4: Aplicar filtros del widget
     let filteredRecords = processedRecords;
     if (widgetFilters && widgetFilters.length > 0) {
       filteredRecords = applyFilters(processedRecords, widgetFilters);
     }
 
-    // Realizar agregación
-    const result = performAggregation(filteredRecords, aggregation, groupBy);
+    // 🔹 PASO 5: Realizar agregación según el modo de período
+    let result;
+
+    if (periodConfig && periodConfig.mode === 'comparison') {
+      // Modo comparación: agrupar por período
+      result = performComparisonAggregation(filteredRecords, aggregation, groupBy, periods);
+    } else if (periodConfig && periodConfig.mode === 'accumulated') {
+      // Modo acumulado: agregar todos los datos y mostrar acumulación
+      result = performAccumulatedAggregation(filteredRecords, aggregation, groupBy, periodConfig.accumulated);
+    } else {
+      // Modos single, range, current: agregación normal
+      result = performAggregation(filteredRecords, aggregation, groupBy);
+    }
+
+    // Agregar información de períodos al resultado
+    result.periods = periods;
+    result.periodMode = periodConfig?.mode || 'current';
 
     return result;
   } catch (error) {
@@ -483,6 +622,107 @@ function applyFilters(records, filters) {
       }
     });
   });
+}
+
+/**
+ * Agregación para modo COMPARISON: agrupar por período
+ */
+function performComparisonAggregation(records, aggregation, groupBy, periods) {
+  console.log('[CUSTOM DASHBOARD] performComparisonAggregation con', periods.length, 'períodos');
+
+  // Agrupar registros por período
+  const periodGroups = {};
+  periods.forEach(p => {
+    const key = `${p.year}-${p.month}`;
+    periodGroups[key] = {
+      label: p.label,
+      records: []
+    };
+  });
+
+  records.forEach(record => {
+    const key = `${record._period_year}-${record._period_month}`;
+    if (periodGroups[key]) {
+      periodGroups[key].records.push(record);
+    }
+  });
+
+  // Realizar agregación para cada período
+  const comparisonData = [];
+  Object.keys(periodGroups).forEach(key => {
+    const group = periodGroups[key];
+    if (group.records.length > 0) {
+      const result = performAggregation(group.records, aggregation, groupBy);
+      comparisonData.push({
+        period: group.label,
+        ...result
+      });
+    }
+  });
+
+  return {
+    data: comparisonData,
+    isComparison: true
+  };
+}
+
+/**
+ * Agregación para modo ACCUMULATED: acumular datos progresivamente
+ */
+function performAccumulatedAggregation(records, aggregation, groupBy, accumulatedConfig) {
+  console.log('[CUSTOM DASHBOARD] performAccumulatedAggregation');
+
+  // Agrupar por período
+  const periodMap = {};
+  records.forEach(record => {
+    const key = `${record._period_year}-${String(record._period_month).padStart(2, '0')}`;
+    if (!periodMap[key]) {
+      periodMap[key] = {
+        year: record._period_year,
+        month: record._period_month,
+        label: record._period_label,
+        records: []
+      };
+    }
+    periodMap[key].records.push(record);
+  });
+
+  // Ordenar períodos cronológicamente
+  const sortedPeriods = Object.values(periodMap).sort((a, b) => {
+    if (a.year !== b.year) return a.year - b.year;
+    return a.month - b.month;
+  });
+
+  // Calcular valores acumulados
+  const accumulatedData = [];
+  let accumulated = 0;
+
+  sortedPeriods.forEach(period => {
+    const result = performAggregation(period.records, aggregation, groupBy);
+    const periodValue = result.value || 0;
+
+    if (accumulatedConfig.aggregationType === 'sum') {
+      accumulated += periodValue;
+    } else if (accumulatedConfig.aggregationType === 'avg') {
+      // Para promedio, calculamos el promedio de todos los valores hasta ahora
+      accumulatedData.push({ value: periodValue });
+      const sum = accumulatedData.reduce((s, d) => s + d.value, 0);
+      accumulated = sum / accumulatedData.length;
+    } else if (accumulatedConfig.aggregationType === 'count') {
+      accumulated += period.records.length;
+    }
+
+    accumulatedData.push({
+      label: period.label,
+      value: periodValue,
+      accumulated: accumulated
+    });
+  });
+
+  return {
+    data: accumulatedData,
+    isAccumulated: true
+  };
 }
 
 /**
