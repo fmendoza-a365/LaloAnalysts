@@ -868,6 +868,187 @@ function openWidgetConfig(widgetId) {
           <option value="year">Por Año</option>
         </select>
       </div>
+
+      <!-- Configuración de Período Temporal -->
+      <div class="border-t pt-4 mt-4">
+        <h4 class="text-md font-bold text-gray-800 mb-3">📅 Período de Datos</h4>
+
+        <!-- Selector de Modo -->
+        <div class="mb-4">
+          <label class="block text-sm font-semibold text-gray-700 mb-2">Modo de Período</label>
+          <select id="periodMode" onchange="updatePeriodControls()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+            <option value="current">📌 Mes Actual (por defecto)</option>
+            <option value="single">📆 Período Específico</option>
+            <option value="range">📊 Rango de Períodos</option>
+            <option value="comparison">🔄 Comparar Períodos</option>
+            <option value="accumulated">📈 Vista Acumulada</option>
+          </select>
+          <p class="text-xs text-gray-500 mt-1" id="periodModeHelp">Usa el mes actual o el filtro global del dashboard</p>
+        </div>
+
+        <!-- Controles para Single -->
+        <div id="periodSingleControls" style="display: none" class="space-y-3">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1">Año</label>
+              <input type="number" id="singleYear" min="2020" max="2030" placeholder="2024"
+                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1">Mes</label>
+              <select id="singleMonth" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                <option value="1">Enero</option>
+                <option value="2">Febrero</option>
+                <option value="3">Marzo</option>
+                <option value="4">Abril</option>
+                <option value="5">Mayo</option>
+                <option value="6">Junio</option>
+                <option value="7">Julio</option>
+                <option value="8">Agosto</option>
+                <option value="9">Septiembre</option>
+                <option value="10">Octubre</option>
+                <option value="11">Noviembre</option>
+                <option value="12">Diciembre</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Controles para Range -->
+        <div id="periodRangeControls" style="display: none" class="space-y-3">
+          <div class="bg-purple-50 p-3 rounded-lg">
+            <p class="text-xs font-semibold text-purple-900 mb-2">Desde:</p>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-xs text-gray-600 mb-1">Año</label>
+                <input type="number" id="rangeStartYear" min="2020" max="2030" placeholder="2024"
+                       class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-purple-500">
+              </div>
+              <div>
+                <label class="block text-xs text-gray-600 mb-1">Mes</label>
+                <select id="rangeStartMonth" class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-purple-500">
+                  <option value="1">Ene</option>
+                  <option value="2">Feb</option>
+                  <option value="3">Mar</option>
+                  <option value="4">Abr</option>
+                  <option value="5">May</option>
+                  <option value="6">Jun</option>
+                  <option value="7">Jul</option>
+                  <option value="8">Ago</option>
+                  <option value="9">Sep</option>
+                  <option value="10">Oct</option>
+                  <option value="11">Nov</option>
+                  <option value="12">Dic</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="bg-purple-50 p-3 rounded-lg">
+            <p class="text-xs font-semibold text-purple-900 mb-2">Hasta:</p>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-xs text-gray-600 mb-1">Año</label>
+                <input type="number" id="rangeEndYear" min="2020" max="2030" placeholder="2024"
+                       class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-purple-500">
+              </div>
+              <div>
+                <label class="block text-xs text-gray-600 mb-1">Mes</label>
+                <select id="rangeEndMonth" class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-purple-500">
+                  <option value="1">Ene</option>
+                  <option value="2">Feb</option>
+                  <option value="3">Mar</option>
+                  <option value="4">Abr</option>
+                  <option value="5">May</option>
+                  <option value="6">Jun</option>
+                  <option value="7">Jul</option>
+                  <option value="8">Ago</option>
+                  <option value="9">Sep</option>
+                  <option value="10">Oct</option>
+                  <option value="11">Nov</option>
+                  <option value="12">Dic</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Controles para Comparison -->
+        <div id="periodComparisonControls" style="display: none">
+          <div id="comparisonPeriodsList" class="space-y-2 mb-3">
+            <!-- Períodos se agregarán dinámicamente -->
+          </div>
+          <button type="button" onclick="addComparisonPeriod()"
+                  class="w-full px-3 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors text-sm font-semibold">
+            + Agregar Período a Comparar
+          </button>
+        </div>
+
+        <!-- Controles para Accumulated -->
+        <div id="periodAccumulatedControls" style="display: none" class="space-y-3">
+          <div class="bg-blue-50 p-3 rounded-lg mb-3">
+            <p class="text-xs font-semibold text-blue-900 mb-2">Desde:</p>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-xs text-gray-600 mb-1">Año</label>
+                <input type="number" id="accStartYear" min="2020" max="2030" placeholder="2024"
+                       class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500">
+              </div>
+              <div>
+                <label class="block text-xs text-gray-600 mb-1">Mes</label>
+                <select id="accStartMonth" class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500">
+                  <option value="1">Ene</option>
+                  <option value="2">Feb</option>
+                  <option value="3">Mar</option>
+                  <option value="4">Abr</option>
+                  <option value="5">May</option>
+                  <option value="6">Jun</option>
+                  <option value="7">Jul</option>
+                  <option value="8">Ago</option>
+                  <option value="9">Sep</option>
+                  <option value="10">Oct</option>
+                  <option value="11">Nov</option>
+                  <option value="12">Dic</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="bg-blue-50 p-3 rounded-lg mb-3">
+            <p class="text-xs font-semibold text-blue-900 mb-2">Hasta:</p>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-xs text-gray-600 mb-1">Año</label>
+                <input type="number" id="accEndYear" min="2020" max="2030" placeholder="2024"
+                       class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500">
+              </div>
+              <div>
+                <label class="block text-xs text-gray-600 mb-1">Mes</label>
+                <select id="accEndMonth" class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500">
+                  <option value="1">Ene</option>
+                  <option value="2">Feb</option>
+                  <option value="3">Mar</option>
+                  <option value="4">Abr</option>
+                  <option value="5">May</option>
+                  <option value="6">Jun</option>
+                  <option value="7">Jul</option>
+                  <option value="8">Ago</option>
+                  <option value="9">Sep</option>
+                  <option value="10">Oct</option>
+                  <option value="11">Nov</option>
+                  <option value="12">Dic</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">Tipo de Acumulación</label>
+            <select id="accAggregationType" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+              <option value="sum">Sumar (Total Acumulado)</option>
+              <option value="avg">Promediar</option>
+              <option value="count">Contar</option>
+            </select>
+          </div>
+        </div>
+      </div>
       ` : ''}
     </div>
   `;
@@ -972,6 +1153,15 @@ async function updateFieldsForDataset() {
                                          !Array.isArray(widget.dataConfig.groupBy) ? 'groupBy no es array' :
                                          widget.dataConfig.groupBy.length === 0 ? 'groupBy está vacío' : 'desconocido');
         }
+
+        // Restaurar configuración de período
+        if (widget.dataConfig && widget.dataConfig.periodConfig) {
+          console.log('[DEBUG] 📅 Restaurando configuración de período:', widget.dataConfig.periodConfig);
+          restorePeriodConfig(widget.dataConfig.periodConfig);
+        } else {
+          console.log('[DEBUG] 📅 Sin configuración de período guardada, usando modo current');
+          restorePeriodConfig({ mode: 'current' });
+        }
       }
       console.log('[DEBUG] ═══════════════════════════════════════════');
 
@@ -997,6 +1187,212 @@ async function updateFieldsForDataset() {
     }
   } catch (error) {
     console.error('Error al actualizar campos:', error);
+  }
+}
+
+/**
+ * Actualizar controles de período según el modo seleccionado
+ */
+function updatePeriodControls() {
+  const mode = document.getElementById('periodMode').value;
+
+  // Ocultar todos los controles
+  document.getElementById('periodSingleControls').style.display = 'none';
+  document.getElementById('periodRangeControls').style.display = 'none';
+  document.getElementById('periodComparisonControls').style.display = 'none';
+  document.getElementById('periodAccumulatedControls').style.display = 'none';
+
+  // Actualizar texto de ayuda
+  const helpTexts = {
+    current: 'Usa el mes actual o el filtro global del dashboard',
+    single: 'Selecciona un mes y año específico para visualizar',
+    range: 'Define un rango de meses para agregar datos',
+    comparison: 'Compara múltiples períodos lado a lado',
+    accumulated: 'Visualiza datos acumulados progresivamente'
+  };
+
+  document.getElementById('periodModeHelp').textContent = helpTexts[mode] || '';
+
+  // Mostrar controles según el modo
+  switch (mode) {
+    case 'single':
+      document.getElementById('periodSingleControls').style.display = 'block';
+      break;
+    case 'range':
+      document.getElementById('periodRangeControls').style.display = 'block';
+      break;
+    case 'comparison':
+      document.getElementById('periodComparisonControls').style.display = 'block';
+      break;
+    case 'accumulated':
+      document.getElementById('periodAccumulatedControls').style.display = 'block';
+      break;
+  }
+}
+
+/**
+ * Agregar un período para comparación
+ */
+let comparisonPeriodsCount = 0;
+
+function addComparisonPeriod(year = null, month = null, label = null) {
+  const currentYear = new Date().getFullYear();
+  const currentMonth = new Date().getMonth() + 1;
+
+  const index = comparisonPeriodsCount++;
+  const container = document.getElementById('comparisonPeriodsList');
+
+  const periodHTML = `
+    <div class="bg-purple-50 p-3 rounded-lg" data-comparison-index="${index}">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-xs font-semibold text-purple-900">Período ${index + 1}</span>
+        <button type="button" onclick="removeComparisonPeriod(${index})"
+                class="text-red-600 hover:text-red-800 text-xs font-bold">✕</button>
+      </div>
+      <div class="grid grid-cols-3 gap-2">
+        <div>
+          <label class="block text-xs text-gray-600 mb-1">Año</label>
+          <input type="number" class="comparison-year w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-purple-500"
+                 min="2020" max="2030" value="${year || currentYear}" placeholder="2024">
+        </div>
+        <div>
+          <label class="block text-xs text-gray-600 mb-1">Mes</label>
+          <select class="comparison-month w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-purple-500">
+            ${[1,2,3,4,5,6,7,8,9,10,11,12].map(m => `
+              <option value="${m}" ${month == m ? 'selected' : ''}>${['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'][m-1]}</option>
+            `).join('')}
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs text-gray-600 mb-1">Etiqueta</label>
+          <input type="text" class="comparison-label w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-purple-500"
+                 value="${label || ''}" placeholder="Ej: Q1">
+        </div>
+      </div>
+    </div>
+  `;
+
+  container.insertAdjacentHTML('beforeend', periodHTML);
+}
+
+/**
+ * Eliminar período de comparación
+ */
+function removeComparisonPeriod(index) {
+  const element = document.querySelector(`[data-comparison-index="${index}"]`);
+  if (element) {
+    element.remove();
+  }
+}
+
+/**
+ * Obtener configuración de período desde los controles
+ */
+function getPeriodConfigFromControls() {
+  const mode = document.getElementById('periodMode').value;
+
+  if (mode === 'current') {
+    return { mode: 'current' };
+  }
+
+  const config = { mode };
+
+  switch (mode) {
+    case 'single':
+      config.single = {
+        year: parseInt(document.getElementById('singleYear').value) || new Date().getFullYear(),
+        month: parseInt(document.getElementById('singleMonth').value) || (new Date().getMonth() + 1)
+      };
+      break;
+
+    case 'range':
+      config.range = {
+        startYear: parseInt(document.getElementById('rangeStartYear').value) || new Date().getFullYear(),
+        startMonth: parseInt(document.getElementById('rangeStartMonth').value) || 1,
+        endYear: parseInt(document.getElementById('rangeEndYear').value) || new Date().getFullYear(),
+        endMonth: parseInt(document.getElementById('rangeEndMonth').value) || 12
+      };
+      break;
+
+    case 'comparison':
+      config.comparison = [];
+      document.querySelectorAll('#comparisonPeriodsList > div').forEach(periodDiv => {
+        const year = parseInt(periodDiv.querySelector('.comparison-year').value);
+        const month = parseInt(periodDiv.querySelector('.comparison-month').value);
+        const label = periodDiv.querySelector('.comparison-label').value;
+
+        if (year && month) {
+          config.comparison.push({ year, month, label: label || `${['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'][month-1]} ${year}` });
+        }
+      });
+      break;
+
+    case 'accumulated':
+      config.accumulated = {
+        startYear: parseInt(document.getElementById('accStartYear').value) || new Date().getFullYear(),
+        startMonth: parseInt(document.getElementById('accStartMonth').value) || 1,
+        endYear: parseInt(document.getElementById('accEndYear').value) || new Date().getFullYear(),
+        endMonth: parseInt(document.getElementById('accEndMonth').value) || 12,
+        aggregationType: document.getElementById('accAggregationType').value || 'sum'
+      };
+      break;
+  }
+
+  return config;
+}
+
+/**
+ * Restaurar configuración de período en los controles
+ */
+function restorePeriodConfig(periodConfig) {
+  if (!periodConfig || periodConfig.mode === 'current') {
+    document.getElementById('periodMode').value = 'current';
+    updatePeriodControls();
+    return;
+  }
+
+  document.getElementById('periodMode').value = periodConfig.mode;
+  updatePeriodControls();
+
+  switch (periodConfig.mode) {
+    case 'single':
+      if (periodConfig.single) {
+        document.getElementById('singleYear').value = periodConfig.single.year || '';
+        document.getElementById('singleMonth').value = periodConfig.single.month || '';
+      }
+      break;
+
+    case 'range':
+      if (periodConfig.range) {
+        document.getElementById('rangeStartYear').value = periodConfig.range.startYear || '';
+        document.getElementById('rangeStartMonth').value = periodConfig.range.startMonth || '';
+        document.getElementById('rangeEndYear').value = periodConfig.range.endYear || '';
+        document.getElementById('rangeEndMonth').value = periodConfig.range.endMonth || '';
+      }
+      break;
+
+    case 'comparison':
+      // Limpiar períodos existentes
+      document.getElementById('comparisonPeriodsList').innerHTML = '';
+      comparisonPeriodsCount = 0;
+
+      // Agregar períodos guardados
+      if (periodConfig.comparison && Array.isArray(periodConfig.comparison)) {
+        periodConfig.comparison.forEach(p => {
+          addComparisonPeriod(p.year, p.month, p.label);
+        });
+      }
+      break;
+
+    case 'accumulated':
+      if (periodConfig.accumulated) {
+        document.getElementById('accStartYear').value = periodConfig.accumulated.startYear || '';
+        document.getElementById('accStartMonth').value = periodConfig.accumulated.startMonth || '';
+        document.getElementById('accEndYear').value = periodConfig.accumulated.endYear || '';
+        document.getElementById('accEndMonth').value = periodConfig.accumulated.endMonth || '';
+        document.getElementById('accAggregationType').value = periodConfig.accumulated.aggregationType || 'sum';
+      }
+      break;
   }
 }
 
@@ -1438,6 +1834,9 @@ function saveWidgetConfig() {
     }
   }
 
+  // Obtener configuración de período
+  const periodConfig = getPeriodConfigFromControls();
+
   // Crear dataConfig con todos los campos necesarios
   widget.dataConfig = {
     dataset: document.getElementById('widgetDataset').value,
@@ -1449,7 +1848,9 @@ function saveWidgetConfig() {
       customFormula: calculatedFields[0]?.customFormula || ''
     },
     // Agregar groupBy si existe
-    ...(groupByConfig && { groupBy: groupByConfig })
+    ...(groupByConfig && { groupBy: groupByConfig }),
+    // Agregar configuración de período
+    periodConfig: periodConfig
   };
 
   console.log('[DEBUG] ═══════════════════════════════════════════');
