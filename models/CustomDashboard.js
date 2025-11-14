@@ -290,6 +290,7 @@ const CustomDashboardSchema = new mongoose.Schema({
 CustomDashboardSchema.index({ createdBy: 1, isActive: 1 });
 CustomDashboardSchema.index({ campaign: 1, isActive: 1 });
 CustomDashboardSchema.index({ isDefault: 1 });
+CustomDashboardSchema.index({ 'sharedWith.user': 1, isActive: 1 }); // Para queries de dashboards compartidos
 
 /**
  * Método para obtener dashboards de un usuario

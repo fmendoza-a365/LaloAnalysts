@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { evaluate: mathEvaluate } = require('mathjs');
 const { ensureAuthenticated } = require('../middleware/auth');
 const { requireTenant, getTenantModelFromReq } = require('../middleware/tenant');
 const { processDataset, getDatasetSchema } = require('../utils/formatters/dataTypeConverter');
@@ -838,9 +839,9 @@ function evaluateCustomFormula(records, formula) {
       result = result.replace(op, value.toString());
     });
 
-    // Evaluar expresión matemática (solo números y operadores básicos)
+    // Evaluar expresión matemática de forma segura con mathjs
     const sanitized = result.replace(/[^0-9+\-*/().\s]/g, '');
-    const calculated = eval(sanitized);
+    const calculated = mathEvaluate(sanitized);
 
     return Math.round(calculated * 100) / 100;
   } catch (error) {

@@ -3,6 +3,11 @@ const router = express.Router();
 const { ensureAuthenticated, checkRole } = require('../middleware/auth');
 const { requireTenant, getTenantModelFromReq } = require('../middleware/tenant');
 
+// Services y utilidades
+const datasetService = require('../services/datasetService');
+const { processGenesysDatasets, calculateGlobalKPIs } = require('../utils/genesysProcessors');
+const { excelDateToJSDate } = require('../utils/formatters/dateHelpers');
+
 // Modelos GLOBALES (compartidos entre todos los tenants)
 const User = require('../models/User');
 const PowerBILink = require('../models/PowerBILink');
@@ -10,35 +15,6 @@ const PowerBILink = require('../models/PowerBILink');
 // ❌ NO importar modelos multi-tenant directamente
 // Los obtendremos dinámicamente con getTenantModelFromReq() en cada ruta
 // Modelos multi-tenant: Asesor, GenesysDataset, GenesysRecord, ProvisionDataset, ProvisionRecord
-
-// Helper para convertir números de Excel a fechas JavaScript
-function excelDateToJSDate(excelDate) {
-  if (!excelDate) return null;
-  
-  // Si ya es un objeto Date válido, devolverlo
-  if (excelDate instanceof Date && !isNaN(excelDate.getTime())) {
-    return excelDate;
-  }
-  
-  // Si es un string que parece una fecha, intentar parsearlo
-  if (typeof excelDate === 'string') {
-    const parsed = new Date(excelDate);
-    if (!isNaN(parsed.getTime())) {
-      return parsed;
-    }
-  }
-  
-  // Si es un número (formato serial de Excel)
-  if (typeof excelDate === 'number') {
-    // Excel fecha serial: días desde 1/1/1900
-    // Nota: Excel tiene un bug donde considera 1900 como año bisiesto
-    const excelEpoch = new Date(1899, 11, 30); // 30 de diciembre de 1899
-    const jsDate = new Date(excelEpoch.getTime() + excelDate * 86400000); // 86400000 ms = 1 día
-    return jsDate;
-  }
-  
-  return null;
-}
 
 // Dashboard route - protected - Ahora muestra indicadores de asesores
 router.get('/', ensureAuthenticated, requireTenant, async (req, res) => {
@@ -112,64 +88,11 @@ router.get('/', ensureAuthenticated, requireTenant, async (req, res) => {
     // Calcular rotación: (bajas / total general) * 100
     const rotacion = totalGeneral > 0 ? ((totalBaja / totalGeneral) * 100).toFixed(2) : 0;
     
-    // Obtener datasets del periodo
-    const dsE = await GenesysDataset.findOne({ anio, mes, tipo: 'estados' }).sort({ creadoEn: -1 });
-    const dsR = await GenesysDataset.findOne({ anio, mes, tipo: 'rendimiento' }).sort({ creadoEn: -1 });
-    
-    // Helpers
-    function pick(obj, keys) {
-      for (const k of keys) if (obj[k] != null && obj[k] !== '') return obj[k];
-      return null;
-    }
-    function setIf(ag, metric, val) {
-      if (val != null && !indMap.has(ag)) indMap.set(ag, {});
-      if (val != null) indMap.get(ag)[metric] = val;
-    }
-    
-    const indMap = new Map();
-    
-    // Procesar Estados
-    if (dsE) {
-      const recE = await GenesysRecord.find({ datasetId: dsE._id }).select('ag data');
-      for (const r of recE) {
-        const d = r.data || {};
-        setIf(r.ag, 'Conectado', pick(d, ['Conectado']));
-        setIf(r.ag, 'En Cola', pick(d, ['En Cola']));
-        setIf(r.ag, 'Fuera de Cola', pick(d, ['Fuera de Cola']));
-        setIf(r.ag, 'Interactuando', pick(d, ['Interactuando']));
-        setIf(r.ag, 'No Responde', pick(d, ['No Responde']));
-        setIf(r.ag, 'Inactivo', pick(d, ['Inactivo']));
-        setIf(r.ag, 'Disponible', pick(d, ['Disponible']));
-        setIf(r.ag, 'Comida', pick(d, ['Comida']));
-        setIf(r.ag, 'Ocupado', pick(d, ['Ocupado']));
-        setIf(r.ag, 'Ausente', pick(d, ['Ausente']));
-        setIf(r.ag, 'Descanso', pick(d, ['Descanso']));
-        setIf(r.ag, 'Sistema Ausente', pick(d, ['Sistema Ausente']));
-        setIf(r.ag, 'Reunión', pick(d, ['Reunión']));
-        setIf(r.ag, 'Capacitación', pick(d, ['Capacitación']));
-        setIf(r.ag, 'En Comunicación', pick(d, ['En Comunicación']));
-      }
-    }
-    
-    // Procesar Rendimiento
-    if (dsR) {
-      const recR = await GenesysRecord.find({ datasetId: dsR._id }).select('ag data');
-      for (const r of recR) {
-        const d = r.data || {};
-        const ofrecidas = pick(d, ['Ofrecidas','Total de alertas','Total que están contactando']);
-        const contestadas = pick(d, ['Contestadas','Manejo']);
-        const noContestadas = (ofrecidas != null && contestadas != null) ? (Number(ofrecidas) - Number(contestadas)) : pick(d, ['No Contestadas']);
-        setIf(r.ag, 'Ofrecidas', ofrecidas);
-        setIf(r.ag, 'Contestadas', contestadas);
-        setIf(r.ag, 'No Contestadas', noContestadas);
-        setIf(r.ag, 'Tiempo Medio Operativo', pick(d, ['Manejo medio']));
-        setIf(r.ag, 'Tiempo Medio Conversación', pick(d, ['Conversación media']));
-        setIf(r.ag, 'Tiempo Medio ACW', pick(d, ['ACW medio']));
-        setIf(r.ag, 'Tiempo Medio Retención', pick(d, ['Retención media','Retención media manejada']));
-      }
-    }
-    
-    const indicadoresRaw = indMap.size ? Object.fromEntries(indMap) : {};
+    // Obtener datasets del periodo usando service layer
+    const { dsEstados, dsRendimiento } = await datasetService.getGenesysDatasets(GenesysDataset, anio, mes);
+
+    // Procesar datasets usando utilidad centralizada
+    const indicadoresRaw = await processGenesysDatasets(GenesysRecord, dsEstados, dsRendimiento);
     
     // Calcular KPIs globales
     let totalOfrecidas = 0;
@@ -498,64 +421,11 @@ router.get('/asesores', ensureAuthenticated, requireTenant, async (req, res) => 
     const asesores = await Asesor.find({}).sort({ apellidosNombres: 1 });
     const totalAsesores = asesores.filter(a => a.estado && a.estado.toLowerCase().includes('activo')).length;
 
-    // ✅ Obtener datasets del periodo (solo del tenant actual)
-    const dsE = await GenesysDataset.findOne({ anio, mes, tipo: 'estados' }).sort({ creadoEn: -1 });
-    const dsR = await GenesysDataset.findOne({ anio, mes, tipo: 'rendimiento' }).sort({ creadoEn: -1 });
-    
-    // Helpers
-    function pick(obj, keys) {
-      for (const k of keys) if (obj[k] != null && obj[k] !== '') return obj[k];
-      return null;
-    }
-    function setIf(ag, metric, val) {
-      if (val != null && !indMap.has(ag)) indMap.set(ag, {});
-      if (val != null) indMap.get(ag)[metric] = val;
-    }
-    
-    const indMap = new Map();
-    
-    // Procesar Estados
-    if (dsE) {
-      const recE = await GenesysRecord.find({ datasetId: dsE._id }).select('ag data');
-      for (const r of recE) {
-        const d = r.data || {};
-        setIf(r.ag, 'Conectado', pick(d, ['Conectado']));
-        setIf(r.ag, 'En Cola', pick(d, ['En Cola']));
-        setIf(r.ag, 'Fuera de Cola', pick(d, ['Fuera de Cola']));
-        setIf(r.ag, 'Interactuando', pick(d, ['Interactuando']));
-        setIf(r.ag, 'No Responde', pick(d, ['No Responde']));
-        setIf(r.ag, 'Inactivo', pick(d, ['Inactivo']));
-        setIf(r.ag, 'Disponible', pick(d, ['Disponible']));
-        setIf(r.ag, 'Comida', pick(d, ['Comida']));
-        setIf(r.ag, 'Ocupado', pick(d, ['Ocupado']));
-        setIf(r.ag, 'Ausente', pick(d, ['Ausente']));
-        setIf(r.ag, 'Descanso', pick(d, ['Descanso']));
-        setIf(r.ag, 'Sistema Ausente', pick(d, ['Sistema Ausente']));
-        setIf(r.ag, 'Reunión', pick(d, ['Reunión']));
-        setIf(r.ag, 'Capacitación', pick(d, ['Capacitación']));
-        setIf(r.ag, 'En Comunicación', pick(d, ['En Comunicación']));
-      }
-    }
-    
-    // Procesar Rendimiento
-    if (dsR) {
-      const recR = await GenesysRecord.find({ datasetId: dsR._id }).select('ag data');
-      for (const r of recR) {
-        const d = r.data || {};
-        const ofrecidas = pick(d, ['Ofrecidas','Total de alertas','Total que están contactando']);
-        const contestadas = pick(d, ['Contestadas','Manejo']);
-        const noContestadas = (ofrecidas != null && contestadas != null) ? (Number(ofrecidas) - Number(contestadas)) : pick(d, ['No Contestadas']);
-        setIf(r.ag, 'Ofrecidas', ofrecidas);
-        setIf(r.ag, 'Contestadas', contestadas);
-        setIf(r.ag, 'No Contestadas', noContestadas);
-        setIf(r.ag, 'Tiempo Medio Operativo', pick(d, ['Manejo medio']));
-        setIf(r.ag, 'Tiempo Medio Conversación', pick(d, ['Conversación media']));
-        setIf(r.ag, 'Tiempo Medio ACW', pick(d, ['ACW medio']));
-        setIf(r.ag, 'Tiempo Medio Retención', pick(d, ['Retención media','Retención media manejada']));
-      }
-    }
-    
-    const indicadoresRaw = indMap.size ? Object.fromEntries(indMap) : {};
+    // ✅ Obtener datasets del periodo (solo del tenant actual) usando service layer
+    const { dsEstados: dsE2, dsRendimiento: dsR2 } = await datasetService.getGenesysDatasets(GenesysDataset, anio, mes);
+
+    // Procesar datasets usando utilidad centralizada
+    const indicadoresRaw = await processGenesysDatasets(GenesysRecord, dsE2, dsR2);
     
     // Calcular KPIs globales
     let totalOfrecidas = 0;
@@ -741,62 +611,11 @@ router.get('/analytics', ensureAuthenticated, requireTenant, async (req, res) =>
     
     const asesoresActivos = asesores.filter(a => a.estado && a.estado.toLowerCase().includes('activo'));
     
-    // Obtener datasets del periodo
-    const dsE = await GenesysDataset.findOne({ anio, mes, tipo: 'estados' }).sort({ creadoEn: -1 });
-    const dsR = await GenesysDataset.findOne({ anio, mes, tipo: 'rendimiento' }).sort({ creadoEn: -1 });
-    
-    // Helpers
-    function pick(obj, keys) {
-      for (const k of keys) if (obj[k] != null && obj[k] !== '') return obj[k];
-      return null;
-    }
-    function setIf(ag, metric, val) {
-      if (val != null && !indMap.has(ag)) indMap.set(ag, {});
-      if (val != null) indMap.get(ag)[metric] = val;
-    }
-    
-    const indMap = new Map();
-    
-    // Procesar Estados
-    if (dsE) {
-      const recE = await GenesysRecord.find({ datasetId: dsE._id }).select('ag data');
-      for (const r of recE) {
-        const d = r.data || {};
-        setIf(r.ag, 'Conectado', pick(d, ['Conectado']));
-        setIf(r.ag, 'En Cola', pick(d, ['En Cola']));
-        setIf(r.ag, 'Fuera de Cola', pick(d, ['Fuera de Cola']));
-        setIf(r.ag, 'Interactuando', pick(d, ['Interactuando']));
-        setIf(r.ag, 'No Responde', pick(d, ['No Responde']));
-        setIf(r.ag, 'Inactivo', pick(d, ['Inactivo']));
-        setIf(r.ag, 'Disponible', pick(d, ['Disponible']));
-        setIf(r.ag, 'Comida', pick(d, ['Comida']));
-        setIf(r.ag, 'Ocupado', pick(d, ['Ocupado']));
-        setIf(r.ag, 'Ausente', pick(d, ['Ausente']));
-        setIf(r.ag, 'Descanso', pick(d, ['Descanso']));
-        setIf(r.ag, 'Sistema Ausente', pick(d, ['Sistema Ausente']));
-        setIf(r.ag, 'Reunión', pick(d, ['Reunión']));
-        setIf(r.ag, 'Capacitación', pick(d, ['Capacitación']));
-        setIf(r.ag, 'En Comunicación', pick(d, ['En Comunicación']));
-      }
-    }
-    
-    // Procesar Rendimiento
-    if (dsR) {
-      const recR = await GenesysRecord.find({ datasetId: dsR._id }).select('ag data');
-      for (const r of recR) {
-        const d = r.data || {};
-        const ofrecidas = pick(d, ['Ofrecidas','Total de alertas','Total que están contactando']);
-        const contestadas = pick(d, ['Contestadas','Manejo']);
-        setIf(r.ag, 'Ofrecidas', ofrecidas);
-        setIf(r.ag, 'Contestadas', contestadas);
-        setIf(r.ag, 'Tiempo Medio Operativo', pick(d, ['Manejo medio']));
-        setIf(r.ag, 'Tiempo Medio Conversación', pick(d, ['Conversación media']));
-        setIf(r.ag, 'Tiempo Medio ACW', pick(d, ['ACW medio']));
-        setIf(r.ag, 'Tiempo Medio Retención', pick(d, ['Retención media','Retención media manejada']));
-      }
-    }
-    
-    const indicadoresRaw = indMap.size ? Object.fromEntries(indMap) : {};
+    // Obtener datasets del periodo usando service layer
+    const { dsEstados: dsE3, dsRendimiento: dsR3 } = await datasetService.getGenesysDatasets(GenesysDataset, anio, mes);
+
+    // Procesar datasets usando utilidad centralizada
+    const indicadoresRaw = await processGenesysDatasets(GenesysRecord, dsE3, dsR3);
     
     // 1. Comparativa Full Time vs Part Time
     const fullTimeAsesores = asesoresActivos.filter(a => !(a.modalidad || '').toLowerCase().includes('part'));

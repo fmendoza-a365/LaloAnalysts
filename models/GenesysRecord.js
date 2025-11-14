@@ -8,6 +8,7 @@ const GenesysRecordSchema = new mongoose.Schema({
   data: { type: mongoose.Schema.Types.Mixed },
 }, { timestamps: true });
 
-GenesysRecordSchema.index({ datasetId: 1 });
+// Índice compuesto para queries comunes (datasetId + tipo)
+GenesysRecordSchema.index({ datasetId: 1, tipo: 1 });
 
 module.exports = mongoose.model('GenesysRecord', GenesysRecordSchema);
