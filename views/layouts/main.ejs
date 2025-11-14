@@ -124,6 +124,7 @@
                   </button>
                   <div id="section-mobile-sistema" class="hidden">
                     <a href="/admin" class="block px-3 py-2.5 rounded-md text-base font-medium text-gray-800 hover:bg-orange-50">Administración</a>
+                    <a href="/admin/sync-folders" class="block px-3 py-2.5 rounded-md text-base font-medium text-gray-800 hover:bg-emerald-50">Carpetas Sincronizadas</a>
                   </div>
                 </div>
                 <% } %>
@@ -169,8 +170,8 @@
       <div class="max-w-[88%] mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <div class="flex gap-6">
           <!-- Sidebar izquierda con animación de colapso lateral mejorada -->
-          <aside id="sidebar-modules" class="hidden lg:block transition-all duration-200 ease-in-out overflow-hidden" style="width: 60px;">
-            <nav class="bg-white shadow rounded-lg overflow-hidden h-full">
+          <aside id="sidebar-modules" class="hidden lg:block transition-all duration-200 ease-in-out" style="width: 60px; overflow: hidden;">
+            <nav class="bg-white shadow rounded-lg h-full" style="overflow: hidden;">
               <!-- Botón toggle (siempre visible) -->
               <div class="bg-gradient-to-r from-blue-600 to-indigo-700 px-3 py-4 flex items-center justify-between cursor-pointer hover:from-blue-700 hover:to-indigo-800 transition-all group relative" onclick="toggleModulesMenu()" title="Expandir/Colapsar menú" style="min-height: 56px;">
                 <!-- Icono hamburger cuando está colapsado -->
@@ -265,6 +266,9 @@
                     <ul id="section-sistema" class="menu-expanded space-y-1 mt-2 ml-4 hidden">
                       <li>
                         <a href="/admin" class="nav-link nav-secondary block px-3 py-2 rounded-md text-xs font-medium text-gray-600 hover:bg-orange-50 hover:text-orange-700 transition-colors whitespace-nowrap">Administración</a>
+                      </li>
+                      <li>
+                        <a href="/admin/sync-folders" class="nav-link nav-secondary block px-3 py-2 rounded-md text-xs font-medium text-gray-600 hover:bg-emerald-50 hover:text-emerald-700 transition-colors whitespace-nowrap">Carpetas Sincronizadas</a>
                       </li>
                     </ul>
                   </div>

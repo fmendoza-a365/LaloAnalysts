@@ -243,7 +243,7 @@ function toggleSection(sectionId) {
     }
 }
 
-// Toggle del menú completo de módulos con animación lateral mejorada y fluida
+// Toggle del menú completo de módulos con animación lateral mejorada y fluida (MEJORADO)
 function toggleModulesMenu() {
     const sidebar = document.getElementById('sidebar-modules');
     const container = document.getElementById('modules-container');
@@ -266,7 +266,7 @@ function toggleModulesMenu() {
                 hamburgerIcon.style.display = 'none';
                 title.style.opacity = '1';
                 icon.style.opacity = '1';
-            }, 100); // Reducido de 150ms a 100ms
+            }, 100);
 
             icon.style.transform = 'rotate(180deg)';
 
@@ -276,14 +276,35 @@ function toggleModulesMenu() {
                     text.style.opacity = '1';
                     text.style.display = '';
                 });
-            }, 100); // Reducido de 150ms a 100ms
+            }, 100);
 
             localStorage.setItem('modules-menu-state', 'open');
         } else {
-            // Colapsar - Animación más fluida
+            // Colapsar - MEJORADO para evitar texto cortado
+
+            // 1. PRIMERO: Ocultar textos INMEDIATAMENTE (sin delay)
+            menuTexts.forEach(text => {
+                text.style.opacity = '0';
+                text.style.display = 'none'; // Ocultar inmediatamente
+            });
+
+            // 2. SEGUNDO: Cerrar todos los submenús INMEDIATAMENTE
+            menuExpanded.forEach(menu => {
+                menu.classList.add('hidden');
+            });
+
+            // 3. TERCERO: Resetear íconos de sección expandidos
+            const sectionIcons = document.querySelectorAll('[id^="icon-"]');
+            sectionIcons.forEach(sectionIcon => {
+                if (sectionIcon.id !== 'modules-toggle-icon' && sectionIcon.id !== 'modules-hamburger-icon') {
+                    sectionIcon.style.transform = 'rotate(0deg)';
+                }
+            });
+
+            // 4. CUARTO: Animar el colapso del sidebar
             sidebar.style.width = '60px';
 
-            // Ocultar título y chevron, mostrar hamburger
+            // 5. QUINTO: Ocultar título y chevron, mostrar hamburger
             title.style.opacity = '0';
             icon.style.opacity = '0';
             icon.style.transform = 'rotate(0deg)';
@@ -291,20 +312,7 @@ function toggleModulesMenu() {
             setTimeout(() => {
                 hamburgerIcon.style.display = '';
                 hamburgerIcon.style.opacity = '1';
-            }, 100); // Reducido de 150ms a 100ms
-
-            // Ocultar textos y cerrar submenús más rápido
-            menuTexts.forEach(text => {
-                text.style.opacity = '0';
-                setTimeout(() => {
-                    text.style.display = 'none';
-                }, 200); // Reducido de 300ms a 200ms
-            });
-
-            // Cerrar todos los submenús expandidos
-            menuExpanded.forEach(menu => {
-                menu.classList.add('hidden');
-            });
+            }, 100);
 
             localStorage.setItem('modules-menu-state', 'closed');
         }
