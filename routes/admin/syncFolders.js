@@ -5,14 +5,13 @@
 const express = require('express');
 const router = express.Router();
 const { ensureAuthenticated, checkRole } = require('../../middleware/auth');
-const { requireTenant } = require('../../middleware/tenant');
 const SyncFolder = require('../../models/SyncFolder');
 const { syncFolder } = require('../../services/autoSyncService');
 const { detectDatasetType, canProcessFile } = require('../../services/datasetDetector');
 const multer = require('multer');
 
-// Middleware - Solo admins
-router.use(ensureAuthenticated, requireTenant, checkRole(['admin']));
+// Middleware - Solo admins (SIN requireTenant para permitir acceso sin campaña)
+router.use(ensureAuthenticated, checkRole(['admin']));
 
 // Configurar multer para pruebas de archivos
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 25 * 1024 * 1024 } });
@@ -22,14 +21,26 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 25 
  */
 router.get('/', async (req, res) => {
   try {
-    const syncFolders = await SyncFolder.find({ campaignId: req.tenantId })
+    // Verificar si hay campaña seleccionada
+    if (!req.tenantId) {
+      return res.render('admin/syncFolders/index', {
+        title: 'Carpetas Sincronizadas',
+        user: req.user,
+        folders: [],
+        noCampaign: true
+      });
+    }
+
+    const folders = await SyncFolder.find({ campaignId: req.tenantId })
       .populate('creadoPor', 'username')
       .sort({ createdAt: -1 });
 
     res.render('admin/syncFolders/index', {
       title: 'Carpetas Sincronizadas',
       user: req.user,
-      syncFolders
+      folders,
+      campaign: req.tenant,
+      noCampaign: false
     });
   } catch (error) {
     console.error('[SYNC FOLDERS] Error:', error);
@@ -42,11 +53,18 @@ router.get('/', async (req, res) => {
  * GET /new - Formulario para nueva carpeta
  */
 router.get('/new', (req, res) => {
+  // Verificar si hay campaña seleccionada
+  if (!req.tenantId) {
+    req.flash('error_msg', 'Por favor selecciona una campaña antes de crear una carpeta sincronizada');
+    return res.redirect('/campaigns');
+  }
+
   res.render('admin/syncFolders/form', {
     title: 'Nueva Carpeta Sincronizada',
     user: req.user,
-    syncFolder: null,
-    action: 'create'
+    folder: null,
+    isEdit: false,
+    campaign: req.tenant
   });
 });
 
@@ -55,6 +73,12 @@ router.get('/new', (req, res) => {
  */
 router.post('/', async (req, res) => {
   try {
+    // Verificar que hay campaña seleccionada
+    if (!req.tenantId) {
+      req.flash('error_msg', 'Por favor selecciona una campaña primero');
+      return res.redirect('/campaigns');
+    }
+
     const {
       nombre,
       descripcion,
@@ -115,12 +139,18 @@ router.post('/', async (req, res) => {
  */
 router.get('/:id/edit', async (req, res) => {
   try {
-    const syncFolder = await SyncFolder.findOne({
+    // Verificar que hay campaña seleccionada
+    if (!req.tenantId) {
+      req.flash('error_msg', 'Por favor selecciona una campaña primero');
+      return res.redirect('/campaigns');
+    }
+
+    const folder = await SyncFolder.findOne({
       _id: req.params.id,
       campaignId: req.tenantId
     });
 
-    if (!syncFolder) {
+    if (!folder) {
       req.flash('error_msg', 'Carpeta no encontrada');
       return res.redirect('/admin/sync-folders');
     }
@@ -128,8 +158,9 @@ router.get('/:id/edit', async (req, res) => {
     res.render('admin/syncFolders/form', {
       title: 'Editar Carpeta Sincronizada',
       user: req.user,
-      syncFolder,
-      action: 'edit'
+      folder,
+      isEdit: true,
+      campaign: req.tenant
     });
   } catch (error) {
     console.error('[SYNC FOLDERS] Error:', error);
@@ -143,6 +174,12 @@ router.get('/:id/edit', async (req, res) => {
  */
 router.post('/:id', async (req, res) => {
   try {
+    // Verificar que hay campaña seleccionada
+    if (!req.tenantId) {
+      req.flash('error_msg', 'Por favor selecciona una campaña primero');
+      return res.redirect('/campaigns');
+    }
+
     const syncFolder = await SyncFolder.findOne({
       _id: req.params.id,
       campaignId: req.tenantId
