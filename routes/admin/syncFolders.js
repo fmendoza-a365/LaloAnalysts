@@ -79,45 +79,33 @@ router.post('/', async (req, res) => {
       return res.redirect('/campaigns');
     }
 
-    const {
-      nombre,
-      descripcion,
-      tipo,
-      folderId,
-      folderUrl,
-      siteUrl,
-      libraryName,
-      folderPath,
-      autoSync,
-      frequencyMinutes,
-      autoDetect,
-      fixedType,
-      processOnlyNew,
-      deleteAfterProcess,
-      moveAfterProcess,
-      moveToFolder
-    } = req.body;
+    // Extraer campos usando notación de punto para objetos anidados
+    const publicUrl = req.body['config.publicUrl'] || req.body.config?.publicUrl;
+    const folderName = req.body['config.folderName'] || req.body.config?.folderName;
+
+    // Extraer allowedExtensions (viene como string separado por comas)
+    const allowedExtensionsStr = req.body['fileFilters.allowedExtensions'] || req.body.fileFilters?.allowedExtensions || 'xlsx,xls,csv';
+    const allowedExtensions = allowedExtensionsStr.split(',').map(ext => ext.trim()).filter(ext => ext);
 
     const syncFolder = new SyncFolder({
-      nombre,
-      descripcion,
-      tipo,
+      nombre: req.body.nombre,
+      descripcion: req.body.descripcion,
+      tipo: req.body.tipo,
       config: {
-        folderId,
-        folderUrl,
-        siteUrl,
-        libraryName,
-        folderPath
+        publicUrl: publicUrl,
+        folderName: folderName
       },
       syncConfig: {
-        autoSync: autoSync === 'true',
-        frequencyMinutes: parseInt(frequencyMinutes) || 30,
-        autoDetect: autoDetect === 'true',
-        fixedType: autoDetect === 'true' ? null : fixedType,
-        processOnlyNew: processOnlyNew === 'true',
-        deleteAfterProcess: deleteAfterProcess === 'true',
-        moveAfterProcess: moveAfterProcess === 'true',
-        moveToFolder
+        autoSync: req.body['syncConfig.autoSync'] === 'true',
+        frequencyMinutes: parseInt(req.body['syncConfig.frequencyMinutes']) || 30,
+        autoDetect: req.body['syncConfig.autoDetect'] === 'true',
+        fixedType: req.body['syncConfig.autoDetect'] === 'true' ? null : req.body['syncConfig.fixedType'],
+        processOnlyNew: req.body['syncConfig.processOnlyNew'] === 'true'
+      },
+      fileFilters: {
+        allowedExtensions: allowedExtensions,
+        namePattern: req.body['fileFilters.namePattern'] || '',
+        maxSizeMB: parseInt(req.body['fileFilters.maxSizeMB']) || 25
       },
       campaignId: req.tenantId,
       creadoPor: req.user._id
@@ -190,6 +178,14 @@ router.post('/:id', async (req, res) => {
       return res.redirect('/admin/sync-folders');
     }
 
+    // Extraer campos usando notación de punto para objetos anidados
+    const publicUrl = req.body['config.publicUrl'] || req.body.config?.publicUrl;
+    const folderName = req.body['config.folderName'] || req.body.config?.folderName;
+
+    // Extraer allowedExtensions (viene como string separado por comas)
+    const allowedExtensionsStr = req.body['fileFilters.allowedExtensions'] || req.body.fileFilters?.allowedExtensions || 'xlsx,xls,csv';
+    const allowedExtensions = allowedExtensionsStr.split(',').map(ext => ext.trim()).filter(ext => ext);
+
     // Actualizar campos
     Object.assign(syncFolder, {
       nombre: req.body.nombre,
@@ -198,22 +194,22 @@ router.post('/:id', async (req, res) => {
     });
 
     Object.assign(syncFolder.config, {
-      folderId: req.body.folderId,
-      folderUrl: req.body.folderUrl,
-      siteUrl: req.body.siteUrl,
-      libraryName: req.body.libraryName,
-      folderPath: req.body.folderPath
+      publicUrl: publicUrl,
+      folderName: folderName
     });
 
     Object.assign(syncFolder.syncConfig, {
-      autoSync: req.body.autoSync === 'true',
-      frequencyMinutes: parseInt(req.body.frequencyMinutes) || 30,
-      autoDetect: req.body.autoDetect === 'true',
-      fixedType: req.body.autoDetect === 'true' ? null : req.body.fixedType,
-      processOnlyNew: req.body.processOnlyNew === 'true',
-      deleteAfterProcess: req.body.deleteAfterProcess === 'true',
-      moveAfterProcess: req.body.moveAfterProcess === 'true',
-      moveToFolder: req.body.moveToFolder
+      autoSync: req.body['syncConfig.autoSync'] === 'true',
+      frequencyMinutes: parseInt(req.body['syncConfig.frequencyMinutes']) || 30,
+      autoDetect: req.body['syncConfig.autoDetect'] === 'true',
+      fixedType: req.body['syncConfig.autoDetect'] === 'true' ? null : req.body['syncConfig.fixedType'],
+      processOnlyNew: req.body['syncConfig.processOnlyNew'] === 'true'
+    });
+
+    Object.assign(syncFolder.fileFilters, {
+      allowedExtensions: allowedExtensions,
+      namePattern: req.body['fileFilters.namePattern'] || '',
+      maxSizeMB: parseInt(req.body['fileFilters.maxSizeMB']) || 25
     });
 
     await syncFolder.save();
