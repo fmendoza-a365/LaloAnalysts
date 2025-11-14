@@ -226,6 +226,8 @@ function getProcessingConfig(detectedType) {
       route: '/admin/genesys/upload',
       parser: 'parseRendimiento',
       model: 'GenesysDataset',
+      modelType: 'genesys-rendimiento',
+      datasetTipo: 'rendimiento',
       tipo: 'rendimiento',
       requiresPeriod: true
     },
@@ -233,6 +235,8 @@ function getProcessingConfig(detectedType) {
       route: '/admin/genesys/upload',
       parser: 'parseEstados',
       model: 'GenesysDataset',
+      modelType: 'genesys-estados',
+      datasetTipo: 'estados',
       tipo: 'estados',
       requiresPeriod: true
     },
@@ -240,6 +244,8 @@ function getProcessingConfig(detectedType) {
       route: '/admin/genesys/upload',
       parser: 'parseProvisionAgregada',
       model: 'ProvisionDataset',
+      modelType: 'genesys-provision-agregada',
+      datasetTipo: 'provision-agregada',
       tipo: 'provision-agregada',
       requiresPeriod: true
     },
@@ -247,6 +253,8 @@ function getProcessingConfig(detectedType) {
       route: '/admin/asistencia/upload',
       parser: 'parseAsistencia',
       model: 'AsistenciaDataset',
+      modelType: 'asistencia',
+      datasetTipo: null,
       tipo: null,
       requiresPeriod: true
     },
@@ -254,6 +262,8 @@ function getProcessingConfig(detectedType) {
       route: '/admin/nomina/upload',
       parser: 'parseNomina',
       model: 'NominaDataset',
+      modelType: 'nomina',
+      datasetTipo: null,
       tipo: null,
       requiresPeriod: true
     },
@@ -261,6 +271,8 @@ function getProcessingConfig(detectedType) {
       route: '/admin/tarifas/upload',
       parser: 'parseTarifasCSV',
       model: 'Tarifa',
+      modelType: 'tarifas',
+      datasetTipo: null,
       tipo: null,
       requiresPeriod: false
     },
@@ -268,6 +280,8 @@ function getProcessingConfig(detectedType) {
       route: '/admin/asesores/carga',
       parser: 'parseAsesores',
       model: 'Asesor',
+      modelType: 'asesores',
+      datasetTipo: null,
       tipo: null,
       requiresPeriod: false
     }

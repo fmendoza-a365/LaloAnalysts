@@ -203,7 +203,7 @@ function showToast(message, type = 'success') {
     }, 5000);
 }
 
-// Toggle menu sections (accordion)
+// Toggle menu sections (accordion) - Versión mejorada y fluida
 function toggleSection(sectionId) {
     const section = document.getElementById('section-' + sectionId);
     const icon = document.getElementById('icon-' + sectionId);
@@ -217,18 +217,20 @@ function toggleSection(sectionId) {
             // Expandir el menú primero
             toggleModulesMenu();
 
-            // Luego expandir la sección con un pequeño delay
+            // Luego expandir la sección con un delay más corto (más fluido)
             setTimeout(() => {
                 section.classList.remove('hidden');
                 icon.style.transform = 'rotate(90deg)';
                 localStorage.setItem('menu-section-' + sectionId, 'open');
-            }, 350);
+            }, 250); // Reducido de 350ms a 250ms
         } else {
-            // Comportamiento normal: toggle de la sección
+            // Comportamiento normal: toggle de la sección con transición suave
             const isHidden = section.classList.contains('hidden');
 
             if (isHidden) {
                 section.classList.remove('hidden');
+                // Forzar reflow para animación suave
+                section.offsetHeight;
                 icon.style.transform = 'rotate(90deg)';
             } else {
                 section.classList.add('hidden');
@@ -241,7 +243,7 @@ function toggleSection(sectionId) {
     }
 }
 
-// Toggle del menú completo de módulos con animación lateral
+// Toggle del menú completo de módulos con animación lateral mejorada y fluida
 function toggleModulesMenu() {
     const sidebar = document.getElementById('sidebar-modules');
     const container = document.getElementById('modules-container');
@@ -255,30 +257,30 @@ function toggleModulesMenu() {
         const isCollapsed = sidebar.style.width === '60px' || !sidebar.style.width;
 
         if (isCollapsed) {
-            // Expandir
+            // Expandir - Animación más fluida
             sidebar.style.width = '256px'; // w-64 = 16rem = 256px
 
-            // Ocultar hamburger, mostrar título y chevron
+            // Ocultar hamburger, mostrar título y chevron con transición suave
             hamburgerIcon.style.opacity = '0';
             setTimeout(() => {
                 hamburgerIcon.style.display = 'none';
                 title.style.opacity = '1';
                 icon.style.opacity = '1';
-            }, 150);
+            }, 100); // Reducido de 150ms a 100ms
 
             icon.style.transform = 'rotate(180deg)';
 
-            // Mostrar textos con delay para animación suave
+            // Mostrar textos más rápido para mejor fluidez
             setTimeout(() => {
                 menuTexts.forEach(text => {
                     text.style.opacity = '1';
                     text.style.display = '';
                 });
-            }, 150);
+            }, 100); // Reducido de 150ms a 100ms
 
             localStorage.setItem('modules-menu-state', 'open');
         } else {
-            // Colapsar
+            // Colapsar - Animación más fluida
             sidebar.style.width = '60px';
 
             // Ocultar título y chevron, mostrar hamburger
@@ -289,14 +291,14 @@ function toggleModulesMenu() {
             setTimeout(() => {
                 hamburgerIcon.style.display = '';
                 hamburgerIcon.style.opacity = '1';
-            }, 150);
+            }, 100); // Reducido de 150ms a 100ms
 
-            // Ocultar textos y cerrar submenús
+            // Ocultar textos y cerrar submenús más rápido
             menuTexts.forEach(text => {
                 text.style.opacity = '0';
                 setTimeout(() => {
                     text.style.display = 'none';
-                }, 300);
+                }, 200); // Reducido de 300ms a 200ms
             });
 
             // Cerrar todos los submenús expandidos
@@ -389,11 +391,9 @@ function highlightActiveMenuItem() {
     });
 }
 
-// Restaurar estado del menú al cargar la página
+// Restaurar estado del menú al cargar la página (MEJORADO - sin auto-colapso)
 document.addEventListener('DOMContentLoaded', function() {
-    // Restaurar estado del menú (colapsado en home, recordar en otras páginas)
-    const currentPath = window.location.pathname;
-    const isHomePage = currentPath === '/' || currentPath === '/index' || currentPath === '';
+    // Restaurar estado del menú respetando localStorage sin importar la página
     const modulesMenuState = localStorage.getItem('modules-menu-state');
     const sidebar = document.getElementById('sidebar-modules');
     const modulesContainer = document.getElementById('modules-container');
@@ -403,9 +403,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const menuTexts = document.querySelectorAll('.menu-text');
 
     if (sidebar && modulesContainer && modulesIcon && modulesTitle && hamburgerIcon) {
-        // Si estamos en home, SIEMPRE colapsado. Si no, respetar localStorage
-        if (isHomePage || modulesMenuState !== 'open') {
-            // Estado colapsado
+        // Respetar el estado guardado en localStorage (sin comportamiento especial por página)
+        if (modulesMenuState !== 'open') {
+            // Estado colapsado (por defecto o guardado)
             sidebar.style.width = '60px';
             modulesTitle.style.opacity = '0';
             modulesIcon.style.opacity = '0';
@@ -417,7 +417,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 text.style.display = 'none';
             });
         } else {
-            // Estado expandido (solo si NO es home y localStorage dice 'open')
+            // Estado expandido (guardado en localStorage)
             sidebar.style.width = '256px';
             modulesTitle.style.opacity = '1';
             modulesIcon.style.opacity = '1';
@@ -473,34 +473,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Resaltar elemento activo
     highlightActiveMenuItem();
 
-    // Colapsar menú SOLO al ir a Inicio o hacer clic en el logo
-    const homeLinks = document.querySelectorAll('a[href="/"]');
-    homeLinks.forEach(link => {
-        link.addEventListener('click', function(e) {
-            // Guardar estado colapsado
-            localStorage.setItem('modules-menu-state', 'closed');
-
-            // Colapsar todas las secciones expandidas
-            const sections = ['dashboards', 'reportes', 'personal', 'sistema'];
-            sections.forEach(sectionId => {
-                const section = document.getElementById('section-' + sectionId);
-                const icon = document.getElementById('icon-' + sectionId);
-                if (section && !section.classList.contains('hidden')) {
-                    section.classList.add('hidden');
-                    if (icon) {
-                        icon.style.transform = 'rotate(0deg)';
-                    }
-                }
-                localStorage.setItem('menu-section-' + sectionId, 'closed');
-            });
-
-            // Colapsar el menú lateral inmediatamente si existe
-            const sidebar = document.getElementById('sidebar-modules');
-            if (sidebar && sidebar.style.width === '256px') {
-                toggleModulesMenu();
-            }
-        });
-    });
+    // MEJORADO: No colapsar automáticamente el menú - mantener estado del usuario
+    // El menú ahora mantiene su estado sin importar en qué página estés
 });
 
 // Export for use in other modules if needed

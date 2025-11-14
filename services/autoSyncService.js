@@ -278,16 +278,151 @@ async function loadParser(parserName) {
 }
 
 /**
- * Guarda datos parseados en la base de datos
+ * Guarda datos parseados en la base de datos (IMPLEMENTACIÓN COMPLETA)
  */
 async function saveToDatabase(parsedData, processingConfig, tenantId, userId) {
-  // Esta función debe implementarse según la lógica existente
-  // de cada tipo de dataset (similar a las rutas de upload)
+  const { getTenantModel } = require('../utils/tenantModelFactory');
 
-  // Por ahora, retorno mock
+  try {
+    console.log(`[AUTO SYNC] Guardando ${parsedData.records.length} registros para tipo: ${processingConfig.modelType}`);
+
+    // Determinar modelos según el tipo
+    const { DatasetModel, RecordModel } = await getModels(processingConfig.modelType, tenantId);
+
+    if (!DatasetModel || !RecordModel) {
+      throw new Error(`Modelos no encontrados para tipo: ${processingConfig.modelType}`);
+    }
+
+    // Extraer año y mes de los datos parseados
+    const { anio, mes } = extractPeriod(parsedData);
+
+    // Buscar o crear dataset
+    let dataset = await DatasetModel.findOne({ anio, mes, tipo: processingConfig.datasetTipo });
+
+    if (!dataset) {
+      // Crear nuevo dataset
+      dataset = new DatasetModel({
+        anio,
+        mes,
+        tipo: processingConfig.datasetTipo,
+        nombreArchivo: parsedData.filename || `auto_sync_${Date.now()}.csv`,
+        creadoPor: userId,
+        totalRegistros: 0
+      });
+      await dataset.save();
+      console.log(`[AUTO SYNC] Dataset creado: ${dataset._id}`);
+    } else {
+      // Limpiar registros existentes
+      await RecordModel.deleteMany({ datasetId: dataset._id });
+      console.log(`[AUTO SYNC] Dataset existente actualizado: ${dataset._id}`);
+    }
+
+    // Insertar nuevos registros con bulkWrite (más eficiente)
+    const bulk = parsedData.records.map(record => ({
+      insertOne: {
+        document: {
+          datasetId: dataset._id,
+          ...record
+        }
+      }
+    }));
+
+    if (bulk.length > 0) {
+      await RecordModel.bulkWrite(bulk);
+      console.log(`[AUTO SYNC] ${bulk.length} registros insertados`);
+    }
+
+    // Actualizar total de registros en el dataset
+    dataset.totalRegistros = bulk.length;
+    dataset.updatedAt = new Date();
+    await dataset.save();
+
+    return {
+      recordsImported: bulk.length,
+      datasetId: dataset._id.toString()
+    };
+
+  } catch (error) {
+    console.error('[AUTO SYNC] Error guardando en base de datos:', error);
+    throw error;
+  }
+}
+
+/**
+ * Obtiene los modelos apropiados según el tipo de dataset
+ */
+async function getModels(modelType, tenantId) {
+  const { getTenantModel } = require('../utils/tenantModelFactory');
+
+  const modelMap = {
+    'genesys-rendimiento': {
+      DatasetModel: getTenantModel('GenesysDataset', tenantId),
+      RecordModel: getTenantModel('GenesysRecord', tenantId)
+    },
+    'genesys-estados': {
+      DatasetModel: getTenantModel('GenesysDataset', tenantId),
+      RecordModel: getTenantModel('GenesysRecord', tenantId)
+    },
+    'genesys-provision-agregada': {
+      DatasetModel: getTenantModel('ProvisionDataset', tenantId),
+      RecordModel: getTenantModel('ProvisionRecord', tenantId)
+    },
+    'asistencia': {
+      DatasetModel: getTenantModel('AsistenciaDataset', tenantId),
+      RecordModel: getTenantModel('AsistenciaRecord', tenantId)
+    },
+    'nomina': {
+      DatasetModel: getTenantModel('NominaDataset', tenantId),
+      RecordModel: getTenantModel('NominaRecord', tenantId)
+    },
+    'tarifas': {
+      DatasetModel: getTenantModel('Tarifa', tenantId),
+      RecordModel: null // Tarifas no usa RecordModel separado
+    },
+    'asesores': {
+      DatasetModel: getTenantModel('Asesor', tenantId),
+      RecordModel: null // Asesores son registros directos
+    }
+  };
+
+  return modelMap[modelType] || {};
+}
+
+/**
+ * Extrae el período (año/mes) de los datos parseados
+ */
+function extractPeriod(parsedData) {
+  // Intentar obtener de metadatos
+  if (parsedData.metadata && parsedData.metadata.anio && parsedData.metadata.mes) {
+    return {
+      anio: parseInt(parsedData.metadata.anio, 10),
+      mes: parseInt(parsedData.metadata.mes, 10)
+    };
+  }
+
+  // Intentar obtener del primer registro
+  if (parsedData.records && parsedData.records.length > 0) {
+    const firstRecord = parsedData.records[0];
+
+    // Buscar campo de fecha
+    const dateField = firstRecord.fecha || firstRecord.fechaInteraccion || firstRecord.date;
+
+    if (dateField) {
+      const date = new Date(dateField);
+      if (!isNaN(date.getTime())) {
+        return {
+          anio: date.getFullYear(),
+          mes: date.getMonth() + 1
+        };
+      }
+    }
+  }
+
+  // Por defecto, usar mes/año actuales
+  const now = new Date();
   return {
-    recordsImported: parsedData.records.length,
-    datasetId: 'MOCK_DATASET_ID'
+    anio: now.getFullYear(),
+    mes: now.getMonth() + 1
   };
 }
 
