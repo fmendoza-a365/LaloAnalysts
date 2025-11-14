@@ -9,49 +9,63 @@ const SyncFolder = require('../models/SyncFolder');
 const { detectDatasetType, getProcessingConfig, canProcessFile } = require('./datasetDetector');
 
 /**
- * Cliente de Google Drive
+ * Cliente de Google Drive (Versión para carpetas públicas)
+ * NOTA: Para carpetas públicas, Google Drive API v3 requiere una API Key.
+ * Configura GOOGLE_DRIVE_API_KEY en .env para habilitar esta funcionalidad.
  */
 class GoogleDriveClient {
-  constructor(accessToken) {
-    this.accessToken = accessToken;
-    this.drive = google.drive({
-      version: 'v3',
-      auth: this.getOAuth2Client()
-    });
-  }
-
-  getOAuth2Client() {
-    const oauth2Client = new google.auth.OAuth2(
-      process.env.GOOGLE_CLIENT_ID,
-      process.env.GOOGLE_CLIENT_SECRET,
-      process.env.GOOGLE_REDIRECT_URI
-    );
-
-    if (this.accessToken) {
-      oauth2Client.setCredentials({
-        access_token: this.accessToken
-      });
-    }
-
-    return oauth2Client;
+  constructor(publicUrl) {
+    this.publicUrl = publicUrl;
+    this.folderId = this.extractFolderId(publicUrl);
+    this.apiKey = process.env.GOOGLE_DRIVE_API_KEY;
   }
 
   /**
-   * Lista archivos en una carpeta
+   * Extrae el folder ID de una URL pública de Google Drive
    */
-  async listFiles(folderId, modifiedAfter = null) {
+  extractFolderId(url) {
+    // URLs típicas:
+    // https://drive.google.com/drive/folders/1ABC-xyz123
+    // https://drive.google.com/drive/u/0/folders/1ABC-xyz123
+    const match = url.match(/\/folders\/([a-zA-Z0-9_-]+)/);
+    return match ? match[1] : null;
+  }
+
+  /**
+   * Lista archivos en una carpeta pública
+   */
+  async listFiles(modifiedAfter = null) {
     try {
-      const query = [`'${folderId}' in parents`, 'trashed = false'];
+      if (!this.apiKey) {
+        throw new Error(
+          'GOOGLE_DRIVE_API_KEY no configurada. Para usar carpetas de Google Drive, ' +
+          'configura una API Key en el archivo .env. ' +
+          'Instrucciones: https://developers.google.com/drive/api/guides/enable-drive-api'
+        );
+      }
+
+      if (!this.folderId) {
+        throw new Error('No se pudo extraer el folder ID de la URL proporcionada');
+      }
+
+      // Construir query
+      const query = [`'${this.folderId}' in parents`, 'trashed = false'];
 
       if (modifiedAfter) {
         query.push(`modifiedTime > '${modifiedAfter.toISOString()}'`);
       }
 
-      const response = await this.drive.files.list({
+      // Llamar a la API de Google Drive (público)
+      const url = `https://www.googleapis.com/drive/v3/files`;
+      const params = new URLSearchParams({
+        key: this.apiKey,
         q: query.join(' and '),
-        fields: 'files(id, name, mimeType, size, modifiedTime, createdTime)',
-        orderBy: 'createdTime desc'
+        fields: 'files(id, name, mimeType, size, modifiedTime, createdTime, webContentLink)',
+        orderBy: 'createdTime desc',
+        pageSize: '100'
       });
+
+      const response = await axios.get(`${url}?${params.toString()}`);
 
       return response.data.files || [];
     } catch (error) {
@@ -61,14 +75,24 @@ class GoogleDriveClient {
   }
 
   /**
-   * Descarga un archivo
+   * Descarga un archivo público
    */
   async downloadFile(fileId) {
     try {
-      const response = await this.drive.files.get(
-        { fileId, alt: 'media' },
-        { responseType: 'arraybuffer' }
-      );
+      if (!this.apiKey) {
+        throw new Error('GOOGLE_DRIVE_API_KEY no configurada');
+      }
+
+      // Usar endpoint público de descarga
+      const url = `https://www.googleapis.com/drive/v3/files/${fileId}`;
+      const params = new URLSearchParams({
+        key: this.apiKey,
+        alt: 'media'
+      });
+
+      const response = await axios.get(`${url}?${params.toString()}`, {
+        responseType: 'arraybuffer'
+      });
 
       return Buffer.from(response.data);
     } catch (error) {
@@ -78,44 +102,17 @@ class GoogleDriveClient {
   }
 
   /**
-   * Mueve un archivo a otra carpeta
+   * NOTA: Mover/Eliminar archivos no está disponible con carpetas públicas
+   * Estas operaciones requieren OAuth y permisos de escritura
    */
   async moveFile(fileId, newFolderId) {
-    try {
-      // Obtener padres actuales
-      const file = await this.drive.files.get({
-        fileId,
-        fields: 'parents'
-      });
-
-      const previousParents = file.data.parents ? file.data.parents.join(',') : '';
-
-      // Mover a nueva carpeta
-      await this.drive.files.update({
-        fileId,
-        addParents: newFolderId,
-        removeParents: previousParents,
-        fields: 'id, parents'
-      });
-
-      return true;
-    } catch (error) {
-      console.error('[GOOGLE DRIVE] Error moviendo archivo:', error);
-      return false;
-    }
+    console.warn('[GOOGLE DRIVE] Mover archivos no disponible con carpetas públicas');
+    return false;
   }
 
-  /**
-   * Elimina un archivo
-   */
   async deleteFile(fileId) {
-    try {
-      await this.drive.files.delete({ fileId });
-      return true;
-    } catch (error) {
-      console.error('[GOOGLE DRIVE] Error eliminando archivo:', error);
-      return false;
-    }
+    console.warn('[GOOGLE DRIVE] Eliminar archivos no disponible con carpetas públicas');
+    return false;
   }
 }
 
@@ -447,19 +444,16 @@ async function syncFolder(syncFolderId) {
 
     // Crear cliente según el tipo
     if (syncFolder.tipo === 'google-drive') {
-      client = new GoogleDriveClient(syncFolder.config.accessToken);
-      files = await client.listFiles(
-        syncFolder.config.folderId,
-        syncFolder.fileFilters.processAfterDate
-      );
+      if (!syncFolder.config.publicUrl) {
+        throw new Error('No se configuró una URL pública para la carpeta de Google Drive');
+      }
+      client = new GoogleDriveClient(syncFolder.config.publicUrl);
+      files = await client.listFiles(syncFolder.fileFilters.processAfterDate);
     } else if (syncFolder.tipo === 'sharepoint') {
-      client = new SharePointClient(
-        syncFolder.config.accessToken,
-        syncFolder.config.siteUrl
-      );
-      files = await client.listFiles(
-        syncFolder.config.libraryName,
-        syncFolder.config.folderPath
+      // SharePoint requiere configuración adicional
+      throw new Error(
+        'SharePoint no está implementado aún. Por favor usa Google Drive ' +
+        'o implementa la integración de SharePoint con permisos públicos.'
       );
     }
 
