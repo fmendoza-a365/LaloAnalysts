@@ -94,6 +94,7 @@ const asistenciaRouter = require('./routes/asistencia');
 const kpisRouter = require('./routes/provision'); // Dashboard de KPIs (Provisión Agregada)
 const srrRouter = require('./routes/srr'); // Service Results Report
 const customDashboardRouter = require('./routes/customDashboard'); // Dashboards Personalizados
+const syncFoldersRouter = require('./routes/admin/syncFolders'); // Carpetas Sincronizadas
 
 // Import models
 const User = require('./models/User');
@@ -219,6 +220,7 @@ app.use('/asistencia', asistenciaRouter);
 app.use('/kpis', kpisRouter);
 app.use('/srr', srrRouter); // Service Results Report
 app.use('/admin', adminRouter);
+app.use('/admin/sync-folders', syncFoldersRouter); // Carpetas Sincronizadas
 app.use('/api/indicadores', indicadoresRouter);
 
 // Error handler
@@ -271,6 +273,13 @@ async function init() {
     // Siembra de campañas demo
     if (process.env.SEED_DEMO !== 'false') {
       await seedDemoCampaigns();
+    }
+
+    // Iniciar scheduler de sincronización automática
+    if (process.env.ENABLE_AUTO_SYNC !== 'false') {
+      const { startScheduler } = require('./services/syncScheduler');
+      startScheduler();
+      console.log('🔄 Auto-sync scheduler iniciado');
     }
 
     app.listen(PORT, () => {
