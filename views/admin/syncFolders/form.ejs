@@ -5,7 +5,7 @@
       <%= isEdit ? 'Editar' : 'Nueva' %> Carpeta Sincronizada
     </h1>
     <p class="text-sm text-gray-600">
-      Configura una carpeta de Google Drive o SharePoint para sincronización automática de datasets
+      Configura una carpeta pública de Google Drive o SharePoint para sincronización automática de datasets
     </p>
   </div>
 </div>
@@ -36,6 +36,20 @@
         <p class="mt-1 text-xs text-gray-500">Nombre descriptivo para identificar esta carpeta</p>
       </div>
 
+      <!-- Descripción -->
+      <div>
+        <label for="descripcion" class="block text-sm font-medium text-gray-700 mb-1">
+          Descripción (opcional)
+        </label>
+        <textarea
+          id="descripcion"
+          name="descripcion"
+          rows="2"
+          placeholder="Información adicional sobre esta carpeta..."
+          class="block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
+        ><%= isEdit ? folder.descripcion || '' : '' %></textarea>
+      </div>
+
       <!-- Tipo -->
       <div>
         <label for="tipo" class="block text-sm font-medium text-gray-700 mb-1">
@@ -45,7 +59,6 @@
           id="tipo"
           name="tipo"
           required
-          onchange="cambiarTipo(this.value)"
           class="block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
         >
           <option value="">Seleccionar...</option>
@@ -53,163 +66,34 @@
           <option value="sharepoint" <%= isEdit && folder.tipo === 'sharepoint' ? 'selected' : '' %>>SharePoint</option>
         </select>
       </div>
-    </div>
-  </div>
 
-  <!-- Configuración de Google Drive -->
-  <div id="config-google-drive" class="bg-white shadow rounded-lg overflow-hidden mb-6" style="display: <%= isEdit && folder.tipo === 'google-drive' ? 'block' : 'none' %>">
-    <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
-      <h3 class="text-lg font-semibold text-gray-900">Configuración de Google Drive</h3>
-    </div>
-
-    <div class="px-6 py-5 space-y-4">
-      <!-- Folder ID -->
+      <!-- URL Pública -->
       <div>
-        <label for="folderId" class="block text-sm font-medium text-gray-700 mb-1">
-          ID de la carpeta <span class="text-red-500">*</span>
-        </label>
-        <input
-          type="text"
-          id="folderId"
-          name="config.folderId"
-          value="<%= isEdit && folder.config ? folder.config.folderId : '' %>"
-          placeholder="1ABC-defGHI_jklMNO"
-          class="block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm font-mono"
-        >
-        <p class="mt-1 text-xs text-gray-500">
-          El ID se encuentra en la URL de Google Drive:
-          <code class="bg-gray-100 px-1 py-0.5 rounded">https://drive.google.com/drive/folders/<strong>ID_AQUI</strong></code>
-        </p>
-      </div>
-
-      <!-- Access Token -->
-      <div>
-        <label for="accessToken" class="block text-sm font-medium text-gray-700 mb-1">
-          Access Token
-        </label>
-        <input
-          type="password"
-          id="accessToken"
-          name="config.accessToken"
-          value="<%= isEdit && folder.config && folder.config.accessToken ? '••••••••' : '' %>"
-          placeholder="Dejar vacío para usar OAuth"
-          class="block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm font-mono"
-        >
-        <p class="mt-1 text-xs text-gray-500">
-          Opcional. Si no se proporciona, se usará OAuth para autenticar.
-        </p>
-      </div>
-
-      <!-- Botón OAuth -->
-      <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <div class="flex items-start">
-          <svg class="h-5 w-5 text-blue-600 mt-0.5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
-          </svg>
-          <div class="flex-1">
-            <h4 class="text-sm font-medium text-blue-900">Autenticación recomendada</h4>
-            <p class="mt-1 text-sm text-blue-700">
-              Se recomienda usar OAuth para mayor seguridad. Los tokens se renovarán automáticamente.
-            </p>
-            <button type="button" onclick="iniciarOAuthGoogle()" class="mt-3 inline-flex items-center px-3 py-1.5 border border-blue-300 text-sm font-medium rounded text-blue-700 bg-white hover:bg-blue-50">
-              <svg class="h-4 w-4 mr-1.5" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z"/>
-              </svg>
-              Conectar con Google
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Configuración de SharePoint -->
-  <div id="config-sharepoint" class="bg-white shadow rounded-lg overflow-hidden mb-6" style="display: <%= isEdit && folder.tipo === 'sharepoint' ? 'block' : 'none' %>">
-    <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
-      <h3 class="text-lg font-semibold text-gray-900">Configuración de SharePoint</h3>
-    </div>
-
-    <div class="px-6 py-5 space-y-4">
-      <!-- Site URL -->
-      <div>
-        <label for="siteUrl" class="block text-sm font-medium text-gray-700 mb-1">
-          URL del sitio <span class="text-red-500">*</span>
+        <label for="publicUrl" class="block text-sm font-medium text-gray-700 mb-1">
+          URL pública de la carpeta <span class="text-red-500">*</span>
         </label>
         <input
           type="url"
-          id="siteUrl"
-          name="config.siteUrl"
-          value="<%= isEdit && folder.config ? folder.config.siteUrl : '' %>"
-          placeholder="https://tuempresa.sharepoint.com/sites/TuSitio"
-          class="block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm font-mono"
-        >
-      </div>
-
-      <!-- Library Name -->
-      <div>
-        <label for="libraryName" class="block text-sm font-medium text-gray-700 mb-1">
-          Nombre de la biblioteca <span class="text-red-500">*</span>
-        </label>
-        <input
-          type="text"
-          id="libraryName"
-          name="config.libraryName"
-          value="<%= isEdit && folder.config ? folder.config.libraryName : '' %>"
-          placeholder="Shared Documents"
+          id="publicUrl"
+          name="config.publicUrl"
+          required
+          value="<%= isEdit && folder.config ? folder.config.publicUrl || '' : '' %>"
+          placeholder="https://drive.google.com/drive/folders/1ABC... o https://sharepoint.com/..."
           class="block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
         >
-      </div>
-
-      <!-- Folder Path -->
-      <div>
-        <label for="folderPath" class="block text-sm font-medium text-gray-700 mb-1">
-          Ruta de la carpeta
-        </label>
-        <input
-          type="text"
-          id="folderPath"
-          name="config.folderPath"
-          value="<%= isEdit && folder.config ? folder.config.folderPath : '' %>"
-          placeholder="Datasets (opcional, raíz por defecto)"
-          class="block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
-        >
-        <p class="mt-1 text-xs text-gray-500">
-          Ruta relativa dentro de la biblioteca. Dejar vacío para usar la raíz.
-        </p>
-      </div>
-
-      <!-- Access Token -->
-      <div>
-        <label for="spAccessToken" class="block text-sm font-medium text-gray-700 mb-1">
-          Access Token
-        </label>
-        <input
-          type="password"
-          id="spAccessToken"
-          name="config.accessToken"
-          value="<%= isEdit && folder.config && folder.config.accessToken ? '••••••••' : '' %>"
-          placeholder="Dejar vacío para usar OAuth"
-          class="block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm font-mono"
-        >
-      </div>
-
-      <!-- Botón OAuth SharePoint -->
-      <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
-        <div class="flex items-start">
-          <svg class="h-5 w-5 text-purple-600 mt-0.5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
-          </svg>
-          <div class="flex-1">
-            <h4 class="text-sm font-medium text-purple-900">Autenticación de Microsoft</h4>
-            <p class="mt-1 text-sm text-purple-700">
-              Usa OAuth de Microsoft para acceso seguro a SharePoint.
-            </p>
-            <button type="button" onclick="iniciarOAuthSharePoint()" class="mt-3 inline-flex items-center px-3 py-1.5 border border-purple-300 text-sm font-medium rounded text-purple-700 bg-white hover:bg-purple-50">
-              <svg class="h-4 w-4 mr-1.5" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M20.625 0h-17.25C1.507 0 0 1.507 0 3.375v17.25C0 22.493 1.507 24 3.375 24h17.25C22.493 24 24 22.493 24 20.625V3.375C24 1.507 22.493 0 20.625 0z"/>
-              </svg>
-              Conectar con Microsoft
-            </button>
+        <div class="mt-2 bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <div class="flex items-start">
+            <svg class="h-5 w-5 text-blue-600 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+            </svg>
+            <div class="flex-1">
+              <h4 class="text-sm font-medium text-blue-900 mb-1">Requisitos importantes:</h4>
+              <ul class="text-xs text-blue-700 space-y-0.5">
+                <li>• <strong>Google Drive:</strong> La carpeta debe tener permisos de "Cualquier persona con el enlace puede ver"</li>
+                <li>• <strong>SharePoint:</strong> La carpeta debe tener permisos de lectura públicos o compartidos con enlace</li>
+                <li>• Esta aplicación <strong>no requiere autenticación OAuth</strong>, solo acceso público a la carpeta</li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>
@@ -231,7 +115,7 @@
             id="autoSync"
             name="syncConfig.autoSync"
             value="true"
-            <%= isEdit && folder.syncConfig && folder.syncConfig.autoSync ? 'checked' : '' %>
+            <%= !isEdit || (isEdit && folder.syncConfig && folder.syncConfig.autoSync) ? 'checked' : '' %>
             class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
           >
         </div>
@@ -273,7 +157,7 @@
               id="autoDetect"
               name="syncConfig.autoDetect"
               value="true"
-              <%= isEdit && folder.syncConfig && folder.syncConfig.autoDetect ? 'checked' : 'checked' %>
+              <%= !isEdit || (isEdit && folder.syncConfig && folder.syncConfig.autoDetect) ? 'checked' : '' %>
               onchange="toggleTipoFijo(this.checked)"
               class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
             >
@@ -321,7 +205,7 @@
             id="processOnlyNew"
             name="syncConfig.processOnlyNew"
             value="true"
-            <%= isEdit && folder.syncConfig && folder.syncConfig.processOnlyNew ? 'checked' : 'checked' %>
+            <%= !isEdit || (isEdit && folder.syncConfig && folder.syncConfig.processOnlyNew) ? 'checked' : '' %>
             class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
           >
         </div>
@@ -333,99 +217,6 @@
             No reprocesar archivos que ya fueron importados anteriormente
           </p>
         </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Procesamiento de Archivos -->
-  <div class="bg-white shadow rounded-lg overflow-hidden mb-6">
-    <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
-      <h3 class="text-lg font-semibold text-gray-900">Procesamiento de Archivos</h3>
-    </div>
-
-    <div class="px-6 py-5 space-y-4">
-      <!-- Acción después de procesar -->
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">
-          Después de procesar el archivo
-        </label>
-        <div class="space-y-2">
-          <div class="flex items-start">
-            <div class="flex items-center h-5">
-              <input
-                type="radio"
-                id="actionKeep"
-                name="fileAction"
-                value="keep"
-                <%= !isEdit || (folder.syncConfig && !folder.syncConfig.deleteAfterProcess && !folder.syncConfig.moveAfterProcess) ? 'checked' : '' %>
-                class="border-gray-300 text-blue-600 focus:ring-blue-500"
-              >
-            </div>
-            <div class="ml-3">
-              <label for="actionKeep" class="text-sm text-gray-700">
-                Mantener en la carpeta
-              </label>
-            </div>
-          </div>
-
-          <div class="flex items-start">
-            <div class="flex items-center h-5">
-              <input
-                type="radio"
-                id="actionMove"
-                name="fileAction"
-                value="move"
-                <%= isEdit && folder.syncConfig && folder.syncConfig.moveAfterProcess ? 'checked' : '' %>
-                onchange="toggleMoveDestination(this.checked)"
-                class="border-gray-300 text-blue-600 focus:ring-blue-500"
-              >
-            </div>
-            <div class="ml-3">
-              <label for="actionMove" class="text-sm text-gray-700">
-                Mover a otra carpeta
-              </label>
-            </div>
-          </div>
-
-          <div class="flex items-start">
-            <div class="flex items-center h-5">
-              <input
-                type="radio"
-                id="actionDelete"
-                name="fileAction"
-                value="delete"
-                <%= isEdit && folder.syncConfig && folder.syncConfig.deleteAfterProcess ? 'checked' : '' %>
-                class="border-gray-300 text-red-600 focus:ring-red-500"
-              >
-            </div>
-            <div class="ml-3">
-              <label for="actionDelete" class="text-sm text-red-700">
-                Eliminar permanentemente
-              </label>
-              <p class="text-xs text-red-500">
-                ⚠️ No recomendado. El archivo se eliminará y no podrá recuperarse.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Carpeta destino (si es mover) -->
-      <div id="moveDestinationContainer" style="display: <%= isEdit && folder.syncConfig && folder.syncConfig.moveAfterProcess ? 'block' : 'none' %>">
-        <label for="moveDestinationId" class="block text-sm font-medium text-gray-700 mb-1">
-          ID de carpeta destino
-        </label>
-        <input
-          type="text"
-          id="moveDestinationId"
-          name="syncConfig.moveDestinationId"
-          value="<%= isEdit && folder.syncConfig ? folder.syncConfig.moveDestinationId || '' : '' %>"
-          placeholder="ID de carpeta para archivos procesados"
-          class="block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm font-mono"
-        >
-        <p class="mt-1 text-xs text-gray-500">
-          Carpeta donde se moverán los archivos después de procesarlos
-        </p>
       </div>
     </div>
   </div>
@@ -445,8 +236,8 @@
         <input
           type="text"
           id="allowedExtensions"
-          name="filters.allowedExtensions"
-          value="<%= isEdit && folder.filters ? folder.filters.allowedExtensions || 'xlsx,xls,csv' : 'xlsx,xls,csv' %>"
+          name="fileFilters.allowedExtensions"
+          value="<%= isEdit && folder.fileFilters && folder.fileFilters.allowedExtensions ? folder.fileFilters.allowedExtensions.join(',') : 'xlsx,xls,csv' %>"
           placeholder="xlsx,xls,csv"
           class="block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
         >
@@ -457,14 +248,14 @@
 
       <!-- Patrón de nombre -->
       <div>
-        <label for="filenamePattern" class="block text-sm font-medium text-gray-700 mb-1">
-          Patrón de nombre (Regex)
+        <label for="namePattern" class="block text-sm font-medium text-gray-700 mb-1">
+          Patrón de nombre (Regex opcional)
         </label>
         <input
           type="text"
-          id="filenamePattern"
-          name="filters.filenamePattern"
-          value="<%= isEdit && folder.filters ? folder.filters.filenamePattern || '' : '' %>"
+          id="namePattern"
+          name="fileFilters.namePattern"
+          value="<%= isEdit && folder.fileFilters ? folder.fileFilters.namePattern || '' : '' %>"
           placeholder="^Dataset_.*\.xlsx$ (opcional)"
           class="block w-full border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm font-mono"
         >
@@ -481,10 +272,10 @@
         <input
           type="number"
           id="maxSizeMB"
-          name="filters.maxSizeMB"
+          name="fileFilters.maxSizeMB"
           min="1"
           max="100"
-          value="<%= isEdit && folder.filters ? folder.filters.maxSizeMB || 25 : 25 %>"
+          value="<%= isEdit && folder.fileFilters ? folder.fileFilters.maxSizeMB || 25 : 25 %>"
           class="block w-full md:w-48 border border-gray-300 rounded-md shadow-sm px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
         >
         <p class="mt-1 text-xs text-gray-500">
@@ -509,58 +300,7 @@
 </form>
 
 <script>
-function cambiarTipo(tipo) {
-  document.getElementById('config-google-drive').style.display = tipo === 'google-drive' ? 'block' : 'none';
-  document.getElementById('config-sharepoint').style.display = tipo === 'sharepoint' ? 'block' : 'none';
-}
-
 function toggleTipoFijo(autoDetect) {
   document.getElementById('fixedTypeContainer').style.display = autoDetect ? 'none' : 'block';
-}
-
-function toggleMoveDestination(isMove) {
-  document.getElementById('moveDestinationContainer').style.display = isMove ? 'block' : 'none';
-}
-
-// Actualizar valores hidden según radio buttons
-document.querySelectorAll('input[name="fileAction"]').forEach(radio => {
-  radio.addEventListener('change', function() {
-    // Crear campos hidden para enviar al servidor
-    let deleteInput = document.querySelector('input[name="syncConfig.deleteAfterProcess"]');
-    let moveInput = document.querySelector('input[name="syncConfig.moveAfterProcess"]');
-
-    // Limpiar inputs existentes
-    if (deleteInput) deleteInput.remove();
-    if (moveInput) moveInput.remove();
-
-    // Crear nuevos según selección
-    const form = this.closest('form');
-    if (this.value === 'delete') {
-      const input = document.createElement('input');
-      input.type = 'hidden';
-      input.name = 'syncConfig.deleteAfterProcess';
-      input.value = 'true';
-      form.appendChild(input);
-    } else if (this.value === 'move') {
-      const input = document.createElement('input');
-      input.type = 'hidden';
-      input.name = 'syncConfig.moveAfterProcess';
-      input.value = 'true';
-      form.appendChild(input);
-      toggleMoveDestination(true);
-    } else {
-      toggleMoveDestination(false);
-    }
-  });
-});
-
-function iniciarOAuthGoogle() {
-  // TODO: Implementar flujo OAuth de Google
-  alert('OAuth de Google no implementado aún. Por favor, configura el access token manualmente.');
-}
-
-function iniciarOAuthSharePoint() {
-  // TODO: Implementar flujo OAuth de SharePoint
-  alert('OAuth de SharePoint no implementado aún. Por favor, configura el access token manualmente.');
 }
 </script>

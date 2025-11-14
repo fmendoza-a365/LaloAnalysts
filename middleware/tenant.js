@@ -41,15 +41,27 @@ async function detectTenant(req, res, next) {
         if (campaign) {
           req.tenant = campaign; // Información completa de la campaña
           req.tenantName = campaign.nombre;
+
+          // Inyectar en res.locals para que esté disponible en TODAS las vistas EJS
+          res.locals.selectedCampaign = campaign;
+          res.locals.campaign = campaign;
         } else {
           console.warn(`[TENANT] Campaña no encontrada: ${tenantId}`);
           // No bloqueamos, solo advertimos
           req.tenant = null;
+          res.locals.selectedCampaign = null;
+          res.locals.campaign = null;
         }
       } catch (campaignError) {
         console.error(`[TENANT] Error cargando campaña ${tenantId}:`, campaignError);
         req.tenant = null;
+        res.locals.selectedCampaign = null;
+        res.locals.campaign = null;
       }
+    } else {
+      // No hay tenantId, limpiar res.locals
+      res.locals.selectedCampaign = null;
+      res.locals.campaign = null;
     }
 
     // Log para debugging (opcional - comentar en producción)

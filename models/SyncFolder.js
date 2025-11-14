@@ -25,19 +25,20 @@ const syncFolderSchema = new mongoose.Schema({
 
   // Configuración del servicio
   config: {
-    // Para Google Drive
-    folderId: String,        // ID de la carpeta en Drive
-    folderUrl: String,       // URL completa de la carpeta
+    // URL pública de la carpeta (Google Drive o SharePoint con permisos de lectura pública)
+    publicUrl: {
+      type: String,
+      required: true
+    },
 
-    // Para SharePoint/OneDrive
+    // Metadatos opcionales para mejor gestión
+    folderId: String,        // ID de la carpeta (extraído de la URL)
+    folderName: String,      // Nombre de la carpeta para referencia
+
+    // Para SharePoint/OneDrive (opcionales, solo si se necesita más contexto)
     siteUrl: String,         // URL del sitio de SharePoint
     libraryName: String,     // Nombre de la biblioteca
-    folderPath: String,      // Ruta de la carpeta
-
-    // Credenciales (encriptadas)
-    accessToken: String,
-    refreshToken: String,
-    expiresAt: Date
+    folderPath: String       // Ruta de la carpeta
   },
 
   // Configuración de sincronización
