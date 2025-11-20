@@ -5,12 +5,384 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><%= title %> - A365 Analytics</title>
     <link rel="icon" type="image/x-icon" href="/images/icon.ico" />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script type="text/javascript" src="https://unpkg.com/powerbi-client@2.24.0/dist/powerbi.min.js"></script>
+    <link href="/css/styles.css?v=camp-2" rel="stylesheet" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+      try {
+        var t = localStorage.getItem('theme');
+        if (!t) {
+          var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (prefersDark) t = 'dark';
+        }
+        if (t === 'dark') { document.documentElement.classList.add('dark'); }
+      } catch (e) {}
+    </script>
+    <style>
+      :root {
+        --brand-primary: <%= (theme && theme.primary) || '#162B3D' %>;
+        --brand-accent: <%= (theme && theme.accent) || '#2D4A66' %>;
+        --text-on-primary: <%= (theme && theme.textOnPrimary) || '#ffffff' %>;
+        --surface-bg: #f8fafc;
+        --surface-card: #ffffff;
+        --text: #374151;
+        --muted: #6b7280;
+        --border: #e5e7eb;
+        --gray-50: #f9fafb;
+        --gray-100: #f3f4f6;
+        --gray-200: #e5e7eb;
+        --gray-300: #d1d5db;
+        --gray-400: #9ca3af;
+        --gray-500: #6b7280;
+        --gray-600: #4b5563;
+        --gray-700: #374151;
+        --gray-800: #1f2937;
+        --gray-900: #111827;
+        --overlay-scrim: rgba(0,0,0,0.16);
+        --text-title: #1f2937;
+        --text-body: #374151;
+      }
+      .dark {
+        --surface-bg: #0f172a;
+        --surface-card: #111827;
+        --text: #e5e7eb;
+        --muted: #cbd5e1;
+        --border: #1f2937;
+        --gray-50: #0b1220;
+        --gray-100: #0b1628;
+        --gray-200: #0e1b31;
+        --gray-300: #13223d;
+        --gray-400: #1b2b4a;
+        --gray-500: #2a3a5c;
+        --gray-600: #344366;
+        --gray-700: #cbd5e1;
+        --gray-800: #e5e7eb;
+        --gray-900: #f1f5f9;
+        --overlay-scrim: rgba(0,0,0,0.5);
+        --text-title: #dbe1ea;
+        --text-body: #cfd6e4;
+      }
+      html { font-size: 15px; }
+      body { font-family: 'Public Sans', system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif; color: var(--text-body); background-color: var(--surface-bg) !important; transition: background-color .2s ease, color .2s ease, border-color .2s ease; }
+      h1, h2, h3 { font-weight: 600; letter-spacing: 0.2px; }
+      h1 { font-size: 2rem; line-height: 1.25; }
+      h2 { font-size: 1.5rem; line-height: 1.3; }
+      h3 { font-size: 1.25rem; line-height: 1.3; }
+      h4 { font-size: 1.125rem; line-height: 1.3; }
+      .btn-primary { background-color: var(--brand-accent); color: var(--text-on-primary); }
+      .header-brand { background-color: var(--brand-primary); color: var(--text-on-primary); }
+      .header-brand h1,
+      .header-brand h2,
+      .header-brand h3,
+      .header-brand h4 { color: var(--text-on-primary) !important; }
+      .fade-enter { opacity: 0; transform: translateX(-6px); }
+      .fade-enter-active { opacity: 1; transform: translateX(0); transition: opacity .18s ease, transform .18s ease; }
+      .fade-leave { opacity: 1; transform: translateX(0); }
+      .fade-leave-active { opacity: 0; transform: translateX(-6px); transition: opacity .16s ease, transform .16s ease; }
+      html:not(.dark) h1,
+      html:not(.dark) h2,
+      html:not(.dark) h3,
+      html:not(.dark) h4 { color: var(--brand-primary) !important; }
+      .dark h1,
+      .dark h2,
+      .dark h3,
+      .dark h4 { color: var(--text-title) !important; }
+      a { color: var(--text); }
+      a:hover { color: var(--text); text-decoration: underline; text-decoration-color: var(--brand-accent); }
+      :root { --shadow-sm: 0 1px 2px rgba(17, 24, 39, 0.06); --shadow-md: 0 6px 12px rgba(17, 24, 39, 0.08); --shadow-lg: 0 10px 22px rgba(17, 24, 39, 0.12); }
+      :root { --radius-sm: 0.375rem; --radius-md: 0.5rem; --radius-lg: 0.75rem; }
+      .btn { border-radius: var(--radius-md); padding: 0.5rem 0.75rem; font-weight: 600; }
+      /* Navbar neutro */
+      #modules-navbar { border-color: var(--border); }
+      #modules-navbar .nav-link { border-color: var(--border); transition: background-color .16s ease, color .16s ease; border-left: 3px solid transparent; }
+      #modules-navbar .nav-link:hover { color: #374151; background-color: #f9fafb; }
+      .nav-link-active { background-color: #f3f4f6; color: #111827; border-color: #d1d5db; border-left-color: var(--brand-accent); }
+
+      /* Tarjetas sobrias: unificamos bloques con sombra/rounded hacia fondo blanco y borde gris */
+      .rounded-xl.shadow-lg,
+      .rounded-lg.shadow-lg,
+      .rounded-xl.shadow,
+      .rounded-lg.shadow { box-shadow: var(--shadow-sm) !important; border: 1px solid var(--border) !important; background: var(--surface-card) !important; transition: box-shadow .18s ease, transform .18s ease; }
+      .rounded-xl, .rounded-lg { border-radius: var(--radius-lg) !important; }
+      /* Neutralizar gradientes en tarjetas */
+      .rounded-xl.bg-gradient-to-br,
+      .rounded-lg.bg-gradient-to-br,
+      .shadow-lg.bg-gradient-to-br,
+      .shadow.bg-gradient-to-br {
+        background: var(--surface-card) !important;
+        border: 1px solid var(--border) !important;
+      }
+      /* Neutralizar variantes de color en tarjetas con sombra para estilo sobrio */
+      .shadow-lg.bg-yellow-50,
+      .shadow-lg.bg-teal-50,
+      .shadow-lg.bg-blue-50,
+      .shadow-lg.bg-red-50,
+      .shadow-lg.bg-purple-50,
+      .shadow-lg.bg-green-50,
+      .shadow.bg-yellow-50,
+      .shadow.bg-teal-50,
+      .shadow.bg-blue-50,
+      .shadow.bg-red-50,
+      .shadow.bg-purple-50,
+      .shadow.bg-green-50 {
+        background: var(--surface-card) !important;
+        border: 1px solid var(--border) !important;
+      }
+      /* Títulos dentro de tarjetas sobrias con color de campaña */
+      html:not(.dark) .rounded-xl.shadow-lg dt,
+      html:not(.dark) .rounded-lg.shadow-lg dt,
+      html:not(.dark) .rounded-xl.shadow dt,
+      html:not(.dark) .rounded-lg.shadow dt { color: var(--brand-primary) !important; }
+      .dark .rounded-xl.shadow-lg dt,
+      .dark .rounded-lg.shadow-lg dt,
+      .dark .rounded-xl.shadow dt,
+      .dark .rounded-lg.shadow dt { color: var(--text) !important; }
+      html:not(.dark) .rounded-xl.shadow-lg dd,
+      html:not(.dark) .rounded-lg.shadow-lg dd,
+      html:not(.dark) .rounded-xl.shadow dd,
+      html:not(.dark) .rounded-lg.shadow dd { color: var(--text) !important; }
+      .dark .rounded-xl.shadow-lg dd,
+      .dark .rounded-lg.shadow-lg dd,
+      .dark .rounded-xl.shadow dd,
+      .dark .rounded-lg.shadow dd { color: var(--text) !important; }
+
+      /* Tablas sobrias globales */
+      table thead { background-color: var(--gray-50) !important; border-bottom: 1px solid var(--border) !important; }
+      table thead th { color: var(--text-title) !important; font-weight: 600 !important; }
+      table tbody tr:nth-child(even) { background-color: var(--gray-50) !important; }
+      table tbody tr:hover { background-color: var(--gray-100) !important; }
+      table td { color: var(--text-body) !important; }
+      table tbody td, table thead th { padding: 0.75rem 1rem !important; }
+
+      input[type="text"], input[type="email"], input[type="password"], input[type="number"], input[type="search"], input[type="tel"], input[type="url"], input[type="date"], input[type="time"], input[type="datetime-local"], select, textarea { transition: box-shadow .14s ease, border-color .14s ease, background-color .14s ease, color .14s ease; background-color: var(--surface-card); color: var(--text); border-color: var(--border); }
+      input[type="text"]::placeholder, input[type="email"]::placeholder, input[type="password"]::placeholder, input[type="number"]::placeholder, input[type="search"]::placeholder, input[type="tel"]::placeholder, input[type="url"]::placeholder, textarea::placeholder { color: var(--muted); }
+      label { color: var(--text-body); }
+      input[type="text"]:focus, input[type="email"]:focus, input[type="password"]:focus, input[type="number"]:focus, input[type="search"]:focus, input[type="tel"]:focus, input[type="url"]:focus, input[type="date"]:focus, input[type="time"]:focus, input[type="datetime-local"]:focus, select:focus, textarea:focus { border-color: var(--brand-accent) !important; box-shadow: 0 0 0 3px rgba(45, 74, 102, 0.15); }
+      select option, select optgroup { background-color: var(--surface-card); color: var(--text); }
+      input[type="checkbox"], input[type="radio"], input[type="range"] { accent-color: var(--brand-accent); }
+      input[type="checkbox"], input[type="radio"] { background-color: var(--surface-card); border-color: var(--border); }
+      input[type="checkbox"]:focus, input[type="radio"]:focus { outline: 2px solid var(--brand-accent); outline-offset: 2px; }
+      input[disabled], select[disabled], textarea[disabled] { opacity: 0.7; color: var(--muted); border-color: var(--border); background-color: var(--surface-card); }
+      input[type="file"] { color: var(--text); }
+      input[type="file"]::file-selector-button { background-color: var(--brand-accent); color: var(--text-on-primary); border: none; border-radius: var(--radius-md); padding: 0.375rem 0.75rem; }
+      input[type="file"]::file-selector-button:hover { filter: brightness(0.95); }
+      button, .btn-primary, a.btn-primary { transition: box-shadow .14s ease, transform .14s ease, filter .14s ease; }
+      button:hover, .btn-primary:hover, a.btn-primary:hover { box-shadow: 0 8px 16px rgba(17, 24, 39, 0.12); transform: translateY(-1px); filter: brightness(0.97); }
+      button:active, .btn-primary:active, a.btn-primary:active { transform: translateY(0); filter: brightness(0.95); }
+      .form-control { border-radius: var(--radius-md); }
+
+      /* Iconos dentro de tarjetas a tono sobrio */
+      .rounded-xl.shadow-lg .flex-shrink-0,
+      .rounded-lg.shadow-lg .flex-shrink-0,
+      .rounded-xl.shadow .flex-shrink-0,
+      .rounded-lg.shadow .flex-shrink-0 {
+        background-color: #f3f4f6 !important;
+        color: var(--brand-primary) !important;
+      }
+
+      /* Sistema de iconos unificado */
+      svg.icon { width: 1rem; height: 1rem; display: inline-block; }
+      svg.icon-sm { width: 0.875rem; height: 0.875rem; }
+      svg.icon-lg { width: 1.25rem; height: 1.25rem; }
+      svg.icon-xl { width: 2rem; height: 2rem; }
+      .icon-neutral { color: #6b7280; }
+      .icon-primary { color: var(--brand-primary); }
+      .icon-accent { color: var(--brand-accent); }
+      svg.icon path, svg.icon circle, svg.icon rect, svg.icon line, svg.icon polyline { stroke-width: 2; }
+      #page-header .flex-shrink-0 svg { width: 1rem; height: 1rem; }
+      #modules-navbar .nav-link svg { width: 1rem; height: 1rem; }
+      #modules-navbar .nav-link svg path { stroke-width: 2; }
+
+      /* Encabezado de página a tono de tema */
+      #page-header { background-color: var(--surface-card) !important; border-bottom: 1px solid var(--border) !important; }
+      html:not(.dark) #page-header h1 { color: var(--brand-primary) !important; }
+      .dark #page-header h1 { color: var(--text-title) !important; }
+      #page-header p { color: var(--muted) !important; }
+
+      /* Encabezados comunes (filtros, paneles, gráficos) */
+      .section-header,
+      .panel-header,
+      .filters-header,
+      .chart-header,
+      .widget-header,
+      .widget-card-header {
+        background-color: var(--gray-50) !important;
+        border-bottom: 1px solid var(--border) !important;
+        color: var(--text) !important;
+      }
+      html:not(.dark) .section-header h2,
+      html:not(.dark) .panel-header h2,
+      html:not(.dark) .filters-header h2,
+      html:not(.dark) .chart-header h2,
+      html:not(.dark) .widget-card-title { color: var(--brand-primary) !important; }
+      .dark .section-header h2,
+      .dark .panel-header h2,
+      .dark .filters-header h2,
+      .dark .chart-header h2,
+      .dark .widget-card-title { color: var(--text-title) !important; }
+      .section-header p,
+      .panel-header p,
+      .filters-header p,
+      .chart-header p { color: var(--muted) !important; }
+      .widget-toolbar button { color: var(--muted) !important; }
+      .dark .section-header,
+      .dark .panel-header,
+      .dark .filters-header,
+      .dark .chart-header,
+      .dark .widget-header,
+      .dark .widget-card-header { background-color: var(--gray-100) !important; }
+
+      /* Neutralizar gradientes en encabezados para sobriedad y tema */
+      .bg-gradient-to-r { background: var(--surface-card) !important; color: var(--text) !important; }
+
+      /* Banner de campaña: texto usa color de campaña solo en modo claro */
+      html:not(.dark) #campaign-banner { color: var(--brand-primary) !important; }
+      .dark #campaign-banner { color: var(--text) !important; }
+      html:not(.dark) #campaign-banner .accent { border-left-color: var(--brand-accent) !important; }
+
+      .bg-white.rounded-lg,
+      .bg-white.rounded-xl { box-shadow: var(--shadow-sm); border: 1px solid var(--border); transition: box-shadow .18s ease, transform .18s ease; background: var(--surface-card); }
+      .bg-white.rounded-lg:hover,
+      .bg-white.rounded-xl:hover { box-shadow: var(--shadow-lg); transform: translateY(-1px); }
+
+      .bg-white { background: var(--surface-card) !important; }
+      .bg-gray-50 { background: var(--gray-50) !important; }
+
+      html:not(.dark) .theme-a365-light {
+        --brand-primary: #2c5494;
+        --brand-accent: #c40c0c;
+        --text-title: #2c5494;
+        --text-body: #747474;
+      }
+
+      .theme-a365-light #page-header {
+        background-image: linear-gradient(135deg, var(--brand-primary), var(--brand-accent));
+        color: var(--text-on-primary) !important;
+        border-bottom: none !important;
+      }
+      .theme-a365-light #page-header h1,
+      .theme-a365-light #page-header p { color: var(--text-on-primary) !important; }
+      .theme-a365-light #page-header .flex-shrink-0 * { color: var(--text-on-primary) !important; }
+
+      html:not(.dark) .theme-a365-light,
+      html:not(.dark) .theme-a365-light p,
+      html:not(.dark) .theme-a365-light span,
+      html:not(.dark) .theme-a365-light li,
+      html:not(.dark) .theme-a365-light dd,
+      html:not(.dark) .theme-a365-light dt,
+      html:not(.dark) .theme-a365-light label,
+      html:not(.dark) .theme-a365-light input,
+      html:not(.dark) .theme-a365-light select,
+      html:not(.dark) .theme-a365-light textarea {
+        color: var(--text-body) !important;
+      }
+      html:not(.dark) .theme-a365-light h1,
+      html:not(.dark) .theme-a365-light h2,
+      html:not(.dark) .theme-a365-light h3,
+      html:not(.dark) .theme-a365-light h4 {
+        color: var(--text-title) !important;
+      }
+      html:not(.dark) .theme-a365-light .text-gray-500,
+      html:not(.dark) .theme-a365-light .text-gray-600,
+      html:not(.dark) .theme-a365-light .text-gray-700 {
+        color: var(--text-body) !important;
+      }
+      html:not(.dark) .theme-a365-light .text-gray-900 {
+        color: var(--text-title) !important;
+      }
+      html:not(.dark) .theme-a365-light .header-brand {
+        color: var(--text-on-primary) !important;
+      }
+
+      .badge { display: inline-block; padding: 0.25rem 0.5rem; border-radius: 9999px; font-weight: 600; font-size: 0.75rem; }
+      .badge-primary { background-color: var(--brand-accent); color: var(--text-on-primary); }
+      .badge-neutral { background-color: var(--gray-100); color: var(--text); }
+      footer { background-color: var(--surface-card) !important; border-top: 1px solid var(--border); }
+      .chip { display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.25rem 0.5rem; border-radius: 9999px; border: 1px solid var(--border); background-color: var(--surface-card); font-size: 0.75rem; color: var(--text); }
+      .theme-a365-light .empty-state-title { color: var(--brand-accent) !important; }
+      .chip svg { width: 0.875rem; height: 0.875rem; }
+
+      button.bg-blue-600,
+      a.bg-blue-600,
+      button.bg-indigo-600,
+      a.bg-indigo-600,
+      button.bg-purple-600,
+      a.bg-purple-600,
+      button.bg-teal-600,
+      a.bg-teal-600,
+      button.bg-green-600,
+      a.bg-green-600,
+      .btn-primary {
+        background-color: var(--brand-accent) !important;
+        color: var(--text-on-primary) !important;
+        border-color: transparent !important;
+      }
+      .btn-secondary,
+      a.btn-secondary {
+        background-color: var(--brand-accent) !important;
+        color: var(--text-on-primary) !important;
+        border-color: transparent !important;
+      }
+      .modal-danger-header h1,
+      .modal-danger-header h2,
+      .modal-danger-header h3,
+      .modal-danger-header h4 { color: var(--text-on-primary) !important; }
+      .btn-primary:hover {
+        background-color: var(--brand-accent) !important;
+        color: var(--text-on-primary) !important;
+        border-color: transparent !important;
+        filter: brightness(0.94);
+        box-shadow: 0 8px 16px rgba(17, 24, 39, 0.12);
+        transform: translateY(-1px);
+      }
+      .btn-secondary:hover {
+        background-color: var(--brand-accent) !important;
+        filter: brightness(0.94);
+        box-shadow: 0 8px 16px rgba(17, 24, 39, 0.12);
+        transform: translateY(-1px);
+      }
+      /* Botones con texto negro solo en secciones de campañas (theme-a365-light) */
+      .theme-a365-light .btn-primary,
+      .theme-a365-light a.btn-primary { color: #000000 !important; }
+      .theme-a365-light .btn-secondary,
+      .theme-a365-light a.btn-secondary { color: #000000 !important; }
+      .theme-a365-light .btn-primary:hover,
+      .theme-a365-light a.btn-primary:hover { color: #000000 !important; }
+      .theme-a365-light .btn-secondary:hover,
+      .theme-a365-light a.btn-secondary:hover { color: #000000 !important; }
+      button.bg-gray-600:hover,
+      a.bg-gray-600:hover { 
+        filter: brightness(0.95);
+        box-shadow: 0 8px 16px rgba(17, 24, 39, 0.12);
+        transform: translateY(-1px);
+      }
+      button[class*="from-indigo-"][class*="to-indigo-"],
+      a[class*="from-indigo-"][class*="to-indigo-"],
+      button[class*="from-purple-"][class*="to-purple-"],
+      a[class*="from-purple-"][class*="to-purple-"] {
+        background-color: var(--brand-accent) !important;
+        color: var(--text-on-primary) !important;
+        border-color: transparent !important;
+        background-image: none !important;
+      }
+      button[class*="from-indigo-"][class*="to-indigo-"]:hover,
+      a[class*="from-indigo-"][class*="to-indigo-"]:hover,
+      button[class*="from-purple-"][class*="to-purple-"]:hover,
+      a[class*="from-purple-"][class*="to-purple-"]:hover {
+        background-color: var(--brand-accent) !important;
+        filter: brightness(0.95);
+      }
+
+      .dark .navbar-main { background-color: #0b1220 !important; color: #ffffff !important; border-bottom-color: #1f2937 !important; }
+      .dark .navbar-main a { color: #e5e7eb !important; }
+      .dark .navbar-main a:hover { color: #ffffff !important; }
+    </style>
 </head>
-<body class="bg-gray-100 pb-16 lg:pb-0">
+<body class="bg-gray-50 pb-16 lg:pb-0">
     <!-- Navigation -->
-    <nav class="bg-blue-600 text-white shadow-lg">
+    <% if (typeof hideNavbar === 'undefined' || !hideNavbar) { %>
+    <nav class="text-white shadow-lg navbar-main" style="background-color: var(--brand-primary); color: var(--text-on-primary); backdrop-filter: saturate(160%) blur(6px); border-bottom: 1px solid var(--border); transition: background-color .2s ease, color .2s ease, border-color .2s ease;">
         <div class="max-w-[88%] mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16 sm:h-20">
                 <div class="flex">
@@ -29,19 +401,25 @@
                         <div class="relative ml-3">
                             <div class="flex items-center">
                                 <span class="mr-2 text-sm font-medium">Bienvenido, <%= user.username %></span>
-                                <a href="/auth/logout" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                                <a href="/auth/logout" class="text-white font-semibold py-2 px-4 rounded" style="background-color: var(--brand-accent)">
                                     Cerrar sesión
                                 </a>
+                                <button id="themeToggle" class="ml-2 text-white font-semibold py-2 px-3 rounded" style="background-color: var(--brand-accent)">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m8-9h1M3 12H2m15.364 6.364l.707.707M5.929 5.929l-.707-.707m12.142 0l.707-.707M5.929 18.071l-.707.707M12 5a7 7 0 107 7 7.001 7.001 0 00-7-7z"/></svg>
+                                </button>
                             </div>
                         </div>
                     <% } %>
                     <% if (!user) { %>
-                        <a href="/auth/login" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                        <a href="/auth/login" class="text-white font-semibold py-2 px-4 rounded" style="background-color: var(--brand-accent)">
                             Iniciar sesión
                         </a>
-                        <a href="/auth/register" class="ml-4 bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+                        <a href="/auth/register" class="ml-4 text-white font-semibold py-2 px-4 rounded" style="background-color: var(--brand-accent)">
                             Registrarse
                         </a>
+                        <button id="themeToggle" class="ml-2 text-white font-semibold py-2 px-3 rounded" style="background-color: var(--brand-accent)">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m8-9h1M3 12H2m15.364 6.364l.707.707M5.929 5.929l-.707-.707m12.142 0l.707-.707M5.929 18.071l-.707.707M12 5a7 7 0 107 7 7.001 7.001 0 00-7-7z"/></svg>
+                        </button>
                     <% } %>
                 </div>
                 <!-- Mobile menu button -->
@@ -56,11 +434,9 @@
             </div>
         </div>
 
-        <!-- Menú móvil como popup/modal -->
+        <!-- Menú móvil simple -->
         <div id="mobile-menu-modal" class="fixed inset-0 z-50 hidden sm:hidden" role="dialog" aria-modal="true" aria-labelledby="mobile-menu-title">
-          <!-- Overlay -->
           <div id="mobile-menu-overlay" class="absolute inset-0 bg-black bg-opacity-50"></div>
-          <!-- Panel -->
           <div class="absolute inset-x-0 bottom-0 rounded-t-2xl bg-white shadow-xl max-h-[85vh] overflow-y-auto">
             <div class="px-4 pt-4 pb-2 flex items-center justify-between border-b">
               <h2 id="mobile-menu-title" class="text-base font-semibold text-gray-800">Menú</h2>
@@ -72,62 +448,16 @@
               <a href="/" class="block px-3 py-3 rounded-md text-base font-medium text-gray-800 hover:bg-gray-100">Inicio</a>
               <a href="/about" class="block px-3 py-3 rounded-md text-base font-medium text-gray-800 hover:bg-gray-100">Acerca de</a>
               <% if (user) { %>
-                <!-- Dashboards -->
-                <div class="pt-2 mt-2 border-t">
-                  <button onclick="toggleSection('mobile-dashboards')" class="w-full flex items-center justify-between px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 rounded-md">
-                    <span class="flex items-center gap-2">
-                      <svg id="icon-mobile-dashboards" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                      📈 Dashboards
-                    </span>
-                  </button>
-                  <div id="section-mobile-dashboards" class="hidden">
-                    <a href="/dashboard" class="block px-3 py-2.5 rounded-md text-base font-medium text-gray-800 hover:bg-blue-50">Tablero Principal</a>
-                    <a href="/custom-dashboard" class="block px-3 py-2.5 rounded-md text-base font-medium text-gray-800 hover:bg-purple-50">✨ Dashboards Personalizados</a>
-                    <a href="/powerbi" class="block px-3 py-2.5 rounded-md text-base font-medium text-gray-800 hover:bg-blue-50">Power BI</a>
-                  </div>
-                </div>
-                <!-- Reportes -->
-                <div class="pt-2 mt-2 border-t">
-                  <button onclick="toggleSection('mobile-reportes')" class="w-full flex items-center justify-between px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 rounded-md">
-                    <span class="flex items-center gap-2">
-                      <svg id="icon-mobile-reportes" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                      📊 Reportes
-                    </span>
-                  </button>
-                  <div id="section-mobile-reportes" class="hidden">
-                    <a href="/srr" class="block px-3 py-2.5 rounded-md text-base font-medium text-gray-800 hover:bg-purple-50">SRR</a>
-                    <a href="/kpis" class="block px-3 py-2.5 rounded-md text-base font-medium text-gray-800 hover:bg-purple-50">KPIs</a>
-                    <a href="/dashboard/analytics" class="block px-3 py-2.5 rounded-md text-base font-medium text-gray-800 hover:bg-purple-50">Análisis Avanzado</a>
-                  </div>
-                </div>
-                <!-- Personal -->
-                <div class="pt-2 mt-2 border-t">
-                  <button onclick="toggleSection('mobile-personal')" class="w-full flex items-center justify-between px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 rounded-md">
-                    <span class="flex items-center gap-2">
-                      <svg id="icon-mobile-personal" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                      👥 Personal
-                    </span>
-                  </button>
-                  <div id="section-mobile-personal" class="hidden">
-                    <a href="/asesores" class="block px-3 py-2.5 rounded-md text-base font-medium text-gray-800 hover:bg-green-50">Asesores</a>
-                    <a href="/asistencia" class="block px-3 py-2.5 rounded-md text-base font-medium text-gray-800 hover:bg-green-50">Asistencia</a>
-                  </div>
-                </div>
-                <!-- Administración -->
+                <a href="/dashboard" class="block px-3 py-3 rounded-md text-base font-medium text-gray-800 hover:bg-gray-100">Tablero Principal</a>
+                <a href="/custom-dashboard" class="block px-3 py-3 rounded-md text-base font-medium text-gray-800 hover:bg-gray-100">Dashboards Personalizados</a>
+                <a href="/powerbi" class="block px-3 py-3 rounded-md text-base font-medium text-gray-800 hover:bg-gray-100">Power BI</a>
+                <a href="/srr" class="block px-3 py-3 rounded-md text-base font-medium text-gray-800 hover:bg-gray-100">SRR</a>
+                <a href="/kpis" class="block px-3 py-3 rounded-md text-base font-medium text-gray-800 hover:bg-gray-100">KPIs</a>
+                <a href="/asesores" class="block px-3 py-3 rounded-md text-base font-medium text-gray-800 hover:bg-gray-100">Asesores</a>
+                <a href="/asistencia" class="block px-3 py-3 rounded-md text-base font-medium text-gray-800 hover:bg-gray-100">Asistencia</a>
                 <% if (user.role === 'admin') { %>
-                <div class="pt-2 mt-2 border-t">
-                  <button onclick="toggleSection('mobile-sistema')" class="w-full flex items-center justify-between px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 rounded-md">
-                    <span class="flex items-center gap-2">
-                      <svg id="icon-mobile-sistema" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                      ⚙️ Sistema
-                    </span>
-                  </button>
-                  <div id="section-mobile-sistema" class="hidden">
-                    <a href="/admin" class="block px-3 py-2.5 rounded-md text-base font-medium text-gray-800 hover:bg-orange-50">Administración</a>
-                  </div>
-                </div>
+                  <a href="/admin" class="block px-3 py-3 rounded-md text-base font-medium text-gray-800 hover:bg-gray-100">Administración</a>
                 <% } %>
-                <!-- Sesión -->
                 <div class="pt-2 mt-2 border-t">
                   <div class="px-3 text-sm text-gray-500">Sesión</div>
                   <a href="/auth/logout" class="block mt-1 px-3 py-3 rounded-md text-base font-medium text-gray-800 hover:bg-gray-100">Cerrar sesión</a>
@@ -142,6 +472,7 @@
           </div>
         </div>
     </nav>
+    <% } %>
 
     <!-- Flash Messages -->
     <% if (Array.isArray(success_msg) && success_msg.length) { %>
@@ -167,132 +498,85 @@
     <!-- Contenedor principal con barra lateral (solo si hay usuario) -->
     <% if (user) { %>
       <div class="max-w-[88%] mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        <div class="flex gap-6">
-          <!-- Sidebar izquierda con animación de colapso lateral -->
-          <aside id="sidebar-modules" class="hidden lg:block transition-all duration-300 ease-in-out overflow-hidden" style="width: 60px;">
-            <nav class="bg-white shadow rounded-lg overflow-hidden h-full">
-              <!-- Botón toggle (siempre visible) -->
-              <div class="bg-gradient-to-r from-blue-600 to-indigo-700 px-3 py-4 flex items-center justify-between cursor-pointer hover:from-blue-700 hover:to-indigo-800 transition-all group relative" onclick="toggleModulesMenu()" title="Expandir/Colapsar menú" style="min-height: 56px;">
-                <!-- Icono hamburger cuando está colapsado -->
-                <svg id="modules-hamburger-icon" class="w-6 h-6 text-white flex-shrink-0 transition-opacity duration-300 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
-                </svg>
-                <!-- Título cuando está expandido -->
-                <h2 id="modules-title" class="text-sm font-bold text-white uppercase tracking-wider whitespace-nowrap transition-opacity duration-300" style="opacity: 0; position: absolute; left: 16px;">Módulos</h2>
-                <!-- Icono de chevron cuando está expandido -->
-                <svg id="modules-toggle-icon" class="w-5 h-5 text-white transition-all duration-300 flex-shrink-0" style="opacity: 0; position: absolute; right: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                </svg>
-              </div>
-
-              <!-- Contenedor de módulos -->
-              <div id="modules-container" class="transition-opacity duration-300">
-                <div class="p-2">
-                  <!-- Dashboards -->
-                  <div class="mb-2">
-                    <button onclick="toggleSection('dashboards')" class="menu-primary w-full flex items-center justify-center gap-3 px-3 py-3 rounded-lg text-sm font-bold text-gray-800 bg-gray-50 hover:bg-blue-100 hover:text-blue-700 transition-all shadow-sm group" title="Dashboards">
-                      <svg class="w-6 h-6 flex-shrink-0 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/>
-                      </svg>
-                      <span class="menu-text overflow-hidden whitespace-nowrap flex-1 text-left" style="opacity: 0; display: none;">Dashboards</span>
-                      <svg id="icon-dashboards" class="menu-text w-4 h-4 transition-transform flex-shrink-0" style="opacity: 0; display: none;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                    </button>
-                    <ul id="section-dashboards" class="menu-expanded space-y-1 mt-2 ml-4 hidden">
-                      <li>
-                        <a href="/dashboard" class="nav-link nav-secondary block px-3 py-2 rounded-md text-xs font-medium text-gray-600 hover:bg-blue-50 hover:text-blue-700 transition-colors whitespace-nowrap">Tablero Principal</a>
-                      </li>
-                      <li>
-                        <a href="/custom-dashboard" class="nav-link nav-secondary block px-3 py-2 rounded-md text-xs font-medium text-gray-600 hover:bg-purple-50 hover:text-purple-700 transition-colors whitespace-nowrap">Dashboards Personalizados</a>
-                      </li>
-                      <li>
-                        <a href="/powerbi" class="nav-link nav-secondary block px-3 py-2 rounded-md text-xs font-medium text-gray-600 hover:bg-blue-50 hover:text-blue-700 transition-colors whitespace-nowrap">Power BI</a>
-                      </li>
-                    </ul>
-                  </div>
-
-                  <!-- Reportes y Análisis -->
-                  <div class="mb-2">
-                    <button onclick="toggleSection('reportes')" class="menu-primary w-full flex items-center justify-center gap-3 px-3 py-3 rounded-lg text-sm font-bold text-gray-800 bg-gray-50 hover:bg-purple-100 hover:text-purple-700 transition-all shadow-sm group" title="Reportes">
-                      <svg class="w-6 h-6 flex-shrink-0 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-                      </svg>
-                      <span class="menu-text overflow-hidden whitespace-nowrap flex-1 text-left" style="opacity: 0; display: none;">Reportes</span>
-                      <svg id="icon-reportes" class="menu-text w-4 h-4 transition-transform flex-shrink-0" style="opacity: 0; display: none;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                    </button>
-                    <ul id="section-reportes" class="menu-expanded space-y-1 mt-2 ml-4 hidden">
-                      <li>
-                        <a href="/srr" class="nav-link nav-secondary block px-3 py-2 rounded-md text-xs font-medium text-gray-600 hover:bg-purple-50 hover:text-purple-700 transition-colors whitespace-nowrap">SRR</a>
-                      </li>
-                      <li>
-                        <a href="/kpis" class="nav-link nav-secondary block px-3 py-2 rounded-md text-xs font-medium text-gray-600 hover:bg-purple-50 hover:text-purple-700 transition-colors whitespace-nowrap">KPIs</a>
-                      </li>
-                      <li>
-                        <a href="/dashboard/analytics" class="nav-link nav-secondary block px-3 py-2 rounded-md text-xs font-medium text-gray-600 hover:bg-purple-50 hover:text-purple-700 transition-colors whitespace-nowrap">Análisis Avanzado</a>
-                      </li>
-                    </ul>
-                  </div>
-
-                  <!-- Gestión de Personal -->
-                  <div class="mb-2">
-                    <button onclick="toggleSection('personal')" class="menu-primary w-full flex items-center justify-center gap-3 px-3 py-3 rounded-lg text-sm font-bold text-gray-800 bg-gray-50 hover:bg-green-100 hover:text-green-700 transition-all shadow-sm group" title="Personal">
-                      <svg class="w-6 h-6 flex-shrink-0 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
-                      </svg>
-                      <span class="menu-text overflow-hidden whitespace-nowrap flex-1 text-left" style="opacity: 0; display: none;">Personal</span>
-                      <svg id="icon-personal" class="menu-text w-4 h-4 transition-transform flex-shrink-0" style="opacity: 0; display: none;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                    </button>
-                    <ul id="section-personal" class="menu-expanded space-y-1 mt-2 ml-4 hidden">
-                      <li>
-                        <a href="/asesores" class="nav-link nav-secondary block px-3 py-2 rounded-md text-xs font-medium text-gray-600 hover:bg-green-50 hover:text-green-700 transition-colors whitespace-nowrap">Asesores</a>
-                      </li>
-                      <li>
-                        <a href="/asistencia" class="nav-link nav-secondary block px-3 py-2 rounded-md text-xs font-medium text-gray-600 hover:bg-green-50 hover:text-green-700 transition-colors whitespace-nowrap">Asistencia</a>
-                      </li>
-                    </ul>
-                  </div>
-
-                  <!-- Administración -->
-                  <% if (user && user.role === 'admin') { %>
-                  <div class="mb-2">
-                    <button onclick="toggleSection('sistema')" class="menu-primary w-full flex items-center justify-center gap-3 px-3 py-3 rounded-lg text-sm font-bold text-gray-800 bg-gray-50 hover:bg-orange-100 hover:text-orange-700 transition-all shadow-sm group" title="Sistema">
-                      <svg class="w-6 h-6 flex-shrink-0 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                      </svg>
-                      <span class="menu-text overflow-hidden whitespace-nowrap flex-1 text-left" style="opacity: 0; display: none;">Sistema</span>
-                      <svg id="icon-sistema" class="menu-text w-4 h-4 transition-transform flex-shrink-0" style="opacity: 0; display: none;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                    </button>
-                    <ul id="section-sistema" class="menu-expanded space-y-1 mt-2 ml-4 hidden">
-                      <li>
-                        <a href="/admin" class="nav-link nav-secondary block px-3 py-2 rounded-md text-xs font-medium text-gray-600 hover:bg-orange-50 hover:text-orange-700 transition-colors whitespace-nowrap">Administración</a>
-                      </li>
-                    </ul>
-                  </div>
-                  <% } %>
-                </div>
-              </div>
-            </nav>
-          </aside>
+        <div class="flex flex-col gap-4">
+          <!-- Navbar de módulos (horizontal) -->
+          <% if (typeof hideNavbar === 'undefined' || !hideNavbar) { %>
+          <nav id="modules-navbar" class="bg-white border rounded-lg px-3 py-2 overflow-x-auto">
+            <ul class="flex items-center gap-2 flex-wrap">
+              <li>
+                <a href="/dashboard" class="nav-link inline-flex items-center gap-2 px-3 py-2 text-sm rounded-md border text-gray-700 hover:bg-gray-50">
+                  <svg class="icon icon-neutral" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+                  Tablero
+                </a>
+              </li>
+              <li>
+                <a href="/custom-dashboard" class="nav-link inline-flex items-center gap-2 px-3 py-2 text-sm rounded-md border text-gray-700 hover:bg-gray-50">
+                  <svg class="icon icon-neutral" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                  Personalizados
+                </a>
+              </li>
+              <li>
+                <a href="/powerbi" class="nav-link inline-flex items-center gap-2 px-3 py-2 text-sm rounded-md border text-gray-700 hover:bg-gray-50">
+                  <svg class="icon icon-neutral" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                  Power BI
+                </a>
+              </li>
+              <li>
+                <a href="/srr" class="nav-link inline-flex items-center gap-2 px-3 py-2 text-sm rounded-md border text-gray-700 hover:bg-gray-50">
+                  <svg class="icon icon-neutral" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                  SRR
+                </a>
+              </li>
+              <li>
+                <a href="/kpis" class="nav-link inline-flex items-center gap-2 px-3 py-2 text-sm rounded-md border text-gray-700 hover:bg-gray-50">
+                  <svg class="icon icon-neutral" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10"/></svg>
+                  KPIs
+                </a>
+              </li>
+              <li>
+                <a href="/asesores" class="nav-link inline-flex items-center gap-2 px-3 py-2 text-sm rounded-md border text-gray-700 hover:bg-gray-50">
+                  <svg class="icon icon-neutral" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM15 21H3v-1a6 6 0 0112 0v1z"/></svg>
+                  Asesores
+                </a>
+              </li>
+              <li>
+                <a href="/asistencia" class="nav-link inline-flex items-center gap-2 px-3 py-2 text-sm rounded-md border text-gray-700 hover:bg-gray-50">
+                  <svg class="icon icon-neutral" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3M4 11h16M4 19h16"/></svg>
+                  Asistencia
+                </a>
+              </li>
+              <% if (user && user.role === 'admin') { %>
+              <li>
+                <a href="/admin" class="nav-link inline-flex items-center gap-2 px-3 py-2 text-sm rounded-md border text-gray-700 hover:bg-gray-50">
+                  <svg class="icon icon-neutral" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6"/></svg>
+                  Admin
+                </a>
+              </li>
+              <% } %>
+            </ul>
+          </nav>
+          <% } %>
 
           <!-- Contenido principal -->
-          <main id="main-content" class="flex-1 min-w-0 transition-all duration-300 ease-in-out">
+          <main id="main-content" class="flex-1 min-w-0 transition-all duration-300 ease-in-out relative z-0">
             <!-- Breadcrumb de Campaña -->
-            <% if (typeof selectedCampaign !== 'undefined' && selectedCampaign) { %>
-            <div class="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-lg shadow-lg mb-6 px-6 py-4">
+            <% if ((typeof hideNavbar === 'undefined' || !hideNavbar) && typeof selectedCampaign !== 'undefined' && selectedCampaign) { %>
+            <div id="campaign-banner" class="rounded-lg shadow mb-6 px-6 py-4" style="backdrop-filter: saturate(160%) blur(6px); border: 1px solid var(--border); transition: background-color .2s ease, color .2s ease, border-color .2s ease;">
               <div class="flex items-center justify-between">
-                <div class="flex items-center gap-3 text-white">
+                <div class="flex items-center gap-3 accent">
                   <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                   </svg>
-                  <span class="text-xl font-bold">A365</span>
+                  <span class="text-xl font-bold" style="color: var(--text)">A365</span>
                   <svg class="h-5 w-5 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                   </svg>
-                  <span class="text-lg font-semibold text-blue-100">Campaña: <%= selectedCampaign.nombre %></span>
+                  <span class="text-lg font-semibold" style="opacity: 0.85; color: var(--text)">Campaña: <%= (tenant && tenant.nombre) || '—' %></span>
                 </div>
                 <a 
                   href="/campaigns" 
-                  class="inline-flex items-center px-4 py-2 bg-white/20 hover:bg-white/30 text-white font-bold rounded-lg transition-all"
+                  class="inline-flex items-center px-4 py-2 font-semibold rounded-lg"
+                  style="background-color: var(--brand-accent); color: var(--text-on-primary)"
                 >
                   <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
@@ -315,6 +599,7 @@
     <% } %>
 
     <!-- Footer -->
+    <% if (typeof hideNavbar === 'undefined' || !hideNavbar) { %>
     <footer class="bg-white mt-12">
         <div class="max-w-[88%] mx-auto py-6 px-4 sm:px-6 lg:px-8">
             <p class="text-center text-gray-500 text-sm">
@@ -323,8 +608,21 @@
             </p>
         </div>
     </footer>
+    <% } %>
+    <script>
+      (function(){
+        var btn=document.getElementById('themeToggle');
+        if(!btn) return;
+        btn.addEventListener('click',function(){
+          var el=document.documentElement;
+          var isDark=el.classList.toggle('dark');
+          try{localStorage.setItem('theme', isDark?'dark':'light');}catch(e){}
+        });
+      })();
+    </script>
 
     <!-- Barra inferior móvil -->
+    <% if (typeof hideNavbar === 'undefined' || !hideNavbar) { %>
     <nav class="fixed bottom-0 inset-x-0 bg-white border-t shadow-sm lg:hidden z-40">
       <ul class="grid grid-cols-4 gap-0 text-xs text-gray-600">
         <li>
@@ -383,6 +681,7 @@
         <% } %>
       </ul>
     </nav>
+    <% } %>
 
     <script src="/js/main.js"></script>
 </body>

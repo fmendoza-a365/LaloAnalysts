@@ -22,6 +22,14 @@ const CampaignSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  colorPrimary: {
+    type: String,
+    default: '#162B3D'
+  },
+  colorAccent: {
+    type: String,
+    default: '#2D4A66'
+  },
   subCampanas: [{
     nombre: String,
     descripcion: String

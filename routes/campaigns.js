@@ -3,15 +3,15 @@ const router = express.Router();
 const { ensureAuthenticated } = require('../middleware/auth');
 const Campaign = require('../models/Campaign');
 
-// Vista principal de selección de campañas (sin layout)
+// Vista principal de selección de campañas
 router.get('/', ensureAuthenticated, async (req, res) => {
   try {
     const campaigns = await Campaign.find({ activa: true }).sort({ fechaActualizacion: -1 });
     res.render('campaigns/select', {
-      title: 'Selección de Campaña - A365',
+      title: 'Campañas',
       user: req.user,
       campaigns,
-      layout: false
+      hideNavbar: true
     });
   } catch (err) {
     console.error(err);
@@ -59,7 +59,8 @@ router.get('/edit/:id', ensureAuthenticated, async (req, res) => {
     res.render('campaigns/edit', {
       title: 'Editar Campaña',
       user: req.user,
-      campaign
+      campaign,
+      hideNavbar: true
     });
   } catch (err) {
     console.error(err);
@@ -71,7 +72,7 @@ router.get('/edit/:id', ensureAuthenticated, async (req, res) => {
 // Actualizar campaña
 router.post('/edit/:id', ensureAuthenticated, async (req, res) => {
   try {
-    const { nombre, descripcion, imagen, gerente, analista, subCampanas } = req.body;
+    const { nombre, descripcion, imagen, gerente, analista, subCampanas, colorPrimary, colorAccent } = req.body;
     
     // Parsear subcampañas si viene como JSON string
     let parsedSubCampanas = [];
@@ -89,6 +90,8 @@ router.post('/edit/:id', ensureAuthenticated, async (req, res) => {
       imagen: imagen || '/images/default-campaign.jpg',
       gerente,
       analista,
+      colorPrimary: colorPrimary || '#162B3D',
+      colorAccent: colorAccent || '#2D4A66',
       subCampanas: parsedSubCampanas,
       fechaActualizacion: Date.now()
     });
@@ -105,7 +108,7 @@ router.post('/edit/:id', ensureAuthenticated, async (req, res) => {
 // Crear nueva campaña
 router.post('/create', ensureAuthenticated, async (req, res) => {
   try {
-    const { nombre, descripcion, imagen, gerente, analista } = req.body;
+    const { nombre, descripcion, imagen, gerente, analista, colorPrimary, colorAccent } = req.body;
     
     const newCampaign = new Campaign({
       nombre,
@@ -113,6 +116,8 @@ router.post('/create', ensureAuthenticated, async (req, res) => {
       imagen: imagen || '/images/default-campaign.jpg',
       gerente,
       analista,
+      colorPrimary: colorPrimary || '#162B3D',
+      colorAccent: colorAccent || '#2D4A66',
       subCampanas: []
     });
     

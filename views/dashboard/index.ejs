@@ -1,83 +1,59 @@
-<!-- Header Ejecutivo del Dashboard -->
-<div class="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-lg shadow-2xl mb-8">
-  <div class="px-6 py-8">
-    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-      <div class="flex-1">
-        <h1 class="text-3xl lg:text-4xl font-bold text-white flex items-center gap-4 mb-3">
-          <svg class="h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
-          </svg>
-          Dashboard General
-        </h1>
-        <p class="text-blue-100 text-lg">Panel de control integral de rendimiento y productividad del equipo</p>
-      </div>
-      <div class="flex items-center gap-4 bg-white/10 backdrop-blur-sm rounded-xl p-4">
-        <div class="text-center">
-          <div class="text-white/80 text-sm mb-1">Total Asesores</div>
-          <div class="text-4xl font-bold text-white"><%= kpis.totalAsesores %></div>
-        </div>
-        <div class="h-16 w-px bg-white/30"></div>
-        <div class="text-center">
-          <div class="text-white/80 text-sm mb-1">Periodo</div>
-          <div class="text-2xl font-bold text-white"><%= ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'][periodo.mes-1] %> <%= periodo.anio %></div>
-        </div>
-      </div>
-    </div>
+<%- include('../partials/page-header', { title: 'Dashboard General', subtitle: 'Panel de control integral de rendimiento y productividad del equipo', extraContent: `<div class=\"flex items-center gap-6\"><div><div class=\"text-xs text-gray-500\">Total Asesores</div><div class=\"text-2xl font-bold text-gray-900\">${kpis.totalAsesores}</div></div><div class=\"h-10 w-px bg-gray-200\"></div><div><div class=\"text-xs text-gray-500\">Periodo</div><div class=\"text-lg font-semibold text-gray-900\">${['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'][periodo.mes-1]} ${periodo.anio}</div></div></div>` }) %>
+
+<div class="bg-white rounded-lg shadow border border-gray-200 overflow-hidden mb-6">
+  <div class="bg-gray-50 border-b border-gray-200 px-6 py-4">
+    <h3 class="text-base font-semibold text-gray-900">Filtros de Período</h3>
   </div>
-  
-  <!-- Selector de Periodo - Integrado en header -->
-  <div class="bg-white/10 backdrop-blur-sm border-t border-white/20">
-    <div class="px-6 py-4">
-      <form method="GET" action="/dashboard" class="flex flex-col sm:flex-row sm:flex-wrap gap-3 sm:gap-4 items-stretch sm:items-end">
-        <div class="flex-1 min-w-[140px]">
-          <label for="anio" class="block text-xs font-semibold text-white/90 uppercase tracking-wide mb-2">Año</label>
-          <input type="number" min="2000" max="2100" id="anio" name="anio" value="<%= periodo.anio %>" class="block w-full border border-white/30 bg-white/20 text-white placeholder-white/50 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-white transition text-sm font-medium">
-        </div>
-        <div class="flex-1 min-w-[180px]">
-          <label for="mes" class="block text-xs font-semibold text-white/90 uppercase tracking-wide mb-2">Mes</label>
-          <select id="mes" name="mes" class="block w-full border border-white/30 bg-white/20 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-white transition text-sm font-medium">
-            <% for (let i=1;i<=12;i++){ %>
-              <option value="<%= i %>" <%= periodo.mes===i ? 'selected' : '' %> class="text-gray-900"><%= String(i).padStart(2,'0') %> - <%= ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][i-1] %></option>
-            <% } %>
-          </select>
-        </div>
-        <div class="flex-1 min-w-[200px]">
-          <label for="supervisor" class="block text-xs font-semibold text-white/90 uppercase tracking-wide mb-2">Supervisor</label>
-          <select id="supervisor" name="supervisor" class="block w-full border border-white/30 bg-white/20 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-white transition text-sm font-medium">
-            <option value="" class="text-gray-900">Todos los Supervisores</option>
-            <% (todosLosSupervisores || []).forEach(sup => { %>
-              <option value="<%= sup %>" <%= filtros.supervisor === sup ? 'selected' : '' %> class="text-gray-900"><%= sup %></option>
-            <% }) %>
-          </select>
-        </div>
-        <div class="flex-1 min-w-[160px]">
-          <label for="antiguedad" class="block text-xs font-semibold text-white/90 uppercase tracking-wide mb-2">Antigüedad</label>
-          <select id="antiguedad" name="antiguedad" class="block w-full border border-white/30 bg-white/20 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-white transition text-sm font-medium">
-            <option value="" class="text-gray-900">Todas</option>
-            <option value="nuevo" <%= filtros.antiguedad === 'nuevo' ? 'selected' : '' %> class="text-gray-900">Nuevo (1-30 días)</option>
-            <option value="intermedio" <%= filtros.antiguedad === 'intermedio' ? 'selected' : '' %> class="text-gray-900">Intermedio (30-90 días)</option>
-            <option value="antiguo" <%= filtros.antiguedad === 'antiguo' ? 'selected' : '' %> class="text-gray-900">Antiguo (+90 días)</option>
-          </select>
-        </div>
-        <div class="flex-1 min-w-[180px]">
-          <label for="mesa" class="block text-xs font-semibold text-white/90 uppercase tracking-wide mb-2">Mesa</label>
-          <select id="mesa" name="mesa" class="block w-full border border-white/30 bg-white/20 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-white transition text-sm font-medium">
-            <option value="" class="text-gray-900">Todas las Mesas</option>
-            <% (todasLasMesas || []).forEach(mesa => { %>
-              <option value="<%= mesa %>" <%= filtros.mesa === mesa ? 'selected' : '' %> class="text-gray-900"><%= mesa %></option>
-            <% }) %>
-          </select>
-        </div>
-        <div>
-          <button type="submit" class="inline-flex items-center px-6 py-2.5 border-2 border-white/40 text-sm font-bold rounded-lg shadow-lg text-white bg-white/20 hover:bg-white/30 hover:border-white/60 focus:outline-none focus:ring-2 focus:ring-white/50 backdrop-blur-sm transition-all">
-            <svg class="h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            Aplicar Filtros
-          </button>
-        </div>
-      </form>
-    </div>
+  <div class="p-3 sm:p-6">
+    <form method="GET" action="/dashboard" class="flex flex-col sm:flex-row sm:flex-wrap gap-3 sm:gap-4 items-stretch sm:items-end">
+      <div class="flex-1 min-w-[140px]">
+        <label for="anio" class="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Año</label>
+        <input type="number" min="2000" max="2100" id="anio" name="anio" value="<%= periodo.anio %>" class="block w-full border-2 border-gray-200 rounded-lg shadow-sm px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm font-medium">
+      </div>
+      <div class="flex-1 min-w-[180px]">
+        <label for="mes" class="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Mes</label>
+        <select id="mes" name="mes" class="block w-full border-2 border-gray-200 rounded-lg shadow-sm px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm font-medium">
+          <% for (let i=1;i<=12;i++){ %>
+            <option value="<%= i %>" <%= periodo.mes===i ? 'selected' : '' %>><%= String(i).padStart(2,'0') %> - <%= ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][i-1] %></option>
+          <% } %>
+        </select>
+      </div>
+      <div class="flex-1 min-w-[200px]">
+        <label for="supervisor" class="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Supervisor</label>
+        <select id="supervisor" name="supervisor" class="block w-full border-2 border-gray-200 rounded-lg shadow-sm px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm font-medium">
+          <option value="">Todos los Supervisores</option>
+          <% (todosLosSupervisores || []).forEach(sup => { %>
+            <option value="<%= sup %>" <%= filtros.supervisor === sup ? 'selected' : '' %>><%= sup %></option>
+          <% }) %>
+        </select>
+      </div>
+      <div class="flex-1 min-w-[160px]">
+        <label for="antiguedad" class="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Antigüedad</label>
+        <select id="antiguedad" name="antiguedad" class="block w-full border-2 border-gray-200 rounded-lg shadow-sm px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm font-medium">
+          <option value="">Todas</option>
+          <option value="nuevo" <%= filtros.antiguedad === 'nuevo' ? 'selected' : '' %>>Nuevo (1-30 días)</option>
+          <option value="intermedio" <%= filtros.antiguedad === 'intermedio' ? 'selected' : '' %>>Intermedio (30-90 días)</option>
+          <option value="antiguo" <%= filtros.antiguedad === 'antiguo' ? 'selected' : '' %>>Antiguo (+90 días)</option>
+        </select>
+      </div>
+      <div class="flex-1 min-w-[180px]">
+        <label for="mesa" class="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Mesa</label>
+        <select id="mesa" name="mesa" class="block w-full border-2 border-gray-200 rounded-lg shadow-sm px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm font-medium">
+          <option value="">Todas las Mesas</option>
+          <% (todasLasMesas || []).forEach(mesa => { %>
+            <option value="<%= mesa %>" <%= filtros.mesa === mesa ? 'selected' : '' %>><%= mesa %></option>
+          <% }) %>
+        </select>
+      </div>
+      <div>
+        <button type="submit" class="inline-flex items-center px-6 py-2.5 border border-transparent text-sm font-semibold rounded-lg shadow-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all">
+          <svg class="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          Consultar
+        </button>
+      </div>
+    </form>
   </div>
 </div>
 
