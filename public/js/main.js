@@ -355,3 +355,29 @@ document.addEventListener('DOMContentLoaded', function() {
 window.A365Analyst = { showToast, toggleSection };
 // Alias temporal para compatibilidad hacia atrás
 window.WindSurf = window.A365Analyst;
+
+function __theme_set_icons(){
+  var isDark=document.documentElement.classList.contains('dark');
+  var sunIcon='<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m8-9h1M3 12H2m15.364 6.364l.707.707M5.929 5.929l-.707-.707m12.142 0l.707-.707M5.929 18.071l-.707.707M12 5a7 7 0 107 7 7.001 7.001 0 00-7-7z"/></svg>';
+  var moonIcon='<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>';
+  document.querySelectorAll('[data-theme-icon]').forEach(function(el){ el.innerHTML=isDark?sunIcon:moonIcon; });
+}
+
+function __theme_apply_contrast(){
+  function srgb(v){ v/=255; return v<=0.03928? v/12.92 : Math.pow((v+0.055)/1.055,2.4); }
+  function toContrastText(bg){ var m=String(bg).match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/); if(!m) return ''; var r=parseInt(m[1],10), g=parseInt(m[2],10), b=parseInt(m[3],10); var Y=0.2126*srgb(r)+0.7152*srgb(g)+0.0722*srgb(b); return Y>0.5?'#000000':'#ffffff'; }
+  document.querySelectorAll('.btn-primary, .btn-secondary').forEach(function(el){ var cs=getComputedStyle(el); var bg=cs.backgroundColor; var c=toContrastText(bg); if(c) el.style.color=c; });
+}
+
+document.addEventListener('DOMContentLoaded',function(){
+  __theme_set_icons();
+  __theme_apply_contrast();
+  document.querySelectorAll('[data-theme-toggle]').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      var el=document.documentElement; var isDark=el.classList.toggle('dark');
+      try{ localStorage.setItem('theme', isDark?'dark':'light'); }catch(e){}
+      __theme_set_icons();
+      __theme_apply_contrast();
+    });
+  });
+});

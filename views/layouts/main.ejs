@@ -342,15 +342,6 @@
         box-shadow: 0 8px 16px rgba(17, 24, 39, 0.12);
         transform: translateY(-1px);
       }
-      /* Botones con texto negro solo en secciones de campañas (theme-a365-light) */
-      .theme-a365-light .btn-primary,
-      .theme-a365-light a.btn-primary { color: #000000 !important; }
-      .theme-a365-light .btn-secondary,
-      .theme-a365-light a.btn-secondary { color: #000000 !important; }
-      .theme-a365-light .btn-primary:hover,
-      .theme-a365-light a.btn-primary:hover { color: #000000 !important; }
-      .theme-a365-light .btn-secondary:hover,
-      .theme-a365-light a.btn-secondary:hover { color: #000000 !important; }
       button.bg-gray-600:hover,
       a.bg-gray-600:hover { 
         filter: brightness(0.95);
@@ -683,6 +674,9 @@
     </nav>
     <% } %>
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
     <script src="/js/main.js"></script>
+    <script src="/js/campaigns.js"></script>
+    <script src="/js/dashboard.js"></script>
 </body>
 </html>

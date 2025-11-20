@@ -12,6 +12,8 @@ const methodOverride = require('method-override');
 const flash = require('connect-flash');
 const expressLayouts = require('express-ejs-layouts');
 const { registerGlobalHelpers } = require('./utils/helpers');
+const compression = require('compression');
+const helmet = require('helmet');
 let MongoMemoryServer;
 try {
   ({ MongoMemoryServer } = require('mongodb-memory-server'));
@@ -125,7 +127,9 @@ app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(methodOverride('_method'));
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(helmet());
+app.use(compression());
+app.use(express.static(path.join(__dirname, 'public'), { maxAge: '7d', etag: true }));
 
 // Session configuration
 const useMongoSessionStore = !!process.env.MONGODB_URI;
